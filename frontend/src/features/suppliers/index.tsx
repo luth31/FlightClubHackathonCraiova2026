@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { api, download } from "@/services/api-client";
-import { Empty, ErrorMessage, Loading, Modal } from "@/components/ui";
+import { Empty, ErrorMessage, Modal } from "@/components/ui";
 import { date, time } from "@/utils/format";
 import type { User } from "@/types";
 import "./suppliers.css";
@@ -28,6 +28,7 @@ import { SupplierDetail } from './SupplierDetail';
 import { RegistrationDialog } from './RegistrationDialog';
 import { RegistrationDetail } from './RegistrationDetail';
 import { AssignmentForm } from './AssignmentForm';
+import { SupplierContent } from './SupplierContent';
 const labels: Record<string, string> = {
   needs_review: "Necesită verificare",
   verified: "Verificat independent",
@@ -135,11 +136,8 @@ export function SuppliersPage({
         </div>
         <span>Fără acces la e-mail sau plăți</span>
       </div>
-      {error ? (
-        <ErrorMessage message={error} retry={() => setRefresh((n) => n + 1)} />
-      ) : !data ? (
-        <Loading />
-      ) : (
+      <SupplierContent error={error} loading={!data} retry={() => setRefresh((n) => n + 1)}>
+      {data && (
         <>
           <div className="supplier-summary">
             <div>
@@ -306,6 +304,7 @@ export function SuppliersPage({
           </p>
         </>
       )}
+      </SupplierContent>
       {registrationOpen&&<RegistrationDialog onClose={()=>setRegistrationOpen(false)} onCreated={r=>{setRegistrationOpen(false);setRegistrationId(r.id);setRefresh(v=>v+1);notify("Dosarul de furnizor a fost înregistrat.")}}/>}
       {registrationId&&<RegistrationDetail id={registrationId} onClose={()=>setRegistrationId(undefined)} onChanged={()=>{setRefresh(v=>v+1);notify("Decizia a fost înregistrată.")}} onOpen={id=>{setRegistrationId(undefined);onOpen(id)}}/>}
       {create && data && (
@@ -324,7 +323,7 @@ export function SuppliersPage({
           }
         />
       )}
-      {registryId&&<SupplierDetail supplierId={registryId} onClose={()=>{setRegistryId(undefined);setRefresh(v=>v+1)}} onOpen={id=>{setRegistryId(undefined);onOpen(id)}} onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(v=>{setRegistryId(undefined);setSelected(v)}).catch(e=>notify(e.message))}}/>}
+      {registryId&&<SupplierDetail supplierId={registryId} onClose={()=>{setRegistryId(undefined);setRefresh(v=>v+1)}} onOpen={id=>{setRegistryId(undefined);onOpen(id)}} onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(v=>{setRegistryId(undefined);setSelected(v)}).catch(e=>notify(e.message))}} onRegistration={id=>{setRegistryId(undefined);setRegistrationId(id)}}/>}
       {selected && (
         <ReviewDetail
           review={selected}
@@ -333,6 +332,7 @@ export function SuppliersPage({
           onOpen={onOpen}
           onChanged={changed}
           onRecheck={()=>{setRecheck(selected);setSelected(undefined);setCreate(true)}}
+          onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(setSelected).catch(e=>notify(e.message))}}
         />
       )}
     </>
@@ -571,13 +571,14 @@ function NewReview({
     </Modal>
   );
 }
-function ReviewDetail({
-  review: r,
+export function ReviewDetail({
+  review,
   user,
   onClose,
   onOpen,
   onChanged,
   onRecheck,
+  onReview,
 }: {
   review: Review;
   user: User;
@@ -585,7 +586,15 @@ function ReviewDetail({
   onOpen: (id: string) => void;
   onChanged: (r: Review, message: string) => void;
   onRecheck:()=>void;
+  onReview:(id:string)=>void;
 }) {
+  const [loaded,setLoaded]=useState<Review>(),[loadError,setLoadError]=useState('');
+  const r=loaded?.id===review.id && loaded.status===review.status && loaded.assignment_revision===review.assignment_revision ? loaded : review;
+  useEffect(()=>{
+    let active=true;
+    api<Review>(`/supplier-reviews/${review.id}`).then(v=>{if(active){setLoaded(v);setLoadError('')}}).catch(e=>{if(active)setLoadError(e.message)});
+    return()=>{active=false};
+  },[review.id,review.status,review.assignment_revision]);
   const [mode, setMode] = useState<"verify" | "approve" | "reject">(),
     [note, setNote] = useState(""),
     [contact, setContact] = useState(r.verified_contact),
@@ -632,6 +641,12 @@ function ReviewDetail({
       onClose={onClose}
     >
       <div className="review-detail">
+        {loadError&&<ErrorMessage message={loadError}/>}
+        {(r.previous_review_id||r.rechecks?.length)&&<section className="review-control" aria-label="Istoric reevaluări">
+          <h3>Istoric reevaluări</h3>
+          {r.previous_review_id&&<button className="text-button" onClick={()=>onReview(r.previous_review_id!)}>Verificarea precedentă · {r.previous_review_id}</button>}
+          {r.rechecks?.map(c=><p key={c.id}><button className="text-button" onClick={()=>onReview(c.id)}>Reevaluare · {c.id} · {labels[c.status]||c.status} · {date(c.created_at)}</button></p>)}
+        </section>}
         <div className="review-result-heading">
           <ReviewStatus status={r.status} />
           {r.document_id && (

@@ -19,6 +19,7 @@ export interface Supplier {
     verified_by?: string;
     approved_by?: string;
     source_case_id?: string;
+    source_registration_id?: string;
     verified_actor?: {id:string; name:string};
     approved_actor?: {id:string; name:string};
   }>;
