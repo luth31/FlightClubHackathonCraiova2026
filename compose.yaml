@@ -1,31 +1,32 @@
 name: flyleaf
 services:
-  dunarea-api:
+  craiova-api:
     build:
       context: .
       dockerfile: deploy/Dockerfile.api
     environment:
-      FLYLEAF_AIRPORT_ID: dunarea
-      FLYLEAF_AIRPORT_NAME: Aeroportul Dunărea
+      FLYLEAF_AIRPORT_ID: craiova
+      FLYLEAF_AIRPORT_NAME: Aeroportul Craiova
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       FLYLEAF_OPENAI_MODEL: ${FLYLEAF_OPENAI_MODEL:-gpt-6-luna}
       FLYLEAF_OPENAI_REDACTION_MODEL: ${FLYLEAF_OPENAI_REDACTION_MODEL:-}
-      FLYLEAF_EXCHANGE_URL: http://dunarea-gateway:8082
+      FLYLEAF_EXCHANGE_URL: http://craiova-gateway:8082
       FLYLEAF_EXCHANGE_TOKEN_FILE: /run/secrets/gateway_token
       FLYLEAF_AUTH_MODE: oidc
-      FLYLEAF_OIDC_ISSUER: http://127.0.0.1:8180/realms/dunarea
-      FLYLEAF_OIDC_INTERNAL_ISSUER: http://dunarea-identity:8080/realms/dunarea
-      FLYLEAF_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${FLYLEAF_DUNAREA_PROVISIONING_SECRET:-flyleaf-dunarea-provisioning-demo}
+      FLYLEAF_OIDC_ISSUER: http://127.0.0.1:8180/realms/craiova
+      FLYLEAF_OIDC_INTERNAL_ISSUER: http://craiova-identity:8080/realms/craiova
+      FLYLEAF_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${FLYLEAF_CRAIOVA_PROVISIONING_SECRET:-flyleaf-craiova-provisioning-demo}
       FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL: ${FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL:-false}
       FLYLEAF_OIDC_CLIENT_ID: flyleaf-web
       FLYLEAF_OIDC_REDIRECT_URI: http://127.0.0.1:8080/api/auth/oidc/callback
       FLYLEAF_OIDC_FRONTEND_URL: http://127.0.0.1:8080/
     secrets:
-      - source: dunarea-token
+      - source: craiova-token
         target: gateway_token
     volumes:
-      - dunarea-state:/state
-    networks: [dunarea-private, dunarea-connector, llm-egress]
+      - craiova-state:/state
+    networks: [craiova-private, craiova-connector, llm-egress]
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3)']
@@ -33,43 +34,44 @@ services:
       timeout: 5s
       retries: 6
       start_period: 30s
-  dunarea-web:
+  craiova-web:
     build:
       context: .
       dockerfile: deploy/Dockerfile.web
     environment:
-      API_HOST: dunarea-api
+      API_HOST: craiova-api
     ports: ['127.0.0.1:8080:80']
-    networks: [dunarea-private, dunarea-web-edge]
-    depends_on: [dunarea-api]
-  carpati-api:
+    networks: [craiova-private, craiova-web-edge]
+    depends_on: [craiova-api]
+  sibiu-api:
     build:
       context: .
       dockerfile: deploy/Dockerfile.api
     environment:
-      FLYLEAF_AIRPORT_ID: carpati
-      FLYLEAF_AIRPORT_NAME: Aeroportul Carpați
+      FLYLEAF_AIRPORT_ID: sibiu
+      FLYLEAF_AIRPORT_NAME: Aeroportul Sibiu
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       FLYLEAF_OPENAI_MODEL: ${FLYLEAF_OPENAI_MODEL:-gpt-6-luna}
       FLYLEAF_OPENAI_REDACTION_MODEL: ${FLYLEAF_OPENAI_REDACTION_MODEL:-}
       FLYLEAF_CORPUS_DIR: /app/peer-data
       FLYLEAF_SEED_DOCUMENTS: 'false'
-      FLYLEAF_EXCHANGE_URL: http://carpati-gateway:8082
+      FLYLEAF_EXCHANGE_URL: http://sibiu-gateway:8082
       FLYLEAF_EXCHANGE_TOKEN_FILE: /run/secrets/gateway_token
       FLYLEAF_AUTH_MODE: oidc
-      FLYLEAF_OIDC_ISSUER: http://127.0.0.1:8181/realms/carpati
-      FLYLEAF_OIDC_INTERNAL_ISSUER: http://carpati-identity:8080/realms/carpati
-      FLYLEAF_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${FLYLEAF_CARPATI_PROVISIONING_SECRET:-flyleaf-carpati-provisioning-demo}
+      FLYLEAF_OIDC_ISSUER: http://127.0.0.1:8181/realms/sibiu
+      FLYLEAF_OIDC_INTERNAL_ISSUER: http://sibiu-identity:8080/realms/sibiu
+      FLYLEAF_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${FLYLEAF_SIBIU_PROVISIONING_SECRET:-flyleaf-sibiu-provisioning-demo}
       FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL: ${FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL:-false}
       FLYLEAF_OIDC_CLIENT_ID: flyleaf-web
       FLYLEAF_OIDC_REDIRECT_URI: http://127.0.0.1:8081/api/auth/oidc/callback
       FLYLEAF_OIDC_FRONTEND_URL: http://127.0.0.1:8081/
     secrets:
-      - source: carpati-token
+      - source: sibiu-token
         target: gateway_token
     volumes:
-      - carpati-state:/state
-    networks: [carpati-private, carpati-connector, carpati-llm-egress]
+      - sibiu-state:/state
+    networks: [sibiu-private, sibiu-connector, sibiu-llm-egress]
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3)']
@@ -77,103 +79,105 @@ services:
       timeout: 5s
       retries: 6
       start_period: 30s
-  carpati-web:
+  sibiu-web:
     build:
       context: .
       dockerfile: deploy/Dockerfile.web
     environment:
-      API_HOST: carpati-api
+      API_HOST: sibiu-api
     ports: ['127.0.0.1:8081:80']
-    networks: [carpati-private, carpati-web-edge]
-    depends_on: [carpati-api]
-  dunarea-identity:
+    networks: [sibiu-private, sibiu-web-edge]
+    depends_on: [sibiu-api]
+  craiova-identity:
     image: quay.io/keycloak/keycloak:26.8.1
     command: ['start-dev', '--import-realm']
     environment:
       KC_HOSTNAME: http://127.0.0.1:8180
-      FLYLEAF_KEYCLOAK_PROVISIONING_SECRET: ${FLYLEAF_DUNAREA_PROVISIONING_SECRET:-flyleaf-dunarea-provisioning-demo}
+      FLYLEAF_PUBLIC_URL: http://127.0.0.1:8080
+      FLYLEAF_KEYCLOAK_PROVISIONING_SECRET: ${FLYLEAF_CRAIOVA_PROVISIONING_SECRET:-flyleaf-craiova-provisioning-demo}
       KC_HTTP_ENABLED: 'true'
       JAVA_OPTS_KC_HEAP: -Xms128m -Xmx384m
     ports: ['127.0.0.1:8180:8080']
     volumes:
-      - dunarea-identity:/opt/keycloak/data
-      - ./deploy/keycloak/dunarea-realm.json:/opt/keycloak/data/import/dunarea-realm.json:ro
+      - craiova-identity:/opt/keycloak/data
+      - ./deploy/keycloak/craiova-realm.json:/opt/keycloak/data/import/craiova-realm.json:ro
       - ./deploy/keycloak/theme/flyleaf:/opt/keycloak/themes/flyleaf:ro
-    networks: [dunarea-private, dunarea-web-edge]
+    networks: [craiova-private, craiova-web-edge]
     restart: unless-stopped
-  carpati-identity:
+  sibiu-identity:
     image: quay.io/keycloak/keycloak:26.8.1
     command: ['start-dev', '--import-realm']
     environment:
       KC_HOSTNAME: http://127.0.0.1:8181
-      FLYLEAF_KEYCLOAK_PROVISIONING_SECRET: ${FLYLEAF_CARPATI_PROVISIONING_SECRET:-flyleaf-carpati-provisioning-demo}
+      FLYLEAF_PUBLIC_URL: http://127.0.0.1:8081
+      FLYLEAF_KEYCLOAK_PROVISIONING_SECRET: ${FLYLEAF_SIBIU_PROVISIONING_SECRET:-flyleaf-sibiu-provisioning-demo}
       KC_HTTP_ENABLED: 'true'
       JAVA_OPTS_KC_HEAP: -Xms128m -Xmx384m
     ports: ['127.0.0.1:8181:8080']
     volumes:
-      - carpati-identity:/opt/keycloak/data
-      - ./deploy/keycloak/carpati-realm.json:/opt/keycloak/data/import/carpati-realm.json:ro
+      - sibiu-identity:/opt/keycloak/data
+      - ./deploy/keycloak/sibiu-realm.json:/opt/keycloak/data/import/sibiu-realm.json:ro
       - ./deploy/keycloak/theme/flyleaf:/opt/keycloak/themes/flyleaf:ro
-    networks: [carpati-private, carpati-web-edge]
+    networks: [sibiu-private, sibiu-web-edge]
     restart: unless-stopped
-  dunarea-gateway:
+  craiova-gateway:
     image: nginx:1.28-alpine
     entrypoint: ['sh', '/gateway-entrypoint.sh']
     environment:
-      LOCAL_GATEWAY: dunarea-gateway
-      PEER_GATEWAY: carpati-gateway
-      API_HOST: dunarea-api
+      LOCAL_GATEWAY: craiova-gateway
+      PEER_GATEWAY: sibiu-gateway
+      API_HOST: craiova-api
     secrets:
-      - source: dunarea-token
+      - source: craiova-token
         target: gateway_token
     volumes:
       - ./deploy/gateway-entrypoint.sh:/gateway-entrypoint.sh:ro
       - ./deploy/gateway.conf:/etc/nginx/templates/default.conf.template:ro
-      - ./.runtime/exchange/dunarea.crt:/certs/airport.crt:ro
-      - ./.runtime/exchange/dunarea.key:/certs/airport.key:ro
+      - ./.runtime/exchange/craiova.crt:/certs/airport.crt:ro
+      - ./.runtime/exchange/craiova.key:/certs/airport.key:ro
       - ./.runtime/exchange/ca.crt:/certs/ca.crt:ro
-    networks: [dunarea-connector, airport-exchange]
-    depends_on: [dunarea-api, carpati-api]
-  carpati-gateway:
+    networks: [craiova-connector, airport-exchange]
+    depends_on: [craiova-api, sibiu-api]
+  sibiu-gateway:
     image: nginx:1.28-alpine
     entrypoint: ['sh', '/gateway-entrypoint.sh']
     environment:
-      LOCAL_GATEWAY: carpati-gateway
-      PEER_GATEWAY: dunarea-gateway
-      API_HOST: carpati-api
+      LOCAL_GATEWAY: sibiu-gateway
+      PEER_GATEWAY: craiova-gateway
+      API_HOST: sibiu-api
     secrets:
-      - source: carpati-token
+      - source: sibiu-token
         target: gateway_token
     volumes:
       - ./deploy/gateway-entrypoint.sh:/gateway-entrypoint.sh:ro
       - ./deploy/gateway.conf:/etc/nginx/templates/default.conf.template:ro
-      - ./.runtime/exchange/carpati.crt:/certs/airport.crt:ro
-      - ./.runtime/exchange/carpati.key:/certs/airport.key:ro
+      - ./.runtime/exchange/sibiu.crt:/certs/airport.crt:ro
+      - ./.runtime/exchange/sibiu.key:/certs/airport.key:ro
       - ./.runtime/exchange/ca.crt:/certs/ca.crt:ro
-    networks: [carpati-connector, airport-exchange]
-    depends_on: [dunarea-api, carpati-api]
+    networks: [sibiu-connector, airport-exchange]
+    depends_on: [craiova-api, sibiu-api]
 networks:
   llm-egress:
-  carpati-llm-egress:
-  dunarea-web-edge:
-  carpati-web-edge:
-  dunarea-private:
+  sibiu-llm-egress:
+  craiova-web-edge:
+  sibiu-web-edge:
+  craiova-private:
     internal: true
-  carpati-private:
+  sibiu-private:
     internal: true
-  dunarea-connector:
+  craiova-connector:
     internal: true
-  carpati-connector:
+  sibiu-connector:
     internal: true
   airport-exchange:
     internal: true
 volumes:
-  dunarea-state:
-  carpati-state:
-  dunarea-identity:
-  carpati-identity:
+  craiova-state:
+  sibiu-state:
+  craiova-identity:
+  sibiu-identity:
 secrets:
-  dunarea-token:
-    file: ./.runtime/exchange/dunarea.token
-  carpati-token:
-    file: ./.runtime/exchange/carpati.token
+  craiova-token:
+    file: ./.runtime/exchange/craiova.token
+  sibiu-token:
+    file: ./.runtime/exchange/sibiu.token

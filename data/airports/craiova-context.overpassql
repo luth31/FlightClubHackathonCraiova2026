@@ -1,0 +1,1 @@
+[out:json][timeout:45];(way["landuse"~"^(forest|grass|meadow|farmland|industrial|residential|orchard)$"](around:5000,44.318055556,23.888611111);way["natural"~"^(wood|water|scrub)$"](around:5000,44.318055556,23.888611111);way["highway"~"^(motorway|trunk|primary|secondary)$"](around:5000,44.318055556,23.888611111););out geom;

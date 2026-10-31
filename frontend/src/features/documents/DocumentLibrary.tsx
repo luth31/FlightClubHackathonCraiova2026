@@ -20,9 +20,9 @@ export function DocumentLibrary({
   initialFilter?: string;
   revision: number;
 }) {
-  const caseStorageKey = `aerodesk-document-case:${getIdentity()}`;
+  const caseStorageKey = `flyleaf-document-case:${getIdentity()}`;
   const [view, setView] = useState<LibraryView>(
-    () => sessionStorage.getItem("aerodesk-document-view") === "flow" ? "flow" : "list",
+    () => sessionStorage.getItem("flyleaf-document-view") === "flow" ? "flow" : "list",
   ),
     [query, setQuery] = useState(""),
     [status, setStatus] = useState(initialFilter),
@@ -40,7 +40,7 @@ export function DocumentLibrary({
 
   const changeView = (next: LibraryView) => {
     setView(next);
-    sessionStorage.setItem("aerodesk-document-view", next);
+    sessionStorage.setItem("flyleaf-document-view", next);
   };
   const selectCase = (id: string) => {
     setCaseId(id);

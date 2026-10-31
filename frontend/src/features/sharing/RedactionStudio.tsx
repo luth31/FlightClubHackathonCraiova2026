@@ -35,7 +35,7 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
   const [preview, setPreview] = useState<Preview>();
   const [compare, setCompare] = useState(false);
   const [reviewed, setReviewed] = useState(false);
-  const [recipient, setRecipient] = useState('carpati');
+  const [recipient, setRecipient] = useState('sibiu');
   const [department, setDepartment] = useState('');
   const [expires, setExpires] = useState('2026-12-01');
   const [announcement, setAnnouncement] = useState('');
@@ -49,7 +49,7 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
         if (['queued', 'processing'].includes(extraction.status)) { timer = window.setTimeout(load, 1500); return; }
         if (extraction.status === 'failed') throw new Error(extraction.error || 'Reîncearcă extragerea textului din informațiile documentului.');
         const [data, session] = await Promise.all([api<Layout>(`/documents/${doc.id}/redaction-layout`), api<Session>('/session')]);
-        if (active) { setLayout(data); setRecipient(session.current_user?.airport_id === 'carpati' ? 'dunarea' : 'carpati'); }
+        if (active) { setLayout(data); setRecipient(session.current_user?.airport_id === 'sibiu' ? 'craiova' : 'sibiu'); }
       } catch (e) { if (active) setError((e as Error).message); }
     }
     void load();
@@ -225,7 +225,7 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
           <div className="review-toolbar"><button className="text-button" disabled={locked} onClick={() => { setStep('edit'); setReviewed(false); setImageError(false); }}><ArrowLeft size={15} />Înapoi la editare</button>{pageNavigation}<label className="compare-toggle"><input type="checkbox" checked={compare} onChange={e => setCompare(e.target.checked)} />Arată originalul</label></div>
           <div className="review-image-scroll"><span className={`compare-label ${compare ? 'original' : ''}`}>{compare ? 'Original · datele sunt vizibile' : 'Copia pregătită pentru partajare'}</span><img alt={`${compare ? 'Original' : 'Copie anonimizată'}, pagina ${pageIndex + 1}`} src={fileUrl(compare ? `/api/documents/${doc.id}/redaction-pages/${pageIndex + 1}?source_version=${layout.source_version}&source_sha256=${layout.source_sha256}` : `/api/share-previews/${preview?.preview_id}/pages/${pageIndex + 1}`)} onError={() => { setImageError(true); setError('Pagina nu poate fi afișată. Deschide copia PDF pentru verificare.'); }} onLoad={() => setImageError(false)} /></div>
         </section><aside className="review-controls"><h3>Verifică înainte de partajare</h3><p>{selected.length ? `${selected.length} cuvinte eliminate din copie.` : 'Copia păstrează tot conținutul.'} Parcurge toate paginile, inclusiv imaginile.</p><a className="text-button" href={fileUrl(preview?.file_url || '')} target="_blank" rel="noreferrer">Deschide copia PDF ↗</a>
-          <div className="share-recipient"><span>Destinatar</span><strong>{recipient === 'carpati' ? 'Aeroportul Carpați' : 'Aeroportul Dunărea'}</strong></div>
+          <div className="share-recipient"><span>Destinatar</span><strong>{recipient === 'sibiu' ? 'Aeroportul Sibiu' : 'Aeroportul Craiova'}</strong></div>
           <label className="field">Cine poate accesa<select disabled={locked} value={department} onChange={e => setDepartment(e.target.value)}><option value="">Avizatorii și directorii autorizați</option>{['Achiziții', 'Tehnic', 'Financiar', 'Operațiuni', 'Resurse umane', 'Conformitate'].map(dep => <option key={dep} value={dep}>Doar {dep}</option>)}</select></label>
           <label className="field">Acces până la<input disabled={locked} type="date" min="2026-10-31" value={expires} onChange={e => setExpires(e.target.value)} /></label>
           <label className="checkbox-field"><input type="checkbox" checked={reviewed} disabled={locked} onChange={e => setReviewed(e.target.checked)} /><span>Am verificat copia și confirm că poate fi partajată.</span></label>

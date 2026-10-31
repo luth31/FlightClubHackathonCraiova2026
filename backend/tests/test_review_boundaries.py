@@ -25,8 +25,8 @@ def shared_copy(client, pdf_bytes):
     assert preview.status_code == 200, preview.text
     response = client.post(f'/api/documents/{document_id}/shares', json={
         'preview_id': preview.json()['preview_id'], 'reviewed': True,
-        'expires_at': '2026-12-31', 'recipient_airport_id': 'carpati',
-        'recipient_airport': 'Aeroportul Carpați'})
+        'expires_at': '2026-12-31', 'recipient_airport_id': 'sibiu',
+        'recipient_airport': 'Aeroportul Sibiu'})
     assert response.status_code == 201, response.text
     return document_id, response.json()['id'], preview.json()['preview_id']
 

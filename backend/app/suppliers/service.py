@@ -49,6 +49,11 @@ def seed_suppliers(db):
         iban=normalize_iban(str(metadata.get('supplier_iban','')))
         contact=str(metadata.get('supplier_contact','')).strip().lower()
         if not doc.supplier or not metadata.get('demo_iban_valid_checksum') or not valid_ro_iban(iban) or not contact: continue
+        # Tenant renames must not create a second registry identity for the same
+        # seeded source contract. Existing IDs carry bank history and review links.
+        if any(item.document_id==doc.id or item.name.casefold()==doc.supplier.casefold()
+               for item in db.scalars(select(Supplier).where(Supplier.airport_id==doc.airport_id))):
+            continue
         identifier=supplier_id(doc.supplier,doc.airport_id)
         if db.get(Supplier,identifier): continue
         db.add(Supplier(id=identifier,name=doc.supplier,airport_id=doc.airport_id,document_id=doc.id,source_version=doc.version,expected_iban=iban,verified_contact=contact,trust_status='demo_verified',bank_history=[{'iban':iban,'version':1,'source':'Registru fictiv verificat pentru scenariul demonstrativ','approved_by':'demo-fixture','created_at':doc.created_at}]))

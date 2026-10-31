@@ -1,7 +1,7 @@
 {
-  "realm": "carpati",
+  "realm": "craiova",
   "enabled": true,
-  "displayName": "FlyLeaf · Aeroportul Carpați",
+  "displayName": "FlyLeaf · Aeroportul Craiova",
   "registrationAllowed": false,
   "resetPasswordAllowed": false,
   "loginWithEmailAllowed": false,
@@ -29,14 +29,14 @@
       "serviceAccountsEnabled": false,
       "implicitFlowEnabled": false,
       "redirectUris": [
-        "http://127.0.0.1:8081/api/auth/oidc/callback"
+        "${FLYLEAF_PUBLIC_URL}/api/auth/oidc/callback"
       ],
       "webOrigins": [
-        "http://127.0.0.1:8081"
+        "${FLYLEAF_PUBLIC_URL}"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://127.0.0.1:8081/"
+        "post.logout.redirect.uris": "${FLYLEAF_PUBLIC_URL}/"
       },
       "defaultClientScopes": [
         "web-origins",
@@ -68,22 +68,22 @@
   ],
   "users": [
     {
-      "id": "0a2d6e9c-66af-5313-a952-91c8442bf828",
+      "id": "78f3f62f-9942-57a0-b610-8bc449514179",
       "username": "technical-head",
       "firstName": "Sorin",
       "lastName": "Pavel",
-      "email": "technical-head@carpati.example",
+      "email": "technical-head@craiova.example",
       "emailVerified": true,
       "enabled": true,
       "requiredActions": [],
       "credentials": [{"type": "password", "value": "FlyLeaf2026!", "temporary": false}]
     },
     {
-      "id": "ae41e412-8c0a-515c-89d3-b6a87c7c0d83",
+      "id": "af4c2bc9-6243-53f5-8051-574255e83321",
       "username": "admin",
       "firstName": "Ana",
       "lastName": "Ionescu",
-      "email": "admin@carpati.example",
+      "email": "admin@craiova.example",
       "emailVerified": true,
       "enabled": true,
       "requiredActions": [],
@@ -96,11 +96,11 @@
       ]
     },
     {
-      "id": "f116602c-c29c-5511-a885-b8f20a20dfaa",
+      "id": "cfb97976-e57b-585e-aeba-f8f62eea15d9",
       "username": "manager",
       "firstName": "Mihai",
       "lastName": "Dumitrescu",
-      "email": "manager@carpati.example",
+      "email": "manager@craiova.example",
       "emailVerified": true,
       "enabled": true,
       "requiredActions": [],
@@ -113,11 +113,11 @@
       ]
     },
     {
-      "id": "84ace447-6e3f-5b8b-bf26-d38741cc816f",
+      "id": "214b2438-a8ab-57d3-8557-354f2c26d698",
       "username": "reviewer",
       "firstName": "Elena",
       "lastName": "Popa",
-      "email": "reviewer@carpati.example",
+      "email": "reviewer@craiova.example",
       "emailVerified": true,
       "enabled": true,
       "requiredActions": [],
@@ -130,11 +130,11 @@
       ]
     },
     {
-      "id": "2d4ed3c9-d08e-55ab-b0fb-e0525978a7e6",
+      "id": "c88526c8-e1d2-53bc-a857-a12237d1aae1",
       "username": "finance",
       "firstName": "Radu",
       "lastName": "Marinescu",
-      "email": "finance@carpati.example",
+      "email": "finance@craiova.example",
       "emailVerified": true,
       "enabled": true,
       "requiredActions": [],
@@ -147,11 +147,11 @@
       ]
     },
     {
-      "id": "c8461524-70c7-57e2-b67e-db9fc8b56da3",
+      "id": "b7b6d88d-a20c-5dbd-83ff-0636b59c4ad8",
       "username": "hr",
       "firstName": "Ioana",
       "lastName": "Stancu",
-      "email": "hr@carpati.example",
+      "email": "hr@craiova.example",
       "emailVerified": true,
       "enabled": true,
       "requiredActions": [],
@@ -164,11 +164,11 @@
       ]
     },
     {
-      "id": "78bf8f1f-a282-5448-9157-d3979caa5015",
+      "id": "c3906149-d2d1-5e03-8a52-b8b04a11867f",
       "username": "technician",
       "firstName": "Andrei",
       "lastName": "Neagu",
-      "email": "technician@carpati.example",
+      "email": "technician@craiova.example",
       "emailVerified": true,
       "enabled": true,
       "requiredActions": [],

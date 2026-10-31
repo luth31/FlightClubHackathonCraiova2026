@@ -53,3 +53,17 @@ def test_seed_preserves_registry_identity_and_history(admin,db):
     again=admin.get(f'/api/suppliers/{known["id"]}').json()
     assert again['id']==known['id'] and again['bank_history']==before['bank_history']
     assert again['tax_id'] is None
+
+
+def test_reseeding_after_airport_rename_preserves_supplier_id(admin, db, monkeypatch):
+    from sqlalchemy import select
+    from app.suppliers import service
+    from app.suppliers.models import Supplier
+    before = {item.id: copy.deepcopy(item.bank_history) for item in db.scalars(select(Supplier))}
+    # The generated hash changes when the airport identifier changes. Persisted
+    # suppliers must still be recognized by their original source contract.
+    monkeypatch.setattr(service, 'supplier_id', lambda name, airport: 'would-be-new-tenant-hash')
+    service.seed_suppliers(db)
+    db.commit()
+    after = {item.id: item.bank_history for item in db.scalars(select(Supplier))}
+    assert after == before

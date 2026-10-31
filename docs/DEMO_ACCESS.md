@@ -1,6 +1,6 @@
 # Demo organization and access
 
-AeroDesk has four functional departments below the airport director. This is a simplified fictional demonstration inspired by the [CNAB organization page](https://bucharestairports.ro/cnab/prezentare/organizare/), not CNAB's actual organization or staff.
+FlyLeaf has four functional departments below the airport director. This is a simplified fictional demonstration inspired by the [CNAB organization page](https://bucharestairports.ro/cnab/prezentare/organizare/), not CNAB's actual organization or staff.
 
 | Department | Head | Team / specialist |
 |---|---|---|
@@ -19,13 +19,13 @@ Existing core department IDs remain stable. Historical document/PDF business are
 
 | Account | Menu | Record scope |
 |---|---|---|
-| Director | Home, Documents, Contracts, Suppliers, Approvals, Team, Sharing, Audit | Organizational business records; no blanket personnel-file access |
-| Technical head | Home, Documents, Contracts, Approvals, Team, Audit | Technical/operations records and approvals; no automatic signing or banking rights |
-| Technician | Home, Documents, My tasks, Team | Published nonsensitive technical evidence and own technical drafts; basic directory and own leave |
-| Procurement head | Home, Documents, Contracts, Suppliers, Approvals, Team, Audit | Procurement/finance records; supplier business profiles without bank history or banking workflows |
-| Finance specialist | Home, Documents, Contracts, Suppliers, Approvals, Team | Financial records, published nonsensitive contracts, explicitly assigned work and supplier verification |
-| HR | Home, Documents, Approvals, Team, Audit | Personnel records, onboarding and leave management; cannot self-grant privileged roles |
-| Compliance head | Home, Documents, Contracts, Approvals, Team, Sharing, Audit | Compliance records, own cases, current assigned/delegated cases and authorized publishing |
+| Director | Home, Operations, Documents, Contracts, Suppliers, Approvals, Team, Sharing, Audit | Organizational business records; no blanket personnel-file access |
+| Technical head | Home, Operations, Documents, Contracts, Approvals, Team, Audit | Technical/operations records and approvals; no automatic signing or banking rights |
+| Technician | Home, Operations, Documents, My tasks, Team | Published nonsensitive technical evidence and own technical drafts; basic directory and own leave |
+| Procurement head | Home, Operations, Documents, Contracts, Suppliers, Approvals, Team, Audit | Procurement/finance records; supplier business profiles without bank history or banking workflows |
+| Finance specialist | Home, Operations, Documents, Contracts, Suppliers, Approvals, Team | Financial records, published nonsensitive contracts, explicitly assigned work and supplier verification |
+| HR | Home, Operations, Documents, Approvals, Team, Audit | Personnel records, onboarding and leave management; cannot self-grant privileged roles |
+| Compliance head | Home, Operations, Documents, Contracts, Approvals, Team, Sharing, Audit | Compliance records, own cases, current assigned/delegated cases and authorized publishing |
 
 Server-issued capabilities govern menus and direct navigation. Record access is checked for documents, downloads, versions, related records, search, dashboard counts, register exports, assistant sources, tasks and supplier associations. Completing or expiring an assignment does not create permanent access to another department's documents. Delegation does not grant signing or bank-approval authority. An explicitly appointed HR head has HR departmental authority; director and technical heads do not inherit it.
 
@@ -37,13 +37,13 @@ Bank history and review actions are limited to finance/director accounts. Procur
 
 Run `./scripts/start-demo.sh`. It rebuilds the application, waits for both airports and checks the new account in both existing realms. Database and identity volumes are preserved.
 
-Fresh realms use password `AeroDesk2026!` for all seven demo accounts. When upgrading a previously imported realm, the launcher creates only the missing technical-head identity and displays its initial temporary password once; change it at first login. Repeated runs verify the identity without resetting its password.
+Fresh realms use password `FlyLeaf2026!` for all seven demo accounts. When upgrading a previously imported realm, the launcher creates only the missing technical-head identity and displays its initial temporary password once; change it at first login. Repeated runs verify the identity without resetting its password.
 
 For an already rebuilt stack:
 
 ```sh
-docker compose exec -T dunarea-api python -m app.people.sync_demo_organization
-docker compose exec -T carpati-api python -m app.people.sync_demo_organization
+docker compose exec -T craiova-api python -m app.people.sync_demo_organization
+docker compose exec -T sibiu-api python -m app.people.sync_demo_organization
 ```
 
 Keycloak startup import does not update existing realms. Do not delete identity volumes to apply the fixture. Existing provisioning-client configuration must be in place; see [user management](USER_MANAGEMENT.md).

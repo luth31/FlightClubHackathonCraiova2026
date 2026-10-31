@@ -13,7 +13,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from app.extraction.engine import extract
 
 ROOT=Path(__file__).resolve().parents[1]
-TEXT=['Raport de mentenanță - Aeroportul Dunărea', 'Furnizor: Servicii Aeroportuare SRL',
+TEXT=['Raport de mentenanță - Aeroportul Craiova', 'Furnizor: Servicii Aeroportuare SRL',
       'Valabil până la: 2027-05-12', 'Valoare totală: 12500 RON',
       'Responsabil: Elena Popa', 'Echipament: scară pasageri SP-02',
       'Email: contact@aeroport.example', 'Cont IBAN: RO49AAAA1B31007593840000',

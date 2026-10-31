@@ -13,7 +13,7 @@ from app.documents.service import file_hash
 from app.sharing.models import Share, SharePreview
 from app.sharing.service import serialize
 
-PEERS = {'dunarea': 'Aeroportul Dunărea', 'carpati': 'Aeroportul Carpați'}
+PEERS = {'craiova': 'Aeroportul Craiova', 'sibiu': 'Aeroportul Sibiu'}
 
 
 def gateway_token():

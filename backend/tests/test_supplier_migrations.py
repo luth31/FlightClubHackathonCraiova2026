@@ -20,13 +20,13 @@ def test_upgrade_preserves_legacy_supplier_review(tmp_path):
     history = [{'iban': 'RO49AAAA1B31007593840000', 'version': 1}, {'iban': 'old', 'version': 2}]
     with sqlite3.connect(path) as db:
         db.execute("INSERT INTO suppliers VALUES (?,?,?,?,?,?,?,?,?)", (
-            'legacy', 'Legacy SRL', 'dunarea', 'legacy-doc', 1,
+            'legacy', 'Legacy SRL', 'craiova', 'legacy-doc', 1,
             'old', 'contact@legacy.example', 'demo_verified', json.dumps(history)))
         db.execute("""INSERT INTO supplier_reviews
             (id,fingerprint,airport_id,supplier_name,expected_iban,observed_iban,sender_email,
              verified_contact,message,reasons,status,created_by,created_at,verification_note,decision_note)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (
-            'legacy-review', 'fingerprint', 'dunarea', 'Legacy SRL', 'old', 'old',
+            'legacy-review', 'fingerprint', 'craiova', 'Legacy SRL', 'old', 'old',
             'contact@legacy.example', 'contact@legacy.example', 'message', '[]',
             'approved', 'admin', '2026-10-01', 'verified', 'approved'))
     migrate(path, 'head')
@@ -49,12 +49,12 @@ def test_catalog_migration_preserves_explicit_sources_and_only_matches_seed(tmp_
                 (id,title,number,category,department,status,created_at,updated_at,supplier,currency,
                  owner,created_by,confidentiality,summary,searchable_text,version,validated,airport_id,extra)
                 VALUES (?,?,?,'Contract','Achiziții','approved','2026-10-01','2026-10-01',?,'RON',
-                        'Demo',?,'internal','','',1,1,'dunarea','{}')''',
+                        'Demo',?,'internal','','',1,1,'craiova','{}')''',
                 (identifier, identifier, identifier, name, creator))
         for identifier, name, document in (
             ('legacy', 'Legacy SRL', 'primary'), ('other', 'Another Demo SRL', 'other-primary')):
             db.execute('INSERT INTO suppliers VALUES (?,?,?,?,?,?,?,?,?)', (
-                identifier, name, 'dunarea', document, 1, 'old', 'contact@demo.example', 'demo_verified', '[]'))
+                identifier, name, 'craiova', document, 1, 'old', 'contact@demo.example', 'demo_verified', '[]'))
     migrate(path, 'head')
     migrate(path, 'head')
     with sqlite3.connect(path) as db:
