@@ -27,6 +27,8 @@ Document fields: `id,title,number,category,department,status,created_at,updated_
 
 ## Supplier review extension
 
+Reviews persist `service_date`, `invoice_currency`, `registry_revision` and `contract_snapshot` (value, currency, effective/expiry dates, validation and status). Historical missing values remain null. Supplier `registry_revision` increases atomically with trusted bank changes.
+
 Only director and finance roles access `/api/supplier-reviews`. Initial supplier bank/contact records are explicitly fictional, previously verified demo fixtures. Uploaded metadata never automatically becomes a trusted bank record.
 
 * GET `/supplier-reviews` -> `{items,total,suppliers,counters,notice}`. Supplier choices require an approved/signed source with validated fields.

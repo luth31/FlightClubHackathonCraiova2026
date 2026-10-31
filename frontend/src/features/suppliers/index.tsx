@@ -47,6 +47,9 @@ interface Review {
   sender_email: string;
   verified_contact: string;
   invoice_amount?: number;
+  invoice_currency?: string;
+  service_date?: string;
+  contract_snapshot?: {value: string | null; currency: string; effective_date?: string; expires_at?: string};
   message: string;
   reasons: Array<{ code: string; message: string }>;
   status: string;
@@ -727,9 +730,13 @@ function ReviewDetail({
               {r.invoice_amount != null && (
                 <>
                   <dt>Valoare factură</dt>
-                  <dd>{money(r.invoice_amount)}</dd>
+                  <dd>{money(r.invoice_amount)} {r.invoice_currency !== 'RON' ? r.invoice_currency : ''}</dd>
                 </>
               )}
+              <dt>Data prestației</dt>
+              <dd>{r.service_date ? date(r.service_date) : 'Neînregistrat'}</dd>
+              <dt>Perioada evaluată</dt>
+              <dd>{r.contract_snapshot ? `${r.contract_snapshot.effective_date ? date(r.contract_snapshot.effective_date) : 'Început neînregistrat'} — ${r.contract_snapshot.expires_at ? date(r.contract_snapshot.expires_at) : 'Sfârșit neînregistrat'}` : 'Neînregistrat'}</dd>
             </dl>
           </div>
         </div>

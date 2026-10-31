@@ -1,4 +1,4 @@
-from pydantic import BaseModel,Field,field_validator
+from pydantic import BaseModel,Field,field_validator,model_validator
 from datetime import date
 class ReviewCreate(BaseModel):
     document_id: str | None=Field(default=None,max_length=100)
@@ -6,8 +6,19 @@ class ReviewCreate(BaseModel):
     observed_iban: str=Field(min_length=1,max_length=80)
     sender_email: str=Field(min_length=3,max_length=250)
     invoice_amount: float | None=Field(default=None,ge=0,allow_inf_nan=False)
+    invoice_currency: str | None=Field(default=None,pattern='^[A-Z]{3}$')
     service_date: date | None=None
     message: str=Field(default='',max_length=10000)
+
+    @field_validator('invoice_currency',mode='before')
+    @classmethod
+    def currency(cls,value):
+        return value.strip().upper() if isinstance(value,str) else value
+
+    @model_validator(mode='after')
+    def amount_currency(self):
+        self.invoice_currency=(self.invoice_currency or 'RON') if self.invoice_amount is not None else None
+        return self
 class Verification(BaseModel):
     contact_used: str=Field(min_length=3,max_length=250)
     note: str=Field(min_length=10,max_length=2000)

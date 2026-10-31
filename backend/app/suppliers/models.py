@@ -13,6 +13,7 @@ class Supplier(Base):
     verified_contact: Mapped[str]=mapped_column(String)
     trust_status: Mapped[str]=mapped_column(String)
     bank_history: Mapped[list]=mapped_column(JSON,default=list)
+    registry_revision: Mapped[int]=mapped_column(Integer,default=1)
 
 class SupplierReview(Base):
     __tablename__='supplier_reviews'
@@ -28,6 +29,10 @@ class SupplierReview(Base):
     sender_email: Mapped[str]=mapped_column(String)
     verified_contact: Mapped[str]=mapped_column(String)
     invoice_amount: Mapped[float | None]=mapped_column(Float,nullable=True)
+    invoice_currency: Mapped[str | None]=mapped_column(String,nullable=True)
+    service_date: Mapped[str | None]=mapped_column(String,nullable=True)
+    registry_revision: Mapped[int | None]=mapped_column(Integer,nullable=True)
+    contract_snapshot: Mapped[dict | None]=mapped_column(JSON,nullable=True)
     message: Mapped[str]=mapped_column(Text)
     reasons: Mapped[list]=mapped_column(JSON)
     status: Mapped[str]=mapped_column(String)

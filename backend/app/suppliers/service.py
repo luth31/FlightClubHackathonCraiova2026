@@ -3,6 +3,7 @@ RO IBAN format: SWIFT IBAN Registry; MOD 97-10 per BNR Regulation 2/2004 Annex 2
 A valid checksum says nothing about account ownership.
 """
 import hashlib,json,re,uuid
+from decimal import Decimal
 from difflib import SequenceMatcher
 from sqlalchemy import select,desc,text
 from app.suppliers.models import Supplier,SupplierReview
@@ -49,11 +50,18 @@ def seed_suppliers(db):
         db.add(Supplier(id=identifier,name=doc.supplier,airport_id=doc.airport_id,document_id=doc.id,source_version=doc.version,expected_iban=iban,verified_contact=contact,trust_status='demo_verified',bank_history=[{'iban':iban,'version':1,'source':'Registru fictiv verificat pentru scenariul demonstrativ','approved_by':'demo-fixture','created_at':doc.created_at}]))
 
 def supplier_dict(item):
-    return {k:getattr(item,k) for k in ('id','name','document_id','expected_iban','verified_contact','trust_status','bank_history')}
+    return {k:getattr(item,k) for k in ('id','name','document_id','expected_iban','verified_contact','trust_status','bank_history','registry_revision')}
+
+def snapshot_contract(document):
+    if not document: return None
+    return {'value':str(Decimal(str(document.value)).quantize(Decimal('0.01'))) if document.value is not None else None,
+        'currency':document.currency,'effective_date':(document.extra or {}).get('metadata',{}).get('effective_date'),
+        'expires_at':document.expires_at,'validated':document.validated,'status':document.status}
 
 def case_dict(item,user=None):
     fields=('id','document_id','source_version','supplier_id','supplier_name','expected_iban','observed_iban','sender_email','verified_contact','invoice_amount','message','reasons','status','created_by','created_at','verified_by','verified_at','verification_note','approved_by','approved_at','decision_note')
     result={k:getattr(item,k) for k in fields}
+    result.update({k:getattr(item,k) for k in ('service_date','invoice_currency','registry_revision','contract_snapshot')})
     result['risk_level']='high' if any(r['code'] in ('iban_mismatch','invalid_iban') for r in item.reasons) else 'medium' if item.reasons else 'low'
     result['iban_valid']=valid_ro_iban(item.observed_iban)
     result['can_verify']=item.status=='needs_review' and bool(item.supplier_id) and result['iban_valid']
@@ -90,7 +98,8 @@ def create_review(db,user,body):
         'source_status':doc.status if doc else None,
         'source_validated':doc.validated if doc else None,
         'registry_iban':expected,'registry_contact':contact,
-        'registry_version':len(supplier.bank_history) if supplier else None,
+        'registry_version':supplier.registry_revision if supplier else None,
+        'currency':body.invoice_currency,
         'iban':observed,'sender':sender,'amount':body.invoice_amount,
         'date':str(body.service_date),'message':body.message,'supplier':name,
     },sort_keys=True).encode()).hexdigest()
@@ -109,6 +118,10 @@ def create_review(db,user,body):
         service_date=body.service_date.isoformat()
         if (effective and service_date<str(effective)[:10]) or (doc.expires_at and service_date>doc.expires_at[:10]): codes.append('outside_service_period')
     item=SupplierReview(id='review-'+uuid.uuid4().hex[:12],fingerprint=fingerprint,airport_id=user.airport_id,document_id=doc.id if doc else None,source_version=doc.version if doc else None,supplier_id=supplier.id if supplier else None,supplier_name=name or 'Furnizor necunoscut',expected_iban=expected,observed_iban=observed,sender_email=sender,verified_contact=contact,invoice_amount=body.invoice_amount,message=body.message,reasons=[{'code':code,'message':REASONS[code]} for code in codes],status='needs_review' if codes else 'clear',created_by=user.id,created_at=now(),verification_note='',decision_note='')
+    item.service_date=body.service_date.isoformat() if body.service_date else None
+    item.invoice_currency=body.invoice_currency
+    item.registry_revision=supplier.registry_revision if supplier else None
+    item.contract_snapshot=snapshot_contract(doc)
     db.add(item);record(db,user,'Mostră furnizor verificată',doc,'; '.join(REASONS[c] for c in codes) if codes else 'Detaliile coincid cu registrul fictiv verificat.')
     db.commit();return case_dict(item,user)
 
@@ -145,6 +158,7 @@ def approve(db,user,case_id,comment):
     if not supplier or supplier.expected_iban!=item.expected_iban: raise DomainError('Registrul furnizorului s-a schimbat. Creează o verificare nouă.',409)
     if supplier.expected_iban!=item.observed_iban:
         supplier.expected_iban=item.observed_iban
+        supplier.registry_revision+=1
         supplier.bank_history=[*supplier.bank_history,{'iban':item.observed_iban,'version':len(supplier.bank_history)+1,'source_case_id':item.id,'verified_by':item.verified_by,'approved_by':user.id,'created_at':now()}]
         supplier.trust_status='independently_approved'
     item.status='approved';item.approved_by=user.id;item.approved_at=now();item.decision_note=comment.strip()
