@@ -1,5 +1,5 @@
 import {useEffect, useState, type FormEvent} from 'react';
-import {ArrowRight, CalendarDays, Check, Plus, Search, ShieldCheck, UserRound, Users, X} from 'lucide-react';
+import {ArrowRight, CalendarDays, Check, Plus, Search, ShieldCheck, UserRound, UserRoundPlus, Users, X} from 'lucide-react';
 import {api} from '@/services/api-client';
 import {Empty, ErrorMessage, Loading, Modal, Status} from '@/components/ui';
 import {date, initials} from '@/utils/format';
@@ -51,7 +51,13 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
       <h2>{p.name}</h2><p className="person-job">{p.job_title}</p><span className="person-department">{p.department}</span>
       <div className="person-authority">{p.is_department_head&&<span>Șef de departament</span>}{p.roles.includes('signer')&&<span>Semnatar autorizat</span>}{p.provisioning_status==='failed'&&<span>Activare de reîncercat</span>}{p.identity_sync_pending&&<span>Sincronizare în așteptare</span>}</div>
       <div className="person-details"><a href={`mailto:${p.email}`}>{p.email}</a><span><UserRound size={14}/>{p.manager_name?`Coordonator: ${p.manager_name}`:'Fără coordonator desemnat'}</span></div>
-      <div className="person-management-actions">{data.can_manage_accounts&&p.id!==data.current_user_id&&<button className="text-button account-action" onClick={()=>setAccount(p)}>Gestionează angajatul<ArrowRight size={14}/></button>}{data.can_propose_heads&&p.active&&!p.is_department_head&&<button className="text-button" onClick={()=>setAuthority({person:p,signing:false})}>Propune șef</button>}{data.can_manage_signing&&p.active&&p.id!==data.current_user_id&&<button className="text-button" onClick={()=>setAuthority({person:p,signing:true})}>Autoritate de semnare</button>}</div>
+      <div className="person-management-actions">
+        {data.can_manage_accounts&&p.id!==data.current_user_id&&<button className="person-action person-action-manage" onClick={()=>setAccount(p)}><span>Gestionează angajatul</span><ArrowRight size={16} aria-hidden="true"/></button>}
+        {((data.can_propose_heads&&p.active&&!p.is_department_head)||(data.can_manage_signing&&p.active&&p.id!==data.current_user_id))&&<div className="person-authority-actions">
+          {data.can_propose_heads&&p.active&&!p.is_department_head&&<button className="person-action" onClick={()=>setAuthority({person:p,signing:false})}><UserRoundPlus size={16} aria-hidden="true"/><span>Propune șef</span></button>}
+          {data.can_manage_signing&&p.active&&p.id!==data.current_user_id&&<button className="person-action" onClick={()=>setAuthority({person:p,signing:true})}><ShieldCheck size={16} aria-hidden="true"/><span>Autoritate de semnare</span></button>}
+        </div>}
+      </div>
     </article>)}</div>{!people.length&&<Empty title="Niciun coleg găsit"/>}</div>}
     {tab==='appointments'&&data.can_view_appointments&&<AppointmentPanel revision={revision+refresh} notify={notify} onChanged={()=>setRefresh(v=>v+1)}/>}
     {tab==='delegations'&&<div className="panel"><div className="people-panel-intro"><ShieldCheck size={22}/><p>Delegatul aprobă în nume propriu, în perioada stabilită. Dreptul de semnătură rămâne personal.</p></div>{data.delegations.length?<div className="delegation-list">{data.delegations.map(d=><article className="delegation-card" key={d.id}><div><div className="delegation-people"><strong>{d.from_name}</strong><ArrowRight size={17}/><strong>{d.to_name}</strong></div><p>{d.scope}</p><small>{date(d.starts_at)} – {date(d.ends_at)} · {d.reason}</small></div><div className="delegation-actions"><Status value={d.status}/>{d.active&&(d.from_user===data.current_user_id||data.can_admin_delegations)&&<button className="text-button" disabled={busy} onClick={()=>void mutate(`/people/delegations/${d.id}/revoke`,{},'Delegarea a fost revocată.')}>Revocă</button>}</div></article>)}</div>:<Empty title="Nicio delegare" message="Înainte de o absență, numește un coleg pentru aprobările tale."/>}{formError&&!dialog&&<ErrorMessage message={formError}/>}</div>}
