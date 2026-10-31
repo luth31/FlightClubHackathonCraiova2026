@@ -24,6 +24,10 @@ function installDOM(window) {
     Object.defineProperty(window,'scrollX',{value:x,configurable:true});
     Object.defineProperty(window,'scrollY',{value:y,configurable:true});
   };
+  window.HTMLElement.prototype.scrollTo=function(x,y){
+    this.scrollLeft=x;
+    this.scrollTop=y;
+  };
 }
 
 const user={id:'admin',name:'Ana Demo',role:'director',roles:['director','finance'],department:'Conducere'};
@@ -270,7 +274,8 @@ test('assistant document return does not reuse a previous list trigger',async t=
   await click(document.querySelector('.back-button'));
   assert.ok(document.activeElement===trigger);
   await click(find('button','Întreabă AeroDesk'));
-  await click(find('[role="dialog"] button','Câte documente'));
+  assert.equal(document.activeElement.id,'aerodesk-question');
+  await click(find('[role="dialog"] button','Documente în aprobare'));
   await click(find('[role="dialog"] button',related.title));
   assert.equal(heading(),related.title);
   await click(document.querySelector('.back-button'));

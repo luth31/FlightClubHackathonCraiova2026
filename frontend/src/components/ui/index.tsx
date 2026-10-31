@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode, type RefObject } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -90,6 +90,7 @@ export function Modal({
   children,
   wide = false,
   className = "",
+  initialFocusRef,
 }: {
   title: string;
   subtitle?: string;
@@ -97,6 +98,7 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
   className?: string;
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const active = useContext(ViewActiveContext);
@@ -127,7 +129,7 @@ export function Modal({
       }
     };
     document.addEventListener("keydown", key);
-    ref.current?.querySelector<HTMLElement>("button,input")?.focus();
+    (initialFocusRef?.current ?? ref.current?.querySelector<HTMLElement>("button,input"))?.focus();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -135,7 +137,7 @@ export function Modal({
       document.body.style.overflow = overflow;
       if (prev?.isConnected && !prev.closest('[hidden],[inert]')) prev.focus({preventScroll: true});
     };
-  }, [active]);
+  }, [active, initialFocusRef]);
   if (!active) return null;
   return (
     <div
