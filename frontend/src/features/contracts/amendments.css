@@ -91,6 +91,59 @@
   background: #f8faf5;
   opacity: 1;
 }
+.amendment-history-picker {
+  margin: 20px 0;
+}
+.amendment-revision-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e2e9da;
+  border-radius: 7px;
+  color: #405d30;
+  background: #f8faf5;
+}
+.amendment-revision-heading svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.amendment-revision-heading strong {
+  font-size: 13px;
+}
+.amendment-revision-heading small,
+.amendment-history .amendment-source-changed small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.amendment-history .amendment-source-changed p {
+  margin: 0;
+}
+.amendment-revision-fields {
+  display: grid;
+  gap: 20px;
+  margin: 24px 0 0;
+}
+.amendment-revision-fields dt {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #405d30;
+}
+.amendment-revision-fields dd {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid #e2e9da;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #405d30;
+  background: #f8faf5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 @media (max-width: 700px) {
   .amendment-drafts {
     padding: 18px;

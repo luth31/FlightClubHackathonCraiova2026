@@ -40,6 +40,22 @@ export interface AmendmentDraft {
   document_url: string | null;
   can_generate_pdf: boolean;
 }
+export interface AmendmentDraftRevision {
+  draft_id: string;
+  revision: number;
+  source_version: number;
+  title: string;
+  reason: string;
+  clause_reference: string;
+  current_wording: string;
+  proposed_wording: string;
+  proposed_effective_date: string | null;
+  saved_by: string | null;
+  saved_by_name: string | null;
+  saved_at: string | null;
+  recorded_at: string;
+  origin: 'saved' | 'migration';
+}
 export interface Task {id:string;document_id:string;title:string;department:string;assignee:string;status:string;priority:string;due_date:string;type:string}
 export interface Share {id:string;document_id:string;document_title?:string;title?:string;recipient_airport:string;recipient_department?:string|null;expires_at:string;created_at:string;status?:string;revoked?:boolean;revoked_at?:string;source_version:number;file_url?:string;redactions?:number}
 export interface Dashboard {stats:{documents:number;pending:number;expiring:number;approved:number};recent_documents:DocumentRecord[];attention:Array<Partial<Task>&Partial<DocumentRecord>>;activity:AuditEvent[];departments:Array<{name:string;count:number}>|Record<string,number>}

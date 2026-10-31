@@ -20,6 +20,10 @@ def contracts(db: Session=Depends(get_db),user=Depends(current_user)):
 def amendment_drafts(contract_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
     return amendments.list_drafts(db,user,contract_id)
 
+@router.get('/contracts/{contract_id}/amendment-drafts/{draft_id}/revisions')
+def amendment_draft_revisions(contract_id: str,draft_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    return amendments.list_revisions(db,user,contract_id,draft_id)
+
 @router.post('/contracts/{contract_id}/amendment-drafts',status_code=201)
 def create_amendment_draft(contract_id: str,body: AmendmentCreate,db: Session=Depends(get_db),user=Depends(current_user)):
     return amendments.create_draft(db,user,contract_id,body)

@@ -2,13 +2,19 @@ import uuid
 
 from sqlalchemy import desc, select, text
 
-from app.contracts.models import AmendmentDraft
+from app.contracts.models import AmendmentDraft, AmendmentDraftRevision
 from app.core.audit import now, record
 from app.core.exceptions import DomainError
 from app.core.security import can_read, has_role
 from app.documents.service import get_document
 from app.documents.models import Document
 from app.people.models import User
+
+
+FORM_FIELDS = (
+    'title', 'reason', 'clause_reference', 'current_wording',
+    'proposed_wording', 'proposed_effective_date',
+)
 
 
 def can_author_proposal(user, contract):
@@ -147,6 +153,40 @@ def list_drafts(db, user, contract_id):
     }
 
 
+def list_revisions(db, user, contract_id, draft_id):
+    contract = get_contract(db, user, contract_id)
+    # Read the current revision and its history together during concurrent saves.
+    rows = db.execute(select(AmendmentDraft, AmendmentDraftRevision).outerjoin(
+        AmendmentDraftRevision, AmendmentDraftRevision.draft_id == AmendmentDraft.id,
+    ).where(
+        AmendmentDraft.id == draft_id, AmendmentDraft.contract_id == contract.id,
+    ).order_by(desc(AmendmentDraftRevision.revision))).all()
+    if not rows:
+        raise DomainError('Propunerea nu a fost găsită.', 404)
+    draft = rows[0][0]
+    revisions = [revision for _, revision in rows if revision is not None]
+    fields = (*FORM_FIELDS, 'draft_id', 'revision', 'source_version',
+        'saved_by', 'saved_by_name', 'saved_at', 'recorded_at', 'origin')
+    return {
+        'items': [{field: getattr(revision, field) for field in fields} for revision in revisions],
+        'total': len(revisions),
+        'current_revision': draft.revision,
+        'history_complete': len(revisions) == draft.revision and all(
+            revision.revision == draft.revision - index for index, revision in enumerate(revisions)
+        ),
+    }
+
+
+def retain_revision(db, draft, user, timestamp):
+    # Keep a full snapshot in the same transaction as the changed form.
+    db.add(AmendmentDraftRevision(
+        draft_id=draft.id, revision=draft.revision, source_version=draft.source_version,
+        **{field: getattr(draft, field) for field in FORM_FIELDS},
+        saved_by=user.id, saved_by_name=user.name, saved_at=timestamp,
+        recorded_at=timestamp, origin='saved',
+    ))
+
+
 def form_values(payload):
     return payload.model_dump(mode='json', exclude={'source_version', 'revision'})
 
@@ -165,6 +205,8 @@ def create_draft(db, user, contract_id, payload):
         revision=1, status='draft', **form_values(payload),
     )
     db.add(draft)
+    db.flush()
+    retain_revision(db, draft, user, timestamp)
     record(db, user, 'Propunere de act adițional creată', contract,
         f'Propunere {draft.id} · revizia 1 · contract versiunea {contract.version}')
     db.commit()
@@ -196,6 +238,7 @@ def update_draft(db, user, contract_id, draft_id, payload):
         setattr(draft, field, value)
     draft.revision += 1
     draft.updated_at = now()
+    retain_revision(db, draft, user, draft.updated_at)
     record(db, user, 'Propunere de act adițional actualizată', contract,
         f'Propunere {draft.id} · revizia {draft.revision} · contract versiunea {draft.source_version}')
     db.commit()

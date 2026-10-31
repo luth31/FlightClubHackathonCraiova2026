@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowUpRight, FilePenLine, FilePlus2, LoaderCircle, PenLine, Plus, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, FilePenLine, FilePlus2, History, LoaderCircle, PenLine, Plus, ShieldCheck } from "lucide-react";
 import { ErrorMessage, Loading, Modal, Status } from "@/components/ui";
 import { api, fileUrl } from "@/services/api-client";
 import { date, time } from "@/utils/format";
 import type { AmendmentDraft, DocumentRecord } from "@/types";
+import { AmendmentHistory } from "./AmendmentHistory";
 import "./amendments.css";
 
 interface DraftFields {
@@ -34,7 +35,9 @@ export function AmendmentDrafts({
   const [formError, setFormError] = useState("");
   const [generatingId, setGeneratingId] = useState<string>();
   const [generationError, setGenerationError] = useState<{ id: string; message: string }>();
+  const [historyDraftId, setHistoryDraftId] = useState<string>();
   const endpoint = `/contracts/${contract.id}/amendment-drafts`;
+  const historyDraft = items?.find((draft) => draft.id === historyDraftId);
 
   useEffect(() => {
     let active = true;
@@ -55,6 +58,7 @@ export function AmendmentDrafts({
 
   function openDraft(draft?: AmendmentDraft) {
     if (busy) return;
+    setHistoryDraftId(undefined);
     setSelection(draft || null);
     setSourceVersion(draft?.source_version || contract.version);
     setFields({
@@ -217,6 +221,9 @@ export function AmendmentDrafts({
                   {draft.can_edit ? <PenLine size={15} /> : <FilePenLine size={15} />}
                   {draft.can_edit ? "Deschide și editează ciorna" : "Consultă ciorna"}
                 </button>
+                <button className="text-button" disabled={busy} onClick={() => setHistoryDraftId(draft.id)}>
+                  <History size={15} /> Istoricul ciornei
+                </button>
                 {draft.can_generate_pdf && (
                   <button className="button secondary" disabled={busy} onClick={() => generatePdf(draft)}>
                     {generatingId === draft.id
@@ -240,6 +247,15 @@ export function AmendmentDrafts({
             </article>
           ))}
         </div>
+      )}
+      {historyDraft && (
+        <AmendmentHistory
+          key={`${contract.id}:${historyDraft.id}:${historyDraft.revision}`}
+          contractId={contract.id}
+          contractNumber={contract.number}
+          draft={historyDraft}
+          onClose={() => setHistoryDraftId(undefined)}
+        />
       )}
       {selection !== undefined && fields && (
         <Modal
