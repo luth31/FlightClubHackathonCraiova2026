@@ -1,0 +1,52 @@
+{
+  "documents": 148,
+  "pages": 316,
+  "procurement_cases": 20,
+  "categories": {
+    "Contract": 20,
+    "Referat de necesitate": 20,
+    "Caiet de sarcini": 20,
+    "Factură": 20,
+    "Proces-verbal": 20,
+    "Raport de mentenanță": 20,
+    "Act adițional": 4,
+    "Procedură": 10,
+    "Audit": 6,
+    "Resurse umane": 4,
+    "Instruire": 4
+  },
+  "statuses": {
+    "in_review": 20,
+    "approved": 125,
+    "draft": 2,
+    "archived": 1
+  },
+  "minimum_words": 272,
+  "maximum_words": 516,
+  "total_words": 49213,
+  "checks": {
+    "page_count_2_to_4": true,
+    "demo_label_each_page": true,
+    "required_text_present": true,
+    "all_relations_resolve": true,
+    "no_replacement_glyphs": true,
+    "all_page_glyphs_within_bounds": true,
+    "fictional_iban_checksums_valid": true,
+    "technician_pdf_bank_contact_absent": true
+  },
+  "visual_review": {
+    "documents": [
+      "doc-001",
+      "doc-004",
+      "doc-005",
+      "doc-031",
+      "doc-095",
+      "doc-121",
+      "doc-125",
+      "doc-137",
+      "doc-145"
+    ],
+    "pages": 20,
+    "result": "Inspected rendered pages; no clipping, overlapping text or missing diacritics observed."
+  }
+}

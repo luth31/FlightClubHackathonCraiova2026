@@ -1,0 +1,57 @@
+:root {
+  color-scheme: light;
+  --keycloak-card-top-color: #195644;
+  --pf-v5-global--primary-color--dark-100: #195644;
+  --pf-v5-global--primary-color--100: #195644;
+  --pf-v5-global--primary-color--200: #124434;
+  --pf-v5-global--active-color--100: #195644;
+  --pf-v5-global--Color--100: #293b32;
+  --pf-v5-global--FontFamily--text: Arial, sans-serif;
+  --pf-v5-global--FontFamily--heading: Arial, sans-serif;
+}
+.pf-v5-c-login {
+  background: #f5f7f2;
+  min-height: 100vh;
+  color: #293b32;
+}
+.pf-v5-c-login__container { max-width: 480px; }
+#kc-header-wrapper {
+  /* Keycloak v2 marks its white brand color important. */
+  color: #195644 !important;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: .03em;
+  text-transform: none;
+}
+.pf-v5-c-login__main {
+  border: 1px solid #dce4d9;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 12px 40px #183a2910;
+  overflow: hidden;
+}
+.pf-v5-c-login__main-header { padding-top: 36px; }
+.pf-v5-c-login__main-header, .pf-v5-c-login__main-body { padding-left: 32px; padding-right: 32px; }
+#kc-page-title { color: #293b32; font-size: 25px; font-weight: 700; letter-spacing: -.03em; }
+.pf-v5-c-form__label { font-size: 14px; color: #394d3f; }
+.pf-v5-c-form-control { border: 1px solid #cdd7c9; border-radius: 7px; }
+.pf-v5-c-form-control::before, .pf-v5-c-form-control::after { border-radius: 7px; }
+.pf-v5-c-form-control input { min-height: 43px; }
+.pf-v5-c-button.pf-m-primary { background: #195644; border-radius: 8px; min-height: 44px; font-weight: 600; }
+.pf-v5-c-button.pf-m-primary:hover { background: #124434; }
+.pf-v5-c-button.pf-m-control { min-height: 45px; border-radius: 7px; color: #52634e; }
+.pf-v5-c-login__main-header-utilities { margin-top: 4px; }
+.pf-v5-c-login__main-header-utilities select { font-size: 12px; }
+@media(max-width: 600px) {
+  .pf-v5-c-login { padding: 24px 16px; }
+  .pf-v5-c-login__container { width: 100%; }
+  .pf-v5-c-login__main-header, .pf-v5-c-login__main-body { padding-left: 22px; padding-right: 22px; }
+}
+
+.pf-v5-c-form-control input:focus-visible,
+.pf-v5-c-form-control select:focus-visible {
+  outline: 2px solid #195644;
+  outline-offset: -2px;
+}

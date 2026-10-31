@@ -1,0 +1,1 @@
+- When sharing documents between airports, have a redaction step, automated/AI based, human reviewed/assisted.

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "S01",
+    "title": "EASA - Easy Access Rules for Aerodromes, March 2026",
+    "url": "https://www.easa.europa.eu/en/document-library/easy-access-rules/online-publications/easy-access-rules-aerodromes-regulation-eu?erules-id=ERULES-1963177438-1846",
+    "scope": "Document control, training, records and maintenance families; not copied operational instructions."
+  },
+  {
+    "id": "S02",
+    "title": "AACR - PAC-AD-CADC, edition 1/2023",
+    "url": "https://caa.ro/uploads/pages/2023.06.16%20D488-2013%20aprobare%20PAC-AD-CADC%20ed%201-2023.pdf",
+    "scope": "Certification evidence and controlled aerodrome documentation."
+  },
+  {
+    "id": "S03",
+    "title": "Portal Legislativ - Legea nr. 99/2016, achiziții sectoriale",
+    "url": "https://legislatie.just.ro/Public/DetaliiDocument/200898",
+    "scope": "Sector procurement context; no procedure thresholds or legal determinations encoded."
+  },
+  {
+    "id": "S04",
+    "title": "ANAP - Completarea referatului de necesitate",
+    "url": "https://achizitiipublice.gov.ro/workflows/view/212",
+    "scope": "Need identification before procurement documentation."
+  },
+  {
+    "id": "S05",
+    "title": "Portal Legislativ - Legea Arhivelor Naționale nr. 16/1996",
+    "url": "https://legislatie.just.ro/Public/DetaliiDocument/263510",
+    "scope": "Inventory and transfer record document families; retention periods require local validation."
+  },
+  {
+    "id": "S06",
+    "title": "Portal Legislativ - Codul muncii, Legea nr. 53/2003",
+    "url": "https://legislatie.just.ro/Public/DetaliiDocumentAfis/128646",
+    "scope": "Leave and personnel administration context; fictional records contain no payroll or medical information."
+  },
+  {
+    "id": "S07",
+    "title": "Aerosimple - Document Management",
+    "url": "https://www.aerosimple.com/solutions/document-management",
+    "scope": "Public product inspiration: searchable repository, approvals, versions, access and expiry alerts. Vendor claims not independently tested."
+  },
+  {
+    "id": "S08",
+    "title": "CN Aeroporturi București - Regulament de organizare și funcționare, rev. 20",
+    "url": "https://bucharestairports.ro/storage/2026/03/ROF-CNAB-Rev.20_1-Noiembrie-2024.pdf",
+    "scope": "Airport department responsibilities and maintenance documentation context; not an organizational clone."
+  }
+]

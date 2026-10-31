@@ -1,0 +1,13 @@
+.git
+.work
+.venv
+.runtime
+backend/.venv
+frontend/node_modules
+frontend/dist
+**/__pycache__
+**/.pytest_cache
+deliverables
+data/qa
+data/storage
+data/*.db*

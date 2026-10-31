@@ -1,0 +1,275 @@
+.task-filters {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 23px;
+}
+.task-filters button {
+  font-size: 11px;
+  border: 1px solid #e0e7d8;
+  background: #fff;
+  color: #536b43;
+  padding: 9px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.task-filters button:hover {
+  background: #f3f7ed;
+}
+.task-filters button.active {
+  border-color: #aac299;
+  background: #edf4e5;
+  color: #456b31;
+}
+.task-filters button span {
+  font-size: 11px;
+  background: #f2e6c8;
+  color: #826222;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.assigned-task {
+  gap: 20px;
+}
+.task-card-main {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}
+.assigned-task .task-copy {
+  min-width: 0;
+}
+.assigned-task .task-copy h2 {
+  white-space: normal;
+  line-height: 1.6;
+}
+.assigned-task .task-copy p {
+  color: #536b43;
+  flex-wrap: wrap;
+  line-height: 1.7;
+}
+.task-right {
+  display: flex;
+  align-items: center;
+  gap: 23px;
+  flex-shrink: 0;
+}
+.task-right .task-deadline {
+  padding-right: 0;
+}
+.task-deadline small {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  color: #536b43;
+}
+.task-deadline strong {
+  color: #596f48;
+}
+.task-deadline.overdue strong {
+  color: #976a31;
+}
+.task-card-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 11px;
+}
+.task-card-actions .task-action {
+  font-size: 11px;
+  color: #456d32;
+  gap: 7px;
+}
+.task-card-actions .task-action svg {
+  width: 16px;
+}
+.reassign-button {
+  font-size: 11px;
+  color: #536b43;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+}
+.reassign-button:hover {
+  color: #3d672b;
+}
+.delegated-task {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #536b43;
+  background: #edf4e5;
+  border: 1px solid #e1ebd7;
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin-top: 9px;
+  line-height: 1.7;
+}
+.task-label .overdue {
+  color: #906a2e;
+  background: #fbf2df;
+}
+.task-assignment-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 11px;
+  padding: 12px 14px;
+  background: #f2f7ec;
+  border: 1px solid #e3ecda;
+  border-radius: 6px;
+  color: #536b43;
+  margin-bottom: 19px;
+}
+.task-assignment-summary strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.assignment-history {
+  font-size: 11px;
+  border-top: 1px solid #e5ecdd;
+  margin-top: 20px;
+  padding-top: 16px;
+  color: #536b43;
+}
+.assignment-history summary {
+  cursor: pointer;
+}
+.assignment-history > div {
+  padding: 14px 0;
+  border-bottom: 1px solid #edf2e6;
+}
+.assignment-history strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.assignment-history p {
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 7px;
+  color: #536b43;
+}
+.assignment-history small {
+  font-size: 11px;
+  color: #536b43;
+  display: block;
+  margin-top: 6px;
+}
+@media (max-width: 1100px) {
+  .task-right {
+    gap: 16px;
+  }
+  .assigned-task .task-copy p {
+    font-size: 11px;
+  }
+  .task-card-actions .task-action {
+    font-size: 11px;
+  }
+  .task-deadline strong {
+    font-size: 11px;
+  }
+}
+@media (max-width: 700px) {
+  .assigned-task {
+    flex-wrap: wrap;
+  }
+  .task-card-main {
+    flex-basis: 100%;
+    gap: 12px;
+  }
+  .task-right {
+    width: 100%;
+    padding-left: 47px;
+    justify-content: space-between;
+  }
+  .task-card-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 13px;
+  }
+  .task-right .task-deadline {
+    margin-left: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .task-deadline small {
+    font-size: 11px;
+    margin: 0;
+  }
+  .task-deadline strong {
+    font-size: 11px;
+  }
+  .task-card-actions .task-action {
+    font-size: 11px;
+  }
+  .reassign-button {
+    font-size: 11px;
+  }
+  .task-card-actions .task-action svg {
+    width: 14px;
+  }
+  .task-filters {
+    gap: 7px;
+  }
+  .task-filters button {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .assigned-task .task-copy {
+    flex-basis: calc(100% - 47px);
+  }
+  .assigned-task .task-copy h2 {
+    font-size: 12px;
+  }
+  .assigned-task .task-copy p {
+    font-size: 11px;
+  }
+  .delegated-task {
+    font-size: 11px;
+  }
+  .task-right {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  .task-right .task-card-actions {
+    margin-left: auto;
+  }
+  .task-assignment-summary {
+    font-size: 11px;
+  }
+  .task-assignment-summary strong {
+    font-size: 11px;
+  }
+}
+
+.assigned-task .task-copy h2 {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+.approval-intro {
+  color: #526b41;
+}
+.priority {
+  color: #806022;
+}
+@media (max-width: 700px) {
+  .assigned-task .task-copy h2 {
+    font-size: 12px;
+  }
+  .assigned-task .task-label > span:first-child {
+    font-size: 11px;
+  }
+}
