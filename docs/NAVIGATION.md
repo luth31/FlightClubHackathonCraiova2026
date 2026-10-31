@@ -29,6 +29,7 @@ Allowed origins are `home`, `documents`, `contracts`, `suppliers`, `approvals`, 
 6. The explicit return controls skip a known document chain back to its list. `history.state.aerodeskNavigation` records the origin, user and chain depth. Use that history only for the matching user and origin. Direct/copied links without that state replace the document route with the origin section; they must not call an unconditional `history.back()` that could leave the application.
 7. Save list scroll before opening detail and restore it after React reveals the list. Document visits, including Forward, start at the top. Move keyboard focus into detail and back to the retained list trigger, or the main landmark when that trigger is unavailable.
 8. Close mobile navigation, user menus, upload and assistant overlays when routing. Feature dialogs must use the shared `Modal`, which releases keyboard handlers and body scroll locks when their retained view becomes inactive. Modal cleanup must not focus a hidden or removed trigger.
+9. Async completion callbacks must respect their view's lifetime. A dismissed upload may still finish on the server, but its late response must not open a document, replace the current section's history entry or use a previous account's navigation context. Cover dismissal, browser Back and account changes with delayed-response regressions. Starting a new visit through an assistant/upload overlay must also clear any saved trigger from an earlier list visit.
 
 Filters, tabs, pagination and trigger references are in-memory state. They survive a document visit in the same mounted workspace; they are not persisted through reloads, another section or another account. Copied/reloaded links preserve the URL's return destination, with a freshly loaded list.
 
@@ -59,7 +60,7 @@ npm --prefix frontend run build
 npm --prefix frontend run lint
 ```
 
-`npm --prefix frontend run test:navigation` runs the targeted suite. `frontend/tests/navigation.test.mjs` mounts the real application in jsdom with fixture responses at the fetch boundary. It checks origin returns, supplier state/scroll, Back/Forward, related chains, direct/legacy/malformed links, role fallback, sidebar/mobile navigation, breadcrumbs, modifier clicks, dialog cleanup, workflow anchors, account changes and focus. Existing supplier render checks remain in `test:suppliers` and run in the combined gate.
+`npm --prefix frontend run test:navigation` runs the targeted suite. `frontend/tests/navigation.test.mjs` mounts the real application in jsdom with fixture responses at the fetch boundary. It checks origin returns, supplier state/scroll, Back/Forward, related chains, direct/legacy/malformed links, role fallback, sidebar/mobile navigation, breadcrumbs, modifier clicks, dialog cleanup, workflow anchors, account changes, focus and delayed upload callbacks. Existing supplier render checks remain in `test:suppliers` and run in the combined gate.
 
 When adding a new document entry point, add a DOM interaction regression that opens it and exercises its return control. A rendered link assertion alone does not prove the flow works. When adding a section, update `Page`, navigation labels/allowlist, shell rendering and this matrix together.
 

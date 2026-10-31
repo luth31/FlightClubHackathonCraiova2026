@@ -199,10 +199,12 @@ The original supplier return failure was reproduced by a failing DOM interaction
 
 | Check | Observed result |
 |---|---|
-| Combined frontend test gate (`npm --prefix frontend test`) | **29 passed**: 25 real-App DOM interaction tests and 4 existing supplier render checks |
+| Combined frontend test gate (`npm --prefix frontend test`) | **35 passed**: 31 real-App DOM interaction tests and 4 existing supplier render checks |
 | TypeScript and Vite production build | Passed |
 | Frontend ESLint | Passed |
 | `git diff --check` | Passed |
 | Browser interaction/layout checks | **Not executed**: browser access host unavailable |
 
-The DOM suite covers document entry points across sections, supplier query/tab/scroll retention, Back/Forward, related chains, breadcrumb and sidebar selection, all eight sidebar destinations and mobile drawer cleanup, modified anchor clicks, workflow links, overlays, safe origin/route fallbacks, account changes and keyboard focus. API responses are fixtures at the fetch boundary; jsdom does not establish native layout, actual scroll limits, PDF behavior or browser accessibility. No backend code changed in this fix. Previous browser results in this file apply to their recorded versions.
+The DOM suite covers document entry points across sections, supplier query/tab/scroll retention, Back/Forward, related chains, breadcrumb and sidebar selection, all eight sidebar destinations and mobile drawer cleanup, modified anchor clicks, workflow links, overlays, safe origin/route fallbacks, account changes, keyboard focus and upload completion. API responses are fixtures at the fetch boundary; jsdom does not establish native layout, actual scroll limits, PDF behavior or browser accessibility. No backend code changed in this fix. Previous browser results in this file apply to their recorded versions.
+
+A fresh code review found an Important late-upload callback that could overwrite navigation after dismissal, and a Minor stale return-focus reference when opening through the assistant. Both were reproduced by failing DOM checks and fixed. The final gate above includes delayed upload completion after cancellation, sidebar navigation, browser Back and account switching, plus successful active upload and assistant-focus regressions.

@@ -17,7 +17,7 @@ const {App}=module.exports;
 initialDOM.window.close();
 
 function installDOM(window) {
-  for (const key of ['window','document','navigator','location','localStorage','HTMLElement','HTMLInputElement','Event','MouseEvent'])
+  for (const key of ['window','document','navigator','location','localStorage','HTMLElement','HTMLInputElement','Event','MouseEvent','FormData','File'])
     Object.defineProperty(globalThis,key,{value:key==='window'?window:window[key],configurable:true,writable:true});
   globalThis.IS_REACT_ACT_ENVIRONMENT=true;
   window.scrollTo=(x,y)=>{
@@ -40,18 +40,20 @@ const supplier={id:'supplier-demo',name:'Demo SRL',document_id:documentRecord.id
   address:'Demo address',category:'Services',state:'active',contracts:[{id:documentRecord.id,title:documentRecord.title,
     version:1,eligible_for_review:true}]};
 
-async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false}={}) {
+async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false,uploadResponse}={}) {
   const dom=new JSDOM('<div id="root"></div>',{url:`http://aerodesk.test/${hash}`,pretendToBeVisual:true});
   installDOM(dom.window);
   let currentUser={...user,roles};
-  globalThis.fetch=async input=>{
+  globalThis.fetch=async (input,options={})=>{
     const path=new URL(String(input),dom.window.location.origin).pathname;
     let body;
     if(path==='/api/session')body={current_user:currentUser,users:[user,technician],airport:'Demo airport',reference_date:'2026-10-30',demo:true};
     else if(path==='/api/auth/login'){currentUser=technician;body={};}
+    else if(path==='/api/assistant')body={answer:'Demo answer',sources:[{id:related.id,title:related.title,number:'DEMO-2',page:1,excerpt:'Demo source'}],mode:'local',reference_date:'2026-10-30'};
     else if(path==='/api/supplier-reviews')body={items:[],total:0,suppliers:[supplier],counters:{needs_review:0,verified:0,approved:0,clear:0}};
     else if(path==='/api/suppliers')body={items:[supplier]};
     else if(path==='/api/supplier-registrations')body={items:[]};
+    else if(path==='/api/documents'&&options.method==='POST')return uploadResponse?await uploadResponse():Response.json(documentRecord);
     else if(path==='/api/documents')body={items:[documentRecord],total:1,categories:['Contract']};
     else if(path==='/api/contracts')body={items:[documentRecord]};
     else if(path==='/api/dashboard')body={stats:{documents:1,pending:0,expiring:0,approved:1},recent_documents:[documentRecord],attention:[],activity:[],departments:[]};
@@ -112,6 +114,23 @@ for(const [page,label] of [['documents','Documente'],['contracts','Contracte'],[
     assert.equal(location.hash,`#${page}`);
     assert.notEqual(heading(),documentRecord.title);
   });
+
+test('assistant document return does not reuse a previous list trigger',async t=>{
+  await setup(t);
+  await click(find('button','Registru furnizori'));
+  const trigger=find('button','Contractul sursă');
+  trigger.focus();
+  await click(trigger);
+  await click(document.querySelector('.back-button'));
+  assert.ok(document.activeElement===trigger);
+  await click(find('button','Întreabă AeroDesk'));
+  await click(find('[role="dialog"] button','Câte documente'));
+  await click(find('[role="dialog"] button',related.title));
+  assert.equal(heading(),related.title);
+  await click(document.querySelector('.back-button'));
+  assert.equal(heading(),'Furnizori');
+  assert.equal(document.activeElement.tagName,'MAIN');
+});
 
 test('browser Back and Forward retain the supplier origin',async t=>{
   const browser=await setup(t);
@@ -277,4 +296,43 @@ test('every sidebar section works and mobile navigation closes its drawer',async
     assert.ok(find('nav [aria-current="page"]',label));
     assert.equal(document.querySelector('.sidebar-overlay'),null);
   }
+});
+
+for (const dismiss of ['cancel','navigate','back','account change'])
+  test(`a completed upload cannot redirect after ${dismiss}`,async t=>{
+    let complete;
+    const response=new Promise(resolve=>{complete=resolve});
+    await setup(t,'#home',{uploadResponse:()=>response});
+    await click(find('nav button','Documente'));
+    await click(find('button','Adaugă document'));
+    const input=document.querySelector('[type="file"]');
+    Object.defineProperty(input,'files',{value:[new window.File(['demo'],'demo.pdf',{type:'application/pdf'})]});
+    await act(async()=>input.dispatchEvent(new window.Event('change',{bubbles:true})));
+    await click(find('[role="dialog"] button','Înregistrează documentul'));
+    assert.ok(find('button','Se încarcă'));
+    if(dismiss==='cancel')await click(find('[role="dialog"] button','Renunță'));
+    else if(dismiss==='navigate')await click(find('nav button','Contracte'));
+    else if(dismiss==='back'){await act(async()=>window.history.back());await settle(70);}
+    else {
+      await click(document.querySelector('.user-button'));
+      await click(find('.user-menu button',technician.name));
+    }
+    const expectedHash=location.hash,historyLength=window.history.length;
+    await act(async()=>complete(Response.json(documentRecord)));await settle(70);
+    assert.equal(location.hash,expectedHash);
+    assert.equal(window.history.length,historyLength);
+    assert.equal(document.querySelector('[role="dialog"]'),null);
+  });
+
+test('a completed active upload opens its document and returns to its origin',async t=>{
+  await setup(t,'#documents');
+  await click(find('button','Adaugă document'));
+  const input=document.querySelector('[type="file"]');
+  Object.defineProperty(input,'files',{value:[new window.File(['demo'],'demo.pdf',{type:'application/pdf'})]});
+  await act(async()=>input.dispatchEvent(new window.Event('change',{bubbles:true})));
+  await click(find('[role="dialog"] button','Înregistrează documentul'));
+  assert.equal(heading(),documentRecord.title);
+  assert.equal(location.hash,'#document/doc-contract?from=documents');
+  await click(document.querySelector('.back-button'));
+  assert.equal(heading(),'Documente');
 });

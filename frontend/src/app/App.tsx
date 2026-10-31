@@ -57,7 +57,10 @@ export function App() {
   const navigate=(p:Page,f='')=>{setFilter(f);goToPage(p);setMobileOpen(false);setUserMenu(false);setUpload(false);setAssistant(false)};
   const openDoc=(id:string)=>{
     const element=document.activeElement;
-    if(!doc&&userId&&element instanceof HTMLElement&&mainRef.current?.contains(element))returnFocus.current={element,page,userId};
+    if(!doc){
+      returnFocus.current=userId&&element instanceof HTMLElement&&mainRef.current?.contains(element)
+        ? {element,page,userId} : undefined;
+    }
     openDocument(id);setMobileOpen(false);setUserMenu(false);setUpload(false);setAssistant(false);
   };
   async function changeUser(id:string){
