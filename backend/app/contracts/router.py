@@ -5,7 +5,8 @@ from app.database import get_db
 from app.core.security import current_user
 from app.contracts import service
 from app.contracts import amendments
-from app.contracts.schemas import AmendmentCreate, AmendmentUpdate
+from app.contracts import generation
+from app.contracts.schemas import AmendmentCreate, AmendmentUpdate, AmendmentGenerate
 from app.documents.service import CATEGORIES
 from app.core.exceptions import DomainError
 
@@ -26,6 +27,10 @@ def create_amendment_draft(contract_id: str,body: AmendmentCreate,db: Session=De
 @router.patch('/contracts/{contract_id}/amendment-drafts/{draft_id}')
 def update_amendment_draft(contract_id: str,draft_id: str,body: AmendmentUpdate,db: Session=Depends(get_db),user=Depends(current_user)):
     return amendments.update_draft(db,user,contract_id,draft_id,body)
+
+@router.post('/contracts/{contract_id}/amendment-drafts/{draft_id}/generate-pdf')
+def generate_amendment_pdf(contract_id: str,draft_id: str,body: AmendmentGenerate,db: Session=Depends(get_db),user=Depends(current_user)):
+    return generation.generate_pdf(db,user,contract_id,draft_id,body)
 
 @router.get('/dashboard')
 def dashboard(db: Session=Depends(get_db),user=Depends(current_user)):

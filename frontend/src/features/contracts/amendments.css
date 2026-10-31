@@ -54,8 +54,19 @@
   line-height: 1.8;
   color: #657650;
 }
-.amendment-draft-card .text-button {
-  margin-top: 13px;
+.amendment-draft-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 16px;
+}
+.amendment-generated-document {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
 .amendment-source-changed {
   border-left: 3px solid #b28c48;

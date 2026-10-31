@@ -88,6 +88,14 @@ def serialize(document, db=None, details=False, user=None):
         data['permissions']['can_submit']=can_edit(user,document) and document.validated and not locked
         from app.contracts.amendments import can_propose_amendment
         data['permissions']['can_propose_amendment']=can_propose_amendment(user,document)
+        if db:
+            from app.contracts.amendments import generated_amendment_info
+            generated=generated_amendment_info(db,user,document)
+            if generated:
+                data['generated_amendment']=generated
+                data['permissions']['can_edit']=False
+                for key in ('can_validate','can_submit','can_review','can_sign'):
+                    data['permissions'][key]=data['permissions'].get(key,False) and generated['current']
     data=without_private_text(data)
     if user and has_role(user,'technician'):
         data=sanitize_for_technician(data)
@@ -235,6 +243,8 @@ def patch_document(db,user,document_id,changes):
     db.execute(text('BEGIN IMMEDIATE'))
     document=get_document(db,document_id,user,edit=True)
     require_unlocked_document(document)
+    from app.contracts.amendments import require_manual_revision_allowed
+    require_manual_revision_allowed(db,document)
     nullable={'supplier','expires_at','value'}
     changes={k:v for k,v in changes.items() if v is not None or k in nullable}
     if not changes: return document
@@ -257,6 +267,8 @@ def add_version(db,user,document_id,content,filename,comment):
     db.execute(text('BEGIN IMMEDIATE'))
     document=get_document(db,document_id,user,edit=True)
     require_unlocked_document(document)
+    from app.contracts.amendments import require_manual_revision_allowed
+    require_manual_revision_allowed(db,document)
     texts=validate_pdf(content)
     previous=current_version(db,document)
     previous.snapshot=serialize(document)

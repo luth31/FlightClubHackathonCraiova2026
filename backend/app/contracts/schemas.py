@@ -21,3 +21,8 @@ class AmendmentCreate(AmendmentFields):
 
 class AmendmentUpdate(AmendmentFields):
     revision: int = Field(ge=1)
+
+
+class AmendmentGenerate(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    revision: int = Field(ge=1)

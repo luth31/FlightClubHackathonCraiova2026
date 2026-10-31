@@ -43,17 +43,22 @@ Signed/archived document detail reports `can_edit`, `can_validate`, and `can_sub
 
 ## Amendment drafts
 
-Amendment proposals are separate saved forms linked to an existing Contract and its exact document version. They are not PDFs or executed addenda. Saving a form does not change the original contract's fields, files, versions, approval evidence or tasks. Proposal creation and editing record attributable audit events against the parent contract.
+Amendment proposals are separate saved forms linked to an existing Contract and its exact document version. PDF generation produces a separate proposed-addendum document for review. Saving or generating does not change the original contract's fields, files, versions, approval evidence or tasks. Neither action executes an amendment or applies proposed terms to the base contract. Proposal creation, editing and PDF generation record attributable audit events.
 
 * GET `/contracts/{contract_id}/amendment-drafts` -> `{items,total}`. Readers of the parent contract can consult its proposals.
 * POST `/contracts/{contract_id}/amendment-drafts` -> draft (201). Required JSON fields: `source_version`, `title`, `reason`, `clause_reference`, `proposed_wording`. Optional: `current_wording` (defaults to empty text), `proposed_effective_date` (ISO date or null).
 * PATCH `/contracts/{contract_id}/amendment-drafts/{draft_id}` -> draft. Send the complete form and its current `revision`; a successful change increments that revision. An unchanged save does not create another revision or audit event.
+* POST `/contracts/{contract_id}/amendment-drafts/{draft_id}/generate-pdf` JSON `{revision}` -> updated draft (200). Generate from the current saved revision. Repeating the same generation while the PDF remains an unvalidated draft reuses the document and version.
 
-Draft fields include `id`, `contract_id`, `contract_number`, `source_version`, the form fields, `status:'draft'`, `revision`, `created_by`, `created_by_name`, `created_at`, `updated_at`, `can_edit` and `source_changed`.
+Draft fields include `id`, `contract_id`, `contract_number`, `source_version`, the form fields, `status:'draft'`, `revision`, `created_by`, `created_by_name`, `created_at`, `updated_at`, `can_edit` and `source_changed`. Generated-PDF fields are `generated_document_id`, `generated_revision`, `generated_document_version`, `generated_document_status`, `pdf_outdated`, `can_generate_pdf`, `document_url` and `pdf_file_url` (links require document read access).
 
 The parent must be validated and approved/signed for drafting. Authors must be directors or reviewers whose own department matches the contract's department. Approval-only delegation does not confer drafting authority. The parent document exposes `permissions.can_propose_amendment`, independently of its edit permission. Only the draft's author or a director can edit it while that drafting authority remains valid.
 
-Required text is trimmed and validated: title 3–300 characters, reason 10–5,000, clause reference 3–200, proposed wording 10–10,000; current wording permits up to 10,000 characters. Unknown fields are rejected. Stale source versions or draft revisions return 409. A changed or archived source preserves readable proposals and disables editing; existing proposal wording is never silently rebound to a different contract version. PDF generation and approval routing for these forms are subsequent features.
+Required text is trimmed and validated: title 3–300 characters, reason 10–5,000, clause reference 3–200, proposed wording 10–10,000; current wording permits up to 10,000 characters. Unknown fields are rejected. Stale source versions or draft revisions return 409. A changed or archived source preserves readable proposals and disables editing; existing proposal wording is never silently rebound to a different contract version.
+
+The generated PDF is an `Act adițional` document with its own version history and validation task. It inherits the source airport, department and confidentiality. It contains the proposed wording and date; the addendum's `value` and `expires_at` are unset, and no supplier bank fields are copied. Generation preserves the original contract. Romanian text uses an embedded Arial or DejaVu Sans font; the Docker API image installs DejaVu Sans.
+
+Form corrections are allowed while its PDF remains an unvalidated draft. Saving new wording marks the old PDF as outdated; regeneration adds a new version to the same generated document and preserves earlier PDF bytes. Manual metadata edits and replacement uploads to generated documents return 409: edit the saved form and regenerate instead. Validating, submitting, approving and signing require the current form revision, generated document version and source contract version; outdated PDFs cannot advance. Once the PDF is validated or enters review, the form is read-only. A rejection returns the document for form correction and fresh generation. The existing assigned review/signing workflow applies to the generated document; it never automatically applies the addendum to its parent.
 
 ## Persistent assigned work
 

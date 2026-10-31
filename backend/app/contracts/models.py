@@ -29,3 +29,6 @@ class AmendmentDraft(Base):
     created_by: Mapped[str] = mapped_column(ForeignKey('users.id'))
     created_at: Mapped[str] = mapped_column(String)
     updated_at: Mapped[str] = mapped_column(String)
+    generated_document_id: Mapped[str | None] = mapped_column(ForeignKey('documents.id'), nullable=True, unique=True)
+    generated_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    generated_document_version: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -46,14 +46,7 @@ def test_amendment_upgrade_preserves_existing_records_and_pins_source(tmp_path, 
             before = [dict(row) for row in connection.execute(select(Document.__table__)).mappings()]
             versions_before = [dict(row) for row in connection.execute(select(DocumentVersion.__table__)).mappings()]
 
-        # Upgrade populated data, then verify repeating startup is safe.
-        command.upgrade(config, 'head')
-        command.upgrade(config, 'head')
-        assert 'contract_amendment_drafts' in inspect(engine).get_table_names()
-        with engine.connect() as connection:
-            assert [dict(row) for row in connection.execute(select(Document.__table__)).mappings()] == before
-            assert [dict(row) for row in connection.execute(select(DocumentVersion.__table__)).mappings()] == versions_before
-
+        command.upgrade(config, 'b19a5c732e04')
         draft_values = dict(
             contract_id='existing-contract', source_version=1, title='Separate proposal',
             reason='Add another equipment unit.', clause_reference='Article 3',
@@ -62,6 +55,19 @@ def test_amendment_upgrade_preserves_existing_records_and_pins_source(tmp_path, 
         )
         with engine.begin() as connection:
             connection.execute(AmendmentDraft.__table__.insert().values(id='valid-draft', **draft_values))
+
+        # Upgrade populated proposals, then verify repeating startup is safe.
+        command.upgrade(config, 'head')
+        command.upgrade(config, 'head')
+        assert 'contract_amendment_drafts' in inspect(engine).get_table_names()
+        with engine.connect() as connection:
+            assert [dict(row) for row in connection.execute(select(Document.__table__)).mappings()] == before
+            assert [dict(row) for row in connection.execute(select(DocumentVersion.__table__)).mappings()] == versions_before
+            saved = dict(connection.execute(select(AmendmentDraft.__table__)).mappings().one())
+            assert all(saved[field] == value for field, value in draft_values.items())
+            assert saved['generated_document_id'] is None
+            assert saved['generated_revision'] is None
+            assert saved['generated_document_version'] is None
         with pytest.raises(IntegrityError), engine.begin() as connection:
             connection.execute(AmendmentDraft.__table__.insert().values(
                 id='invalid-source', **{**draft_values, 'source_version': 2},

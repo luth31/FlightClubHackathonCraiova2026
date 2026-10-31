@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { FilePenLine, LoaderCircle, PenLine, Plus, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, FilePenLine, FilePlus2, LoaderCircle, PenLine, Plus, ShieldCheck } from "lucide-react";
 import { ErrorMessage, Loading, Modal, Status } from "@/components/ui";
-import { api } from "@/services/api-client";
+import { api, fileUrl } from "@/services/api-client";
 import { date, time } from "@/utils/format";
 import type { AmendmentDraft, DocumentRecord } from "@/types";
 import "./amendments.css";
@@ -32,6 +32,8 @@ export function AmendmentDrafts({
   const [sourceVersion, setSourceVersion] = useState(contract.version);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
+  const [generatingId, setGeneratingId] = useState<string>();
+  const [generationError, setGenerationError] = useState<{ id: string; message: string }>();
   const endpoint = `/contracts/${contract.id}/amendment-drafts`;
 
   useEffect(() => {
@@ -49,9 +51,10 @@ export function AmendmentDrafts({
     return () => {
       active = false;
     };
-  }, [endpoint, contract.version, contract.status, refresh]);
+  }, [endpoint, contract.version, contract.status, contract.validated, refresh]);
 
   function openDraft(draft?: AmendmentDraft) {
+    if (busy) return;
     setSelection(draft || null);
     setSourceVersion(draft?.source_version || contract.version);
     setFields({
@@ -117,6 +120,7 @@ export function AmendmentDrafts({
       setRefresh((value) => value + 1);
       setSelection(undefined);
       setFields(undefined);
+      setGenerationError(undefined);
       notify("Ciorna actului adițional a fost salvată separat de contract.");
       onSaved?.();
     } catch (failure) {
@@ -126,15 +130,43 @@ export function AmendmentDrafts({
     }
   }
 
+  async function generatePdf(draft: AmendmentDraft) {
+    if (busy || !draft.can_generate_pdf) return;
+    setBusy(true);
+    setGeneratingId(draft.id);
+    setGenerationError(undefined);
+    try {
+      // Generate from the saved revision so unsaved form text never enters the PDF.
+      const saved = await api<AmendmentDraft>(`${endpoint}/${draft.id}/generate-pdf`, {
+        method: "POST",
+        body: JSON.stringify({ revision: draft.revision }),
+      });
+      setItems((current) => [saved, ...(current || []).filter((item) => item.id !== saved.id)]);
+      setRefresh((value) => value + 1);
+      notify("PDF-ul actului adițional a fost generat. Deschide documentul pentru verificare.");
+      onSaved?.();
+    } catch (failure) {
+      setGenerationError({ id: draft.id, message: (failure as Error).message });
+      // Refresh permissions and revision after a concurrent change or failed request.
+      setRefresh((value) => value + 1);
+    } finally {
+      setBusy(false);
+      setGeneratingId(undefined);
+    }
+  }
+
   return (
     <section className="panel amendment-drafts" aria-label="Propuneri de acte adiționale">
       <div className="amendment-drafts-heading">
         <div>
           <h2>Propuneri de acte adiționale</h2>
-          <p>Ciorne separate, legate de acest contract. Termenii contractului rămân neschimbați.</p>
+          <p>
+            Salvează textul propus, apoi generează un PDF separat pentru verificare, avizare și semnare.
+            Termenii contractului rămân neschimbați.
+          </p>
         </div>
         {contract.permissions?.can_propose_amendment && (
-          <button className="button secondary" onClick={() => openDraft()}>
+          <button className="button secondary" disabled={busy} onClick={() => openDraft()}>
             <Plus size={17} />
             Propune act adițional
           </button>
@@ -165,10 +197,46 @@ export function AmendmentDrafts({
                   Contractul are o versiune nouă. Această ciornă rămâne disponibilă pentru consultare.
                 </p>
               )}
-              <button className="text-button" onClick={() => openDraft(draft)}>
-                {draft.can_edit ? <PenLine size={15} /> : <FilePenLine size={15} />}
-                {draft.can_edit ? "Deschide și editează ciorna" : "Consultă ciorna"}
-              </button>
+              {draft.generated_document_id && (
+                <div className="amendment-generated-document">
+                  <small>
+                    PDF generat din revizia {draft.generated_revision} a ciornei
+                    {draft.generated_document_version && ` · versiunea PDF ${draft.generated_document_version}`}
+                  </small>
+                  {draft.generated_document_status && <Status value={draft.generated_document_status} />}
+                </div>
+              )}
+              {draft.pdf_outdated && (
+                <p className="amendment-source-changed" role="status">
+                  PDF-ul nu include ultimele modificări salvate ale ciornei.
+                  {draft.can_generate_pdf && " Regenerează-l înainte de validare."}
+                </p>
+              )}
+              <div className="amendment-draft-actions">
+                <button className="text-button" disabled={busy} onClick={() => openDraft(draft)}>
+                  {draft.can_edit ? <PenLine size={15} /> : <FilePenLine size={15} />}
+                  {draft.can_edit ? "Deschide și editează ciorna" : "Consultă ciorna"}
+                </button>
+                {draft.can_generate_pdf && (
+                  <button className="button secondary" disabled={busy} onClick={() => generatePdf(draft)}>
+                    {generatingId === draft.id
+                      ? <LoaderCircle className="spin" size={16} />
+                      : <FilePlus2 size={16} />}
+                    {generatingId === draft.id ? "Se generează…" : draft.generated_document_id ? "Regenerează PDF" : "Generează PDF"}
+                  </button>
+                )}
+                {draft.generated_document_id && draft.document_url && (
+                  <a className="text-button" href={`#document/${encodeURIComponent(draft.generated_document_id)}`}>
+                    <FilePenLine size={15} /> Deschide documentul
+                  </a>
+                )}
+                {draft.pdf_file_url && (
+                  <a className="text-button" href={fileUrl(draft.pdf_file_url)} target="_blank" rel="noreferrer">
+                    Vezi PDF <ArrowUpRight size={15} />
+                  </a>
+                )}
+              </div>
+              {generationError?.id === draft.id && <ErrorMessage message={generationError.message} />}
             </article>
           ))}
         </div>
@@ -193,6 +261,12 @@ export function AmendmentDrafts({
               <p className="amendment-source-changed">
                 Versiunea contractului s-a schimbat. Verifică noua versiune și pregătește o propunere
                 nouă după aprobarea ei.
+              </p>
+            )}
+            {selection?.generated_document_id && !canEdit && !sourceChanged && (
+              <p className="quiet-note">
+                Ciorna se poate modifica numai de autor sau director, cu drept de redactare,
+                înainte de validarea PDF-ului. După validare, ciorna se păstrează pentru consultare.
               </p>
             )}
             <fieldset className="amendment-draft-fields" disabled={busy}>

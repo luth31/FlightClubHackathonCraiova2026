@@ -319,6 +319,28 @@ export function DocumentDetail({
                 <div className="detail-tab-content">
                   {tab === "details" && (
                     <>
+                      {doc.generated_amendment && (
+                        <div className="note-box">
+                          <Info size={18} />
+                          <p>
+                            Acest PDF este generat din ciorna actului adițional.
+                            {doc.generated_amendment.current
+                              ? " Pentru corecții înainte de validare, editează ciorna și regenerează PDF-ul."
+                              : " Propunerea sau contractul de bază s-a schimbat. Verifică ciorna și PDF-ul curent înainte de avizare."}
+                            {doc.generated_amendment.contract_id && (
+                              <>
+                                {" "}
+                                <a
+                                  className="text-button"
+                                  href={`#document/${encodeURIComponent(doc.generated_amendment.contract_id)}`}
+                                >
+                                  Revino la contractul de bază
+                                </a>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                      )}
                       {doc.validated ? (
                         <div className="verified-line">
                           <Check size={14} />

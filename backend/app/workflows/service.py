@@ -11,6 +11,9 @@ def apply_action(db,user,document_id,action,comment='',expected_version=None):
     # SQLite write lock serializes version approval and sign requests; a second sign is idempotent.
     db.execute(text('BEGIN IMMEDIATE'))
     document=get_document(db,document_id,user,edit=True)
+    if action in ('validate','submit','approve','sign'):
+        from app.contracts.amendments import require_current_generated_pdf
+        require_current_generated_pdf(db,document)
     version=current_version(db,document)
     if expected_version is not None and expected_version!=document.version:
         raise DomainError('Documentul s-a schimbat. Reîncarcă versiunea curentă.',409)

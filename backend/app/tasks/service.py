@@ -81,6 +81,8 @@ def active_delegates(db,task,document):
 
 def can_act(db,user,task,document):
     if not task or task.status!='pending' or task.document_version!=document.version or not eligible(db,user,document,task.type): return False
+    from app.contracts.amendments import generated_pdf_is_current
+    if not generated_pdf_is_current(db,document): return False
     principal=db.get(User,task.assigned_to) if task.assigned_to else None
     if not principal or not principal.active: return False
     if task.assigned_to==user.id: return True
