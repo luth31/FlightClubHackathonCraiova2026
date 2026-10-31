@@ -39,7 +39,21 @@ Case status: `clear`, `needs_review`, `verified`, `approved`, `rejected`. `clear
 
 Document detail now includes `permissions:{can_edit,can_review,can_sign,can_share}`. Access classification fields (`category`,`department`,`confidentiality`) cannot change through ordinary PATCH; this preserves all historical-version access. GET `/reports/register.csv?category=Contract` exports the contracts view only. Search uses private extracted-text FTS5 with Romanian diacritics normalized; hyphenated identifiers are exact phrases.
 
-Signed/archived document detail reports `can_edit`, `can_validate`, and `can_submit` as false. Historical files remain readable under the existing access rules. Register metadata corrections do not change PDF content or legally amend a contract. This protection does not yet provide a dedicated amendment-creation or post-signing metadata-correction workflow.
+Signed/archived document detail reports `can_edit`, `can_validate`, and `can_submit` as false. Historical files remain readable under the existing access rules. Register metadata corrections do not change PDF content or legally amend a contract. Post-signing metadata corrections remain a separate unimplemented workflow; amendment drafting is described below.
+
+## Amendment drafts
+
+Amendment proposals are separate saved forms linked to an existing Contract and its exact document version. They are not PDFs or executed addenda. Saving a form does not change the original contract's fields, files, versions, approval evidence or tasks. Proposal creation and editing record attributable audit events against the parent contract.
+
+* GET `/contracts/{contract_id}/amendment-drafts` -> `{items,total}`. Readers of the parent contract can consult its proposals.
+* POST `/contracts/{contract_id}/amendment-drafts` -> draft (201). Required JSON fields: `source_version`, `title`, `reason`, `clause_reference`, `proposed_wording`. Optional: `current_wording` (defaults to empty text), `proposed_effective_date` (ISO date or null).
+* PATCH `/contracts/{contract_id}/amendment-drafts/{draft_id}` -> draft. Send the complete form and its current `revision`; a successful change increments that revision. An unchanged save does not create another revision or audit event.
+
+Draft fields include `id`, `contract_id`, `contract_number`, `source_version`, the form fields, `status:'draft'`, `revision`, `created_by`, `created_by_name`, `created_at`, `updated_at`, `can_edit` and `source_changed`.
+
+The parent must be validated and approved/signed for drafting. Authors must be directors or reviewers whose own department matches the contract's department. Approval-only delegation does not confer drafting authority. The parent document exposes `permissions.can_propose_amendment`, independently of its edit permission. Only the draft's author or a director can edit it while that drafting authority remains valid.
+
+Required text is trimmed and validated: title 3–300 characters, reason 10–5,000, clause reference 3–200, proposed wording 10–10,000; current wording permits up to 10,000 characters. Unknown fields are rejected. Stale source versions or draft revisions return 409. A changed or archived source preserves readable proposals and disables editing; existing proposal wording is never silently rebound to a different contract version. PDF generation and approval routing for these forms are subsequent features.
 
 ## Persistent assigned work
 

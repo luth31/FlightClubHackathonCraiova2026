@@ -26,6 +26,7 @@ import {
   Modal,
 } from "@/components/ui";
 import { ShareDialog } from "@/features/sharing";
+import { AmendmentDrafts } from "@/features/contracts/AmendmentDrafts";
 import { date, time, money, actionLabel } from "@/utils/format";
 import type { DocumentRecord, User } from "@/types";
 export function DocumentDetail({
@@ -888,6 +889,17 @@ export function DocumentDetail({
               )}
             </aside>
           </div>
+          {doc.category === "Contract" && (
+            <AmendmentDrafts
+              key={`${doc.id}:${user.id}`}
+              contract={doc}
+              notify={notify}
+              onSaved={() => {
+                onChanged();
+                load();
+              }}
+            />
+          )}
           {sharing && (
             <ShareDialog
               document={doc}

@@ -86,6 +86,8 @@ def serialize(document, db=None, details=False, user=None):
         data['permissions'].setdefault('can_validate',can_edit(user,document))
         data['permissions']['can_validate']=data['permissions']['can_validate'] and not locked
         data['permissions']['can_submit']=can_edit(user,document) and document.validated and not locked
+        from app.contracts.amendments import can_propose_amendment
+        data['permissions']['can_propose_amendment']=can_propose_amendment(user,document)
     data=without_private_text(data)
     if user and has_role(user,'technician'):
         data=sanitize_for_technician(data)

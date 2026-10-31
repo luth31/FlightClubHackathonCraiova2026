@@ -1,0 +1,96 @@
+.amendment-drafts {
+  margin-top: 24px;
+  padding: 24px;
+}
+.amendment-drafts-heading,
+.amendment-draft-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.amendment-drafts-heading h2 {
+  font-size: 15px;
+  color: #405d30;
+}
+.amendment-drafts-heading p,
+.amendment-empty {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #657650;
+}
+.amendment-drafts-heading .button {
+  flex-shrink: 0;
+}
+.amendment-empty {
+  padding-top: 14px;
+}
+.amendment-draft-list {
+  margin-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+.amendment-draft-card {
+  border: 1px solid #e2e9da;
+  border-radius: 7px;
+  padding: 18px;
+}
+.amendment-draft-title h3 {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #405d30;
+  overflow-wrap: anywhere;
+}
+.amendment-draft-card p {
+  margin: 9px 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #657650;
+}
+.amendment-draft-card small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #657650;
+}
+.amendment-draft-card .text-button {
+  margin-top: 13px;
+}
+.amendment-source-changed {
+  border-left: 3px solid #b28c48;
+  padding: 8px 12px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #805e25;
+  background: #fbf7ee;
+}
+.amendment-draft-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.amendment-draft-fields:disabled input,
+.amendment-draft-fields:disabled textarea,
+.amendment-draft-fields input[readonly],
+.amendment-draft-fields textarea[readonly] {
+  color: #657650;
+  background: #f8faf5;
+  opacity: 1;
+}
+@media (max-width: 700px) {
+  .amendment-drafts {
+    padding: 18px;
+  }
+  .amendment-drafts-heading {
+    flex-direction: column;
+  }
+  .amendment-drafts-heading .button {
+    width: 100%;
+  }
+  .amendment-draft-title {
+    flex-wrap: wrap;
+  }
+}

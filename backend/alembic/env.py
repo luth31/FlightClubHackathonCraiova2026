@@ -2,6 +2,7 @@ from alembic import context
 from app.database import Base,engine
 from app.people import models as people_models
 from app.documents import models as document_models
+from app.contracts import models as contract_models
 from app.sharing import models as share_models
 from app.core import models as core_models
 from app.suppliers import models as supplier_models
