@@ -41,7 +41,7 @@ def seed():
             db.add(LeaveRequest(id='demo-leave',user_id='manager',starts_at='2026-10-29',ends_at='2026-11-06',reason='Concediu de odihnă',status='approved',approver_id='admin'))
         manifest=settings.corpus_dir/'seed-manifest.json'
         if settings.seed_documents and manifest.exists():
-            raw=json.loads(manifest.read_text())
+            raw=json.loads(manifest.read_text(encoding='utf-8'))
             records=raw.get('documents',[]) if isinstance(raw,dict) else raw
             for item in records:
                 if db.get(Document,item['id']): continue

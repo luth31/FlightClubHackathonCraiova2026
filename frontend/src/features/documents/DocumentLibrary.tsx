@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, Download, X } from "lucide-react";
-import { api, download } from "@/services/api-client";
+import { Search, SlidersHorizontal, Download, X, List, Workflow } from "lucide-react";
+import { api, download, getIdentity } from "@/services/api-client";
 import { Loading, ErrorMessage } from "@/components/ui";
 import { DocumentTable } from "./DocumentTable";
-import type { DocumentRecord } from "@/types";
+import { DocumentFlow } from "./DocumentFlow";
+import type { DocumentRecord, DocumentFlowData } from "@/types";
+
+type LibraryView = "list" | "flow";
 export function DocumentLibrary({
   onOpen,
   onUpload,
@@ -17,39 +20,64 @@ export function DocumentLibrary({
   initialFilter?: string;
   revision: number;
 }) {
-  const [query, setQuery] = useState(""),
+  const caseStorageKey = `aerodesk-document-case:${getIdentity()}`;
+  const [view, setView] = useState<LibraryView>(
+    () => sessionStorage.getItem("aerodesk-document-view") === "flow" ? "flow" : "list",
+  ),
+    [query, setQuery] = useState(""),
     [status, setStatus] = useState(initialFilter),
     [category, setCategory] = useState(""),
+    [caseId, setCaseId] = useState(() => sessionStorage.getItem(caseStorageKey) || ""),
     [data, setData] = useState<{
       items: DocumentRecord[];
       total: number;
       categories: string[];
     }>(),
-    [error, setError] = useState("");
+    [flowData, setFlowData] = useState<DocumentFlowData>(),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState(""),
+    [reload, setReload] = useState(0);
+
+  const changeView = (next: LibraryView) => {
+    setView(next);
+    sessionStorage.setItem("aerodesk-document-view", next);
+  };
+  const selectCase = (id: string) => {
+    setCaseId(id);
+    sessionStorage.setItem(caseStorageKey, id);
+  };
   useEffect(() => {
     setStatus(initialFilter);
   }, [initialFilter]);
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setError("");
     const timer = setTimeout(() => {
-      api<{ items: DocumentRecord[]; total: number; categories: string[] }>(
-        `/documents?limit=500&q=${encodeURIComponent(query)}&status=${status}&category=${encodeURIComponent(category)}`,
-      )
-        .then((v) => {
-          if (active) {
-            setData(v);
-            setError("");
-          }
-        })
-        .catch((e) => {
-          if (active) setError(e.message);
+      const params = new URLSearchParams({ q: query, status, category });
+      const request = view === "flow"
+        ? api<DocumentFlowData>(`/documents/flow?${params}&case_id=${encodeURIComponent(caseId)}`)
+          .then((value) => {
+            if (active) {
+              setFlowData(value);
+            }
+          })
+        : api<{ items: DocumentRecord[]; total: number; categories: string[] }>(
+          `/documents?limit=500&${params}`,
+        ).then((value) => {
+          if (active) setData(value);
         });
+      request.catch((e) => {
+        if (active) setError(e.message);
+      }).finally(() => {
+        if (active) setLoading(false);
+      });
     }, 180);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [query, status, category, revision]);
+  }, [query, status, category, caseId, view, revision, reload]);
   const exportCsv = async () => {
     try {
       await download(
@@ -79,6 +107,14 @@ export function DocumentLibrary({
           </button>
         </div>
       </div>
+      <div className="library-view-switch" role="group" aria-label="Vizualizare documente">
+        <button aria-pressed={view === "list"} onClick={() => changeView("list")}>
+          <List size={16} /> Registru
+        </button>
+        <button aria-pressed={view === "flow"} onClick={() => changeView("flow")}>
+          <Workflow size={16} /> Flux achiziții
+        </button>
+      </div>
       <div className="panel library-panel">
         <div className="library-tabs">
           {[
@@ -94,8 +130,8 @@ export function DocumentLibrary({
               onClick={() => setStatus(id)}
             >
               {label}
-              {id === "" && data && !status && !query && !category && (
-                <span>{data.total}</span>
+              {id === "" && !loading && !status && !query && !category && (
+                <span>{view === "flow" ? flowData?.total : data?.total}</span>
               )}
             </button>
           ))}
@@ -123,17 +159,25 @@ export function DocumentLibrary({
               onChange={(e) => setCategory(e.target.value)}
             >
               <option value="">Toate tipurile</option>
-              {(data?.categories || []).map((c) => (
+              {((view === "flow" ? flowData?.categories : data?.categories) || []).map((c) => (
                 <option key={c}>{c}</option>
               ))}
             </select>
           </label>
         </div>
         {error ? (
-          <ErrorMessage message={error} />
-        ) : !data ? (
+          <ErrorMessage message={error} retry={() => setReload((value) => value + 1)} />
+        ) : loading ? (
           <Loading />
-        ) : (
+        ) : view === "flow" && flowData ? (
+          <DocumentFlow
+            data={flowData}
+            caseId={caseId}
+            onSelectCase={selectCase}
+            onOpen={onOpen}
+            onShowRegister={() => changeView("list")}
+          />
+        ) : data ? (
           <>
             <DocumentTable documents={data.items} onOpen={onOpen} />
             <div className="table-footer">
@@ -143,7 +187,7 @@ export function DocumentLibrary({
               <span>Acces conform rolului tău</span>
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </>
   );

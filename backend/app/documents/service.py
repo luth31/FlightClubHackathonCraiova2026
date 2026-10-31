@@ -9,6 +9,7 @@ from sqlalchemy import select, desc, text
 from pypdf import PdfReader
 from pypdf.generic import IndirectObject, DictionaryObject, ArrayObject
 from app.documents.models import Document, DocumentVersion
+from app.documents.classification import classify, case_id
 from app.core.models import AuditEvent
 from app.core.security import can_read, can_edit, require_role, has_role
 from app.core.exceptions import DomainError
@@ -41,6 +42,8 @@ def serialize(document, db=None, details=False, user=None):
     fields=('id','title','number','category','department','status','created_at','updated_at','expires_at','supplier','value','currency','owner','created_by','confidentiality','summary','version','validated')
     data={k:getattr(document,k) for k in fields}
     data.update(document.extra or {})
+    data['flow']=classify(document)
+    data['flow_case_id']=case_id(document)
     data.pop('text_excerpt',None)
     data['file_url']=f'/api/documents/{document.id}/file'
     data['days_remaining']=(date.fromisoformat(document.expires_at[:10])-settings.reference_date).days if document.expires_at else None
