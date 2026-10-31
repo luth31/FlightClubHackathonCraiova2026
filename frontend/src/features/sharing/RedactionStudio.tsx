@@ -39,7 +39,6 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
   const [department, setDepartment] = useState('');
   const [expires, setExpires] = useState('2026-12-01');
   const [announcement, setAnnouncement] = useState('');
-  const inspectorRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     let active = true; let timer: number | undefined;
@@ -95,7 +94,6 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
       const index = layout?.pages.findIndex(p => p.words.some(w => w.id === ids[0]));
       if (index !== undefined && index >= 0) goPage(index);
     }
-    inspectorRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     if (term.length > 500) { setFinding(false); setSelectionNotice('Acest fragment poate fi ascuns doar aici.'); return; }
     try {
       const result = await api<{ items: Match[] }>(`/documents/${doc.id}/redaction-matches`, {
@@ -184,7 +182,7 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
             </div>
             {page && <RedactionCanvas key={page.number} page={page} src={fileUrl(`/api/documents/${doc.id}/redaction-pages/${page.number}?source_version=${layout.source_version}&source_sha256=${layout.source_sha256}`)} hidden={selectedSet} focused={focus} textMode={textMode} locked={locked} onSelect={inspectWords} onImageError={setImageError} />}
           </section>
-          <aside className="studio-inspector" ref={inspectorRef} aria-label="Selecție și anonimizare">
+          <aside className="studio-inspector" aria-label="Selecție și anonimizare">
             <section className="selection-panel" aria-label="Fragment selectat">
               {focus.length ? <>
                 <div className="selection-heading"><h3>{advice ? 'Sugestie Luna' : 'Fragment selectat'}</h3><button className="icon-button" aria-label="Închide selecția" disabled={locked} onClick={clearFocus}><X size={16} /></button></div>
