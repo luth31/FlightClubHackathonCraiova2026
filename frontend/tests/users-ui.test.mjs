@@ -62,9 +62,10 @@ async function fill(name,value) {
 async function submit() {await act(async()=>document.querySelector('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));}
 
 test('ordinary employees can request leave but cannot manage accounts or authority',async t=>{
-  await setup(t,{current_user_id:'employee'});
+  await setup(t,{current_user_id:'employee',items:[{...person,head_appointment:{status:'pending',effective_date:'2026-11-01'}}]});
   assert.match(document.body.textContent,/Cerere de concediu/);
   assert.doesNotMatch(document.body.textContent,/Adaugă angajat|Propune șef|Autoritate de semnare/);
+  assert.doesNotMatch(document.body.textContent,/Numire în aprobare/);
 });
 
 test('HR onboarding sends an ordinary profile and shows credentials once',async t=>{
@@ -112,6 +113,18 @@ test('HR can propose an appointment without granting signing authority',async t=
   assert.equal(calls[0].body.user_id,'employee');
   assert.equal(calls[0].body.department_id,'dept-tehnic');
   assert.ok(!('signer' in calls[0].body));
+});
+
+test('HR sees pending or approved head appointments without a repeat proposal action',async t=>{
+  const scheduled={...person,can_propose_head:false,head_appointment:{status:'approved',effective_date:'2026-11-01'}};
+  const pending={...person,id:'pending',name:'Colega Propusă',email:'colega@airport.example',can_propose_head:false,
+    head_appointment:{status:'pending',effective_date:'2026-11-02'}};
+  const colleague={...person,id:'colleague',name:'Alt Coleg',can_propose_head:false};
+  await setup(t,{can_manage_accounts:true,can_propose_heads:true,can_view_appointments:true,items:[scheduled,pending,colleague]});
+  assert.doesNotMatch(document.querySelector('.people-grid').textContent,/Propune șef/);
+  assert.match(document.querySelector('.people-grid').textContent,/Numire aprobată.*01 nov\. 2026/);
+  assert.match(document.querySelector('.people-grid').textContent,/Numire în aprobare/);
+  assert.equal([...document.querySelectorAll('.person-card button')].filter(b=>b.textContent==='Gestionează angajatul').length,3);
 });
 
 test('email is generated on demand and HR edits survive name changes',async t=>{

@@ -4,7 +4,7 @@ from app.config import settings
 from app.core.audit import record
 from app.core.exceptions import DomainError
 from app.core.security import has_role, require_role, user_dict
-from app.people.models import User, Delegation, LeaveRequest, Session
+from app.people.models import User, Delegation, LeaveRequest, Session, HeadAppointment
 
 
 def local_user(db, user_id, active=False):
@@ -58,9 +58,17 @@ def directory(db, user):
     user_ids = {person.id for person in users}
     all_leaves = list(db.scalars(select(LeaveRequest).where(LeaveRequest.user_id.in_(user_ids))))
     today = settings.reference_date.isoformat()
+    open_appointments = {appointment.department_id: appointment for appointment in db.scalars(
+        select(HeadAppointment).where(HeadAppointment.airport_id == user.airport_id,
+            HeadAppointment.status.in_(['pending', 'approved'])))}
+    can_propose_heads = has_role(user, 'admin', 'hr')
+    can_view_appointments = has_role(user, 'admin', 'hr', 'director')
     items = []
     for person in users:
         item = employee_dict(db, person)
+        appointment = open_appointments.get(person.department_id)
+        item['can_propose_head'] = can_propose_heads and person.active and not item['is_department_head'] and appointment is None
+        item['head_appointment'] = {'status': appointment.status, 'effective_date': appointment.effective_date} if can_view_appointments and appointment and appointment.user_id == person.id else None
         item['manager_id'] = getattr(person, 'manager_id', None)
         manager = db.get(User, item['manager_id']) if item['manager_id'] else None
         item['manager_name'] = manager.name if manager else None
@@ -83,9 +91,9 @@ def directory(db, user):
         'can_manage_accounts': has_role(user, 'admin', 'hr'),
         'can_admin_delegations': has_role(user, 'admin'),
         'can_create_users': has_role(user, 'admin', 'hr'),
-        'can_propose_heads': has_role(user, 'admin', 'hr'),
+        'can_propose_heads': can_propose_heads,
         'can_manage_signing': has_role(user, 'director'),
-        'can_view_appointments': has_role(user, 'admin', 'hr', 'director'),
+        'can_view_appointments': can_view_appointments,
         'department_records': department_records(db),
         'auth_mode': settings.auth_mode,
         'can_manage_delegations': has_role(user, 'admin', 'director', 'reviewer', 'department_head'),

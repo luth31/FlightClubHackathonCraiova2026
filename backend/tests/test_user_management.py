@@ -264,6 +264,61 @@ def test_appointment_scheduled_activation_and_independent_director(client, peopl
     assert client.post(f"/api/people/appointments/{p['id']}/decision", json={'action': 'approve'}).status_code == 403
 
 
+def test_directory_hides_repeat_head_proposals_until_scheduled_appointment_activates(client, people_state, monkeypatch):
+    login(client, 'hr')
+    tomorrow = settings.reference_date + timedelta(days=1)
+    colleague = client.post('/api/people', json=employee()).json()['user']
+    before = client.get('/api/people').json()['items']
+    assert next(u for u in before if u['id'] == 'technician').get('can_propose_head') is True
+    appointment = proposal(client, effective_date=str(tomorrow)).json()
+
+    def candidate():
+        items = client.get('/api/people').json()['items']
+        assert not next(u for u in items if u['id'] == colleague['id'])['can_propose_head']
+        return next(u for u in items if u['id'] == 'technician')
+
+    pending = candidate()
+    assert not pending['can_propose_head']
+    assert pending['head_appointment'] == {'status': 'pending', 'effective_date': str(tomorrow)}
+    login(client, 'admin')
+    assert client.post(f"/api/people/appointments/{appointment['id']}/decision", json={'action': 'approve'}).status_code == 200
+    login(client, 'hr')
+    scheduled = candidate()
+    assert not scheduled['is_department_head']
+    assert not scheduled['can_propose_head']
+    assert scheduled['head_appointment'] == {'status': 'approved', 'effective_date': str(tomorrow)}
+    monkeypatch.setattr(settings, 'reference_date', tomorrow)
+    active = client.get('/api/people').json()['items']
+    head = next(u for u in active if u['id'] == 'technician')
+    assert head['is_department_head'] and not head['can_propose_head']
+    assert head['head_appointment'] is None
+    assert next(u for u in active if u['id'] == colleague['id'])['can_propose_head']
+
+
+def test_rejected_head_appointment_reenables_proposal_in_directory(client, people_state):
+    login(client, 'hr')
+    appointment = proposal(client).json()
+    login(client, 'admin')
+    assert client.post(f"/api/people/appointments/{appointment['id']}/decision",
+        json={'action': 'reject', 'comment': 'Structura necesită revizuire'}).status_code == 200
+    login(client, 'hr')
+    candidate = next(u for u in client.get('/api/people').json()['items'] if u['id'] == 'technician')
+    assert candidate.get('can_propose_head') is True and candidate.get('head_appointment') is None
+
+
+def test_directory_keeps_pending_head_appointments_private_to_management(client, people_state):
+    login(client, 'hr')
+    assert proposal(client).status_code == 201
+    login(client, 'technician')
+    directory = client.get('/api/people').json()
+    assert not directory['can_view_appointments']
+    assert all(person['head_appointment'] is None for person in directory['items'])
+    assert all(not person['can_propose_head'] for person in directory['items'])
+    login(client, 'admin')
+    candidate = next(u for u in client.get('/api/people').json()['items'] if u['id'] == 'technician')
+    assert candidate['head_appointment']['status'] == 'pending'
+
+
 def test_replacement_routes_new_work_and_flags_old_tasks(client, people_state, db):
     from app.people.models import Department
     from app.documents.models import Document

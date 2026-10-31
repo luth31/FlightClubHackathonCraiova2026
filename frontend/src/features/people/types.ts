@@ -3,6 +3,7 @@ export interface Person {
   first_name?:string; middle_name?:string; last_name?:string;
   roles:string[]; active:boolean; availability:string; job_title:string; manager_id?:string|null;
   manager_name?:string; is_department_head?:boolean; provisioning_status?:string;
+  can_propose_head?:boolean; head_appointment?:{status:'pending'|'approved';effective_date:string}|null;
   identity_sync_pending?:boolean; login_username?:string; sign_in_url?:string|null;
 }
 export interface Department {id:string;name:string;head_user_id?:string|null;head_name?:string|null;revision?:number;job_titles?:string[]}

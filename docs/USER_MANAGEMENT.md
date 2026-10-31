@@ -22,6 +22,8 @@ Resetting credentials for privileged accounts requires an administrator. The loc
 
 HR selects **Propune șef** on an active employee in the desired department. A different director reviews the request in **Aprobări → Numiri în departamente**, or **Echipă → Numiri**. The previous head remains responsible until the approved effective date. Appointments use AeroDesk's configured reference date and activate on authenticated application access. A transferred/inactive candidate cannot receive the appointment. Each department accepts one pending/scheduled proposal at a time.
 
+While a department has a pending or approved scheduled appointment, **Propune șef** is hidden on its employees' cards. HR, admin and director viewers see **Numire în aprobare** or **Numire aprobată · din [date]** on the proposed employee until activation; the active head shows **Șef de departament**. Scheduled appointment data remains private to those management roles. Rejected or cancelled proposals allow HR to propose again. The **Numiri** list retains decisions for history.
+
 New document approval tasks prefer the appointed head. Outstanding approvals assigned to the previous head require explicit reassignment; completed decisions retain their authors. Review delegation never grants signing rights.
 
 The director separately uses **Autoritate de semnare**, with a reason, to grant/revoke signing for another employee. Signing still requires document access and an assigned signature task. Certificates remain demonstration certificates. HR profile changes never edit permission roles; specialist access outside onboarding remains an administrator deployment responsibility.
