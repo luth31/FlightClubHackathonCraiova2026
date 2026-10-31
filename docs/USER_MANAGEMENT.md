@@ -1,5 +1,9 @@
 # Employee accounts and authority
 
+HR enters the employee's full name and selects a department, function and optional coordinator. The work email is generated automatically as `<first-name initial>.<surname>@arm.ro` (for example, `Ștefan Mihai Ionescu` → `s.ionescu@arm.ro`). The last word supplies the surname; hyphens are preserved and diacritics removed. Duplicate addresses are reported for HR to resolve. Existing account emails stay unchanged when profiles are renamed.
+
+Function choices appear below the department and include the department's catalog and existing positions. A function title does not grant head or signer permissions. Coordinators must be active colleagues in the same department. Department changes reset the coordinator; moving a coordinator also clears reporting links in the old department. The migration removes legacy links between different departments.
+
 HR uses **Echipă → Adaugă angajat** to create an employee with a primary department, job title, reporting manager and ordinary employee/technician access. Every employee can submit leave requests. HR cannot grant admin, director, finance, HR, reviewer or signer roles through onboarding. Existing privileged demo accounts remain available.
 
 In Docker, AeroDesk creates the Keycloak account and links its stable issuer/subject identity to the local profile. A failed creation remains visible as **Activare de reîncercat**; **Gestionează angajatul → Reîncearcă activarea** retries without duplicating the identity. After an interrupted request, wait two minutes before retrying a processing account.

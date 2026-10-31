@@ -14,11 +14,11 @@ from app.tasks.service import seed_tasks
 
 USERS=[
  ('admin','Ana Ionescu','Conducere','Director aeroport',['admin','director','reviewer','signer'],'AI',None),
- ('manager','Mihai Dumitrescu','Achiziții','Șef achiziții',['reviewer'],'MD','admin'),
- ('reviewer','Elena Popa','Conformitate','Responsabil conformitate',['reviewer'],'EP','admin'),
- ('finance','Radu Marinescu','Financiar','Responsabil financiar',['finance','reviewer'],'RM','admin'),
- ('hr','Ioana Stancu','Resurse umane','Responsabil resurse umane',['hr','reviewer'],'IS','admin'),
- ('technician','Andrei Neagu','Tehnic','Tehnician mentenanță',['technician'],'AN','admin'),
+ ('manager','Mihai Dumitrescu','Achiziții','Șef achiziții',['reviewer'],'MD',None),
+ ('reviewer','Elena Popa','Conformitate','Responsabil conformitate',['reviewer'],'EP',None),
+ ('finance','Radu Marinescu','Financiar','Responsabil financiar',['finance','reviewer'],'RM',None),
+ ('hr','Ioana Stancu','Resurse umane','Responsabil resurse umane',['hr','reviewer'],'IS',None),
+ ('technician','Andrei Neagu','Tehnic','Tehnician mentenanță',['technician'],'AN',None),
 ]
 
 

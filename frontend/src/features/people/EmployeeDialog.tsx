@@ -3,9 +3,24 @@ import {api} from '@/services/api-client';
 import {ErrorMessage, Modal} from '@/components/ui';
 import type {Directory, Person, ProvisionResult} from './types';
 
+function workEmail(name:string) {
+  const parts=name.trim().split(/\s+/);
+  if(parts.length<2)return '';
+  const normalize=(part:string)=>part.normalize('NFKD').replace(/\P{ASCII}/gu,'').toLowerCase();
+  const first=normalize(parts[0]);
+  const last=normalize(parts.at(-1)!).replace(/['’]/g,'');
+  if(!/^[a-z]/.test(first)||! /^[a-z]+(?:-[a-z]+)*$/.test(last)||last.length+2>64)return '';
+  return `${first[0]}.${last}@arm.ro`;
+}
+
 export function EmployeeDialog({directory, person, onClose, onChanged}: {
   directory:Directory;person?:Person;onClose:()=>void;onChanged:(message:string)=>void;
 }) {
+  const departments=directory.department_records||[];
+  const [name,setName]=useState(person?.name||'');
+  const [departmentId,setDepartmentId]=useState(person?.department_id||departments[0]?.id||'');
+  const [jobTitle,setJobTitle]=useState(person?.job_title||'');
+  const [managerId,setManagerId]=useState(person?.manager_id||'');
   const [current,setCurrent]=useState(person);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
@@ -58,7 +73,13 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
       if(updated.identity_sync_pending)setError('Serviciul de identitate nu este disponibil. Accesul local respectă starea contului.');
     } catch(e) {setError((e as Error).message)} finally {setBusy(false)}
   }
-  const departments=directory.department_records||[];
+  const jobTitles=[...new Set([
+    ...(departments.find(d=>d.id===departmentId)?.job_titles||[]),
+    ...directory.items.filter(p=>p.department_id===departmentId).map(p=>p.job_title).filter(Boolean),
+    ...(departmentId===person?.department_id&&person.job_title?[person.job_title]:[]),
+  ])];
+  const coordinators=directory.items.filter(p=>p.active&&p.id!==person?.id&&p.department_id===departmentId);
+  const email=workEmail(name);
   const failed=result?.user.provisioning_status==='failed';
   return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} subtitle="Datele angajatului și accesul său la AeroDesk." onClose={onClose}>
     <div className="modal-body">
@@ -74,14 +95,14 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
         {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button className="button primary" onClick={onClose}>{result.temporary_password?'Am preluat datele':'Închide'}</button></div>
       </div>:<>
         <form onSubmit={save}>
-          <label className="field">Nume complet<input name="name" defaultValue={person?.name||''} minLength={2} maxLength={150} required/></label>
-          {!person&&<label className="field">Email de serviciu<input name="email" type="email" maxLength={254} required/></label>}
-          <label className="field">Funcție<input name="job_title" defaultValue={person?.job_title||''} minLength={2} maxLength={150} required/></label>
-          <div className="form-grid"><label className="field">Departament<select name="department_id" defaultValue={person?.department_id||departments[0]?.id||''} required>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
-          <label className="field">Coordonator<select name="manager_id" defaultValue={person?.manager_id||''}><option value="">Fără coordonator desemnat</option>{directory.items.filter(p=>p.active&&p.id!==person?.id).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
+          <label className="field">Nume complet<input name="name" value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={150} required/></label>
+          {!person&&<label className="field">Email de serviciu<input name="email" type="email" value={email} readOnly required placeholder="Inițială prenume.nume@arm.ro"/><span className="quiet-note">Generat automat din prenume și numele de familie, fără diacritice.</span></label>}
+          <label className="field">Departament<select name="department_id" value={departmentId} onChange={e=>{setDepartmentId(e.target.value);setManagerId('');setJobTitle('');}} required>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+          <div className="form-grid"><label className="field">Funcție<select name="job_title" value={jobTitle} onChange={e=>setJobTitle(e.target.value)} required><option value="">Alege funcția</option>{jobTitles.map(title=><option key={title} value={title}>{title}</option>)}</select></label>
+          <label className="field">Coordonator<select name="manager_id" value={coordinators.some(p=>p.id===managerId)?managerId:''} onChange={e=>setManagerId(e.target.value)}><option value="">Fără coordonator desemnat</option>{coordinators.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
           {!person&&<label className="field">Acces inițial<select name="access_profile" defaultValue="employee"><option value="employee">Angajat</option><option value="technician">Tehnician</option></select></label>}
           <p className="quiet-note">Fiecare angajat poate solicita concediu. Numirea ca șef și autoritatea de semnare se acordă separat.</p>
-          {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy}>{busy?'Se salvează…':person?'Salvează fișa':'Creează contul'}</button></div>
+          {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy||(!person&&!email)}>{busy?'Se salvează…':person?'Salvează fișa':'Creează contul'}</button></div>
         </form>
         {current&&<div className="employee-access"><h3>Accesul la aplicație</h3>
           <p>{current.active?'Dezactivarea închide sesiunile, revocă delegările și păstrează documentele și istoricul.':'Contul este inactiv. Documentele și istoricul rămân păstrate.'}</p>

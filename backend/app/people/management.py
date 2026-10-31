@@ -17,6 +17,16 @@ DEPARTMENTS = [('dept-conducere', 'Conducere', 'admin'), ('dept-achizitii', 'Ach
     ('dept-operatiuni', 'Operațiuni', None), ('dept-hr', 'Resurse umane', 'hr'),
     ('dept-conformitate', 'Conformitate', 'reviewer')]
 
+JOB_TITLES = {
+    'dept-conducere': ['Director aeroport', 'Director adjunct', 'Asistent conducere'],
+    'dept-achizitii': ['Specialist achiziții', 'Referent achiziții', 'Șef achiziții'],
+    'dept-tehnic': ['Inginer', 'Inginer principal', 'Tehnician mentenanță', 'Șef departament tehnic'],
+    'dept-financiar': ['Economist', 'Contabil', 'Responsabil financiar', 'Șef departament financiar'],
+    'dept-operatiuni': ['Agent operațiuni', 'Coordonator operațiuni', 'Șef operațiuni'],
+    'dept-hr': ['Specialist resurse umane', 'Inspector resurse umane', 'Responsabil resurse umane'],
+    'dept-conformitate': ['Specialist conformitate', 'Auditor intern', 'Responsabil conformitate'],
+}
+
 
 def seed_departments(db):
     for did, name, head in DEPARTMENTS:
@@ -49,9 +59,12 @@ def department(db, did):
 
 
 def department_records(db):
+    titles = {}
+    for person in db.scalars(select(User).where(User.airport_id == settings.airport_id)):
+        if person.job_title: titles.setdefault(person.department_id, set()).add(person.job_title)
     return [{'id': d.id, 'name': d.name, 'head_user_id': d.head_user_id,
         'head_name': db.get(User, d.head_user_id).name if d.head_user_id and db.get(User, d.head_user_id) else None,
-        'revision': d.revision} for d in db.scalars(select(Department).where(
+        'revision': d.revision, 'job_titles': sorted(set(JOB_TITLES.get(d.id, ['Angajat'])) | titles.get(d.id, set()))} for d in db.scalars(select(Department).where(
             Department.airport_id == settings.airport_id).order_by(Department.name))]
 
 
@@ -72,11 +85,13 @@ def employee_dict(db, person):
     return data
 
 
-def validate_manager(db, mid, person_id=None):
+def validate_manager(db, mid, department_id, person_id=None):
     if not mid: return None
     target = local_person(db, mid)
     if not target.active or target.id == person_id:
         raise DomainError('Alege un coordonator activ, diferit de persoana administrată.', 422)
+    if target.department_id != department_id:
+        raise DomainError('Coordonatorul trebuie să facă parte din departamentul selectat.', 422)
     seen = {person_id} if person_id else set()
     current = target
     while current:
@@ -90,7 +105,7 @@ def create_employee(db, actor, body):
     require_role(actor, 'hr', 'admin')
     db.execute(text('BEGIN IMMEDIATE'))
     dept = department(db, body.department_id)
-    manager = validate_manager(db, body.manager_id)
+    manager = validate_manager(db, body.manager_id, dept.id)
     email = body.email.lower().strip()
     if db.scalar(select(User).where(User.airport_id == actor.airport_id, func.lower(func.trim(User.email)) == email)):
         raise DomainError('Există deja un angajat cu această adresă de email.', 409)
@@ -180,8 +195,13 @@ def update_profile(db, actor, uid, body):
             from app.tasks.service import flag_offboarding
             flag_offboarding(db, person, actor, 'Departament schimbat')
             for grant in db.scalars(select(Delegation).where((Delegation.from_user == uid) | (Delegation.to_user == uid))): grant.active = False
+            person.manager_id = None
+            for report in db.scalars(select(User).where(User.airport_id == person.airport_id,
+                    User.manager_id == uid, User.department_id != dept.id)):
+                report.manager_id = None
+                record(db, actor, 'employee_coordinator_cleared', detail=f'{report.id}; coordonator transferat: {uid}')
         person.department_id, person.department = dept.id, dept.name
-    if 'manager_id' in changes: person.manager_id = validate_manager(db, changes['manager_id'], uid)
+    if 'manager_id' in changes: person.manager_id = validate_manager(db, changes['manager_id'], person.department_id, uid)
     if changes.get('name') is not None: person.name = changes['name']
     if changes.get('job_title') is not None: person.job_title = person.role = changes['job_title']
     record(db, actor, 'employee_updated', detail=f'{person.id}; câmpuri: {", ".join(changes)}')

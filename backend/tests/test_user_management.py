@@ -9,9 +9,9 @@ from app.people.models import User
 
 
 def employee(**changes):
-    return {'name': 'Mara Test', 'email': f'mara-{uuid4().hex}@airport.example',
+    return {'name': 'Mara Test' + ''.join(chr(97 + int(c, 16)) for c in uuid4().hex),
             'department_id': 'dept-tehnic', 'job_title': 'Inginer',
-            'manager_id': 'admin', 'access_profile': 'employee', **changes}
+            'manager_id': None, 'access_profile': 'employee', **changes}
 
 
 @pytest.fixture
@@ -72,9 +72,47 @@ def test_hr_cannot_grant_privileged_roles_or_duplicate_email(client):
     login(client, 'hr')
     assert client.post('/api/people', json=employee(roles=['signer'])).status_code == 422
     assert client.post('/api/people', json=employee(access_profile='director')).status_code == 422
-    assert client.post('/api/people', json=employee(email=' HR@DUNAREA.EXAMPLE ')).status_code == 409
+    assert client.post('/api/people', json=employee(email=' HR@DUNAREA.EXAMPLE ')).status_code == 422
     assert client.post('/api/people', json=employee(department_id='foreign-department')).status_code == 422
     assert client.post('/api/people', json=employee(manager_id='missing')).status_code == 404
+
+
+def test_work_email_is_generated_and_duplicate_names_are_reported(client):
+    login(client, 'hr')
+    payload = employee(name='  Ștefan   Mihai Ionescu  ')
+    response = client.post('/api/people', json=payload)
+    assert response.status_code == 201, response.text
+    assert response.json()['user']['email'] == 's.ionescu@arm.ro'
+    assert client.post('/api/people', json=payload).status_code == 409
+    assert client.post('/api/people', json=employee(name='Ștefan')).status_code == 422
+    assert client.post('/api/people', json=employee(name='Ana Popescu', email='custom@arm.ro')).status_code == 422
+
+
+def test_coordinator_must_be_active_in_the_selected_department(client, people_state):
+    login(client, 'hr')
+    assert client.post('/api/people', json=employee(name='Mara Invalid', email='m.invalid@arm.ro', manager_id='admin')).status_code == 422
+    created = client.post('/api/people', json=employee(manager_id='technician'))
+    assert created.status_code == 201, created.text
+    uid = created.json()['user']['id']
+    assert created.json()['user']['manager_id'] == 'technician'
+    assert client.patch(f'/api/people/{uid}/profile', json={'manager_id': 'hr'}).status_code == 422
+    assert client.patch(f'/api/people/{uid}/profile', json={'manager_id': uid}).status_code == 422
+    assert client.patch('/api/people/technician/profile', json={'manager_id': uid}).status_code == 422
+    assert client.patch(f'/api/people/{uid}/profile', json={
+        'department_id': 'dept-hr', 'manager_id': 'technician'}).status_code == 422
+    moved = client.patch(f'/api/people/{uid}/profile', json={'department_id': 'dept-hr'})
+    assert moved.status_code == 200, moved.text
+    assert moved.json()['manager_id'] is None
+    assert client.patch(f'/api/people/{uid}/profile', json={'manager_id': 'hr'}).status_code == 200
+
+
+def test_transferring_coordinator_clears_reporting_links_in_old_department(client, people_state):
+    login(client, 'hr')
+    created = client.post('/api/people', json=employee(manager_id='technician')).json()['user']
+    response = client.patch('/api/people/technician/profile', json={'department_id': 'dept-hr'})
+    assert response.status_code == 200, response.text
+    updated = next(p for p in client.get('/api/people').json()['items'] if p['id'] == created['id'])
+    assert updated['manager_id'] is None
 
 
 def test_keycloak_failure_is_retryable_and_never_activates_local_account(client, monkeypatch):
