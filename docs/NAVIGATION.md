@@ -75,6 +75,15 @@ docker compose up -d --no-deps dunarea-web carpati-web
 
 Check that both `http://127.0.0.1:8080/` and `http://127.0.0.1:8081/` serve the new JavaScript asset. Reload the browser and reopen a contract **from Furnizori**; its URL must include `?from=suppliers` and its button must say **Înapoi la Furnizori**. A document URL left open by an older build may lack origin metadata and uses the documented Documente fallback after reload.
 
+If a frontend change depends on new API routes or migrations, rebuild and recreate the API containers as well:
+
+```powershell
+docker compose build dunarea-api carpati-api
+docker compose up -d --no-deps --wait dunarea-api carpati-api
+```
+
+Retain the state volumes and check migration/startup logs and health before testing the frontend. A frontend-only rebuild can leave `/supplier-reviews` counts working while an older API lacks `/suppliers` and `/supplier-registrations`. Check the running API's OpenAPI schema inside each API container at `http://127.0.0.1:8000/openapi.json`, then verify the catalog response under an authorized account. Registry counts must come from the catalog, since review choices exclude suspended or otherwise ineligible suppliers. Until the catalog responds, show loading; a failed catalog request must keep its own visible error and retry control even after a successful review request. An empty-state message applies only after a successful catalog load.
+
 Before release, also check a real browser at desktop and about 390 px width:
 
 - Start with a filtered/paginated supplier list, open a contract through each supplier flow, then return through both controls and browser Back/Forward. Check state and scroll.
