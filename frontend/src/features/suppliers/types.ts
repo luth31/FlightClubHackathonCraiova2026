@@ -5,6 +5,13 @@ export interface Supplier {
   expected_iban: string;
   verified_contact: string;
   trust_status: string;
+  tax_id?: string;
+  address: string;
+  category: string;
+  state: 'active'|'suspended';
+  registry_revision: number;
+  can_manage: boolean;
+  contracts: Array<{id:string;title:string;version:number;eligible_for_review:boolean;unavailable_reason?:string}>;
   bank_history: Array<{
     iban: string;
     version: number;
@@ -21,6 +28,7 @@ export interface Review {
   document_id?: string;
   source_version?: number;
   supplier_name: string;
+  supplier_id?: string;
   expected_iban: string;
   observed_iban: string;
   sender_email: string;

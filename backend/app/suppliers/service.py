@@ -53,6 +53,9 @@ def seed_suppliers(db):
         if db.get(Supplier,identifier): continue
         db.add(Supplier(id=identifier,name=doc.supplier,airport_id=doc.airport_id,document_id=doc.id,source_version=doc.version,expected_iban=iban,verified_contact=contact,trust_status='demo_verified',bank_history=[{'iban':iban,'version':1,'source':'Registru fictiv verificat pentru scenariul demonstrativ','approved_by':'demo-fixture','created_at':doc.created_at}]))
 
+    from app.suppliers.catalog import seed_links
+    db.flush();seed_links(db)
+
 def supplier_dict(item):
     return {k:getattr(item,k) for k in ('id','name','document_id','expected_iban','verified_contact','trust_status','bank_history','registry_revision')}
 
@@ -94,31 +97,28 @@ def detail(db,user,case_id):
     return result
 
 def registry_detail(db,user,supplier_id):
-    require_role(user,'director','finance')
-    supplier=next((s for s in allowed_suppliers(db,user) if s.id==supplier_id),None)
-    if not supplier: raise DomainError('Furnizorul nu a fost găsit.',404)
-    result=supplier_dict(supplier)
-    names=actors(db,user)
-    result['bank_history']=[{**h,'verified_actor':names.get(h.get('verified_by')),'approved_actor':names.get(h.get('approved_by'))} for h in supplier.bank_history]
-    return result
+    from app.suppliers.catalog import detail
+    return detail(db,user,supplier_id)
 
 def require_current(db,user,item):
     freshness=review_freshness(db,user,item)
     if freshness['state']!='current': raise DomainError(' '.join(freshness['reasons']),409)
 
 def allowed_suppliers(db,user):
-    return [s for s in db.scalars(select(Supplier).where(Supplier.airport_id==user.airport_id)).all() if (d:=db.get(Document,s.document_id)) and can_read(user,d) and d.validated and d.status in ('approved','signed')]
+    from app.suppliers.catalog import contracts,eligible
+    return [s for s in db.scalars(select(Supplier).where(Supplier.airport_id==user.airport_id)) if any(eligible(d,s) for d in contracts(db,user,s))]
 
 def list_reviews(db,user,filters=None):
     require_role(user,'director','finance')
     from app.suppliers.query import ReviewFilters,matching_reviews
+    from app.suppliers.catalog import choice_dict
     filters=filters or ReviewFilters()
     all_items=matching_reviews(db,user,ReviewFilters())
     items=matching_reviews(db,user,filters)
     names=actors(db,user)
     return {'items':[serialize_case(db,user,item,names) for item in items[filters.offset:filters.offset+filters.limit]],
         'total':len(items),'limit':filters.limit,'offset':filters.offset,
-        'suppliers':[supplier_dict(s) for s in allowed_suppliers(db,user)],
+        'suppliers':[choice_dict(db,user,s) for s in allowed_suppliers(db,user)],
         'counters':{state:sum(i.status==state for i in all_items) for state in ('needs_review','verified','approved','clear')},
         'notice':'Date fictive. Nu se execută sau blochează plăți externe.'}
 
@@ -141,7 +141,8 @@ def create_review(db,user,body):
     doc=get_document(db,body.document_id,user) if body.document_id else None
     if doc and doc.category!='Contract': raise DomainError('Alege contractul care fundamentează verificarea.',422)
     name=doc.supplier if doc else body.supplier_name.strip() or 'Furnizor necunoscut'
-    supplier=db.get(Supplier,supplier_id(name,user.airport_id)) if name else None
+    from app.suppliers.catalog import resolve_supplier
+    supplier=resolve_supplier(db,user,body,doc)
     if body.previous_review_id:
         previous,_=get_case(db,user,body.previous_review_id)
         if previous.supplier_id and (not supplier or previous.supplier_id!=supplier.id): raise DomainError('Reevaluarea trebuie să păstreze furnizorul cunoscut.',422)
@@ -159,7 +160,7 @@ def create_review(db,user,body):
         'source_validated':doc.validated if doc else None,
         'registry_iban':expected,'registry_contact':contact,
         'registry_version':supplier.registry_revision if supplier else None,
-        'currency':body.invoice_currency,
+        'currency':body.invoice_currency,'supplier_id':supplier.id if supplier else None,
         'previous_review_id':body.previous_review_id,
         'iban':observed,'sender':sender,'amount':body.invoice_amount,
         'date':str(body.service_date),'message':body.message,'supplier':name,

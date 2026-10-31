@@ -17,6 +17,8 @@ def test_missing_inputs_are_not_checked(admin):
 def test_stale_contract_disables_actions_and_blocks_post(admin, pdf_bytes):
     known = supplier(admin)
     document = approved(admin, pdf_bytes)
+    source=admin.get(f'/api/documents/{document}').json()
+    assert admin.post(f'/api/suppliers/{known["id"]}/contracts',json={'document_id':document,'version':source['version']}).status_code==200
     case, _ = create_case(admin, document_id=document)
     url = f'/api/supplier-reviews/{case["id"]}'
     login(admin, 'finance')

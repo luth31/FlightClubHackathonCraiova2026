@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { api, download } from "@/services/api-client";
 import { Empty, ErrorMessage, Loading, Modal } from "@/components/ui";
-import { date, money, time } from "@/utils/format";
+import { date, time } from "@/utils/format";
 import type { User } from "@/types";
 import "./suppliers.css";
 import type { Supplier, Review, Registry } from './types';
@@ -57,6 +57,7 @@ export function SuppliersPage({
   user: User;
 }) {
   const [data, setData] = useState<Registry>(),
+    [catalog,setCatalog]=useState<Supplier[]>([]),
     [error, setError] = useState(""),
     [tab, setTab] = useState("reviews"),
     [query, setQuery] = useState(""),
@@ -87,6 +88,7 @@ export function SuppliersPage({
       active = false;
     };
   }, [revision, refresh, request]);
+  useEffect(()=>{let active=true;api<{items:Supplier[]}>('/suppliers').then(v=>{if(active)setCatalog(v.items)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[revision,refresh]);
   const changed = (item: Review, message: string) => {
     setSelected(item);
     setCreate(false);
@@ -94,7 +96,7 @@ export function SuppliersPage({
     notify(message);
   };
   const cases = data?.items;
-  const suppliers = data?.suppliers.filter((s) =>
+  const suppliers = catalog.filter((s) =>
     `${s.name} ${s.verified_contact}`
       .toLowerCase()
       .includes(query.toLowerCase()),
@@ -312,7 +314,7 @@ export function SuppliersPage({
           }
         />
       )}
-      {registryId&&<SupplierDetail supplierId={registryId} onClose={()=>setRegistryId(undefined)} onOpen={id=>{setRegistryId(undefined);onOpen(id)}} onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(v=>{setRegistryId(undefined);setSelected(v)}).catch(e=>notify(e.message))}}/>}
+      {registryId&&<SupplierDetail supplierId={registryId} onClose={()=>{setRegistryId(undefined);setRefresh(v=>v+1)}} onOpen={id=>{setRegistryId(undefined);onOpen(id)}} onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(v=>{setRegistryId(undefined);setSelected(v)}).catch(e=>notify(e.message))}}/>}
       {selected && (
         <ReviewDetail
           review={selected}
@@ -339,7 +341,9 @@ function NewReview({
   onOpen: (id: string) => void;
   onCreated: (r: Review) => void;
 }) {
-  const [supplierId, setSupplierId] = useState(suppliers.find(s=>s.name===initialReview?.supplier_name)?.id||suppliers[0]?.id||""),
+  const [supplierId, setSupplierId] = useState(suppliers.find(s=>s.id===initialReview?.supplier_id)?.id||suppliers[0]?.id||""),
+    [contractId,setContractId]=useState(initialReview?.document_id||suppliers[0]?.document_id||""),
+    [currency,setCurrency]=useState(initialReview?.invoice_currency||"RON"),
     [sender, setSender] = useState(initialReview?.sender_email||""),
     [iban, setIban] = useState(initialReview?.observed_iban||""),
     [amount, setAmount] = useState(initialReview?.invoice_amount!=null?String(initialReview.invoice_amount):""),
@@ -375,7 +379,7 @@ function NewReview({
   }
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!supplier) return;
+    if (!supplier || !contractId) return;
     setBusy(true);
     setError("");
     try {
@@ -383,7 +387,9 @@ function NewReview({
         await api<Review>("/supplier-reviews", {
           method: "POST",
           body: JSON.stringify({
-            document_id: initialReview?.document_id||supplier.document_id,
+            document_id: contractId,
+            supplier_id: supplier.id,
+            invoice_currency: currency,
             previous_review_id: initialReview?.id,
             observed_iban: iban,
             sender_email: sender,
@@ -414,15 +420,16 @@ function NewReview({
             Furnizor
             <select
               value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
+              onChange={(e) => {setSupplierId(e.target.value);setContractId(suppliers.find(s=>s.id===e.target.value)?.document_id||"")}}
             >
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name}
+                  {s.name} · {s.tax_id||"CUI neînregistrat"}
                 </option>
               ))}
             </select>
           </label>
+          <label className="field">Contract<select required value={contractId} onChange={e=>setContractId(e.target.value)}>{supplier?.contracts.map(c=><option key={c.id} value={c.id} disabled={!c.eligible_for_review}>{c.title}{!c.eligible_for_review?" · Indisponibil":""}</option>)}</select></label>
           {supplier ? (
             <>
               <div className="baseline-label">
@@ -440,7 +447,7 @@ function NewReview({
                 className="text-button"
                 onClick={() => {
                   onClose();
-                  onOpen(supplier.document_id);
+                  onOpen(contractId);
                 }}
               >
                 <FileText size={14} />
@@ -500,7 +507,7 @@ function NewReview({
           </label>
           <div className="form-grid">
             <label className="field">
-              Valoare factură · RON <small>Opțional</small>
+              Valoare factură <small>Opțional</small>
               <input
                 type="number"
                 min="0"
@@ -510,6 +517,7 @@ function NewReview({
                 placeholder="0,00"
               />
             </label>
+            <label className="field">Monedă<input value={currency} maxLength={3} minLength={3} pattern="[A-Za-z]{3}" onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label>
             <label className="field">
               Data prestației <small>Opțional</small>
               <input
@@ -696,7 +704,7 @@ function ReviewDetail({
               {r.invoice_amount != null && (
                 <>
                   <dt>Valoare factură</dt>
-                  <dd>{money(r.invoice_amount)} {r.invoice_currency !== 'RON' ? r.invoice_currency : ''}</dd>
+                  <dd>{new Intl.NumberFormat('ro-RO',{style:'currency',currency:r.invoice_currency||'RON'}).format(r.invoice_amount)}</dd>
                 </>
               )}
               <dt>Data prestației</dt>

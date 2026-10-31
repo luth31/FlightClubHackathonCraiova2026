@@ -1,9 +1,11 @@
 from pydantic import BaseModel,Field,field_validator,model_validator
 from datetime import date
+from typing import Literal
 from app.suppliers.validation import normalize_email
 class ReviewCreate(BaseModel):
     document_id: str | None=Field(default=None,max_length=100)
     supplier_name: str=Field(default='',max_length=200)
+    supplier_id: str | None=Field(default=None,max_length=100)
     previous_review_id: str | None=Field(default=None,max_length=100)
     observed_iban: str=Field(min_length=1,max_length=80)
     sender_email: str=Field(min_length=3,max_length=250)
@@ -36,3 +38,20 @@ class Verification(BaseModel):
         return value.strip() if isinstance(value,str) else value
 class Decision(BaseModel):
     comment: str=Field(default='',max_length=2000)
+
+class ContractLink(BaseModel):
+    document_id: str=Field(min_length=1,max_length=100)
+    version: int=Field(ge=1)
+
+class SupplierUpdate(BaseModel):
+    model_config={'extra':'forbid'}
+    address: str | None=Field(default=None,max_length=500)
+    category: str | None=Field(default=None,max_length=100)
+    state: Literal['active','suspended'] | None=None
+    registry_revision: int=Field(ge=1)
+    comment: str=Field(min_length=3,max_length=2000)
+    @field_validator('comment','address','category','state',mode='before')
+    @classmethod
+    def trim(cls,value):
+        if value is None: raise ValueError('Valoarea nu poate fi null.')
+        return value.strip() if isinstance(value,str) else value

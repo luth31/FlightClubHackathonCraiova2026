@@ -1,9 +1,10 @@
-from sqlalchemy import String,Text,Integer,Float,JSON
+from sqlalchemy import String,Text,Integer,Float,JSON,ForeignKey,UniqueConstraint
 from sqlalchemy.orm import Mapped,mapped_column
 from app.database import Base
 
 class Supplier(Base):
     __tablename__='suppliers'
+    __table_args__=(UniqueConstraint('airport_id','tax_id',name='uq_supplier_airport_tax'),)
     id: Mapped[str]=mapped_column(String,primary_key=True)
     name: Mapped[str]=mapped_column(String)
     airport_id: Mapped[str]=mapped_column(String)
@@ -14,6 +15,17 @@ class Supplier(Base):
     trust_status: Mapped[str]=mapped_column(String)
     bank_history: Mapped[list]=mapped_column(JSON,default=list)
     registry_revision: Mapped[int]=mapped_column(Integer,default=1)
+    tax_id: Mapped[str | None]=mapped_column(String,nullable=True)
+    address: Mapped[str]=mapped_column(String,default='')
+    category: Mapped[str]=mapped_column(String,default='')
+    state: Mapped[str]=mapped_column(String,default='active')
+
+class SupplierContract(Base):
+    __tablename__='supplier_contracts'
+    document_id: Mapped[str]=mapped_column(ForeignKey('documents.id'),primary_key=True)
+    supplier_id: Mapped[str]=mapped_column(ForeignKey('suppliers.id'),index=True)
+    linked_by: Mapped[str]=mapped_column(String)
+    linked_at: Mapped[str]=mapped_column(String)
 
 class SupplierReview(Base):
     __tablename__='supplier_reviews'
