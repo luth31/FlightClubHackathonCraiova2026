@@ -51,11 +51,11 @@ def can_review_leave(db, user, leave):
         (getattr(subject, 'manager_id', None) == user.id or subject.department == user.department or has_role(user, 'director')))
 
 
-def directory(db, user):
+def directory(db, user, reference_date=None):
     users = list(db.scalars(select(User).where(User.airport_id == user.airport_id).order_by(User.name)))
     user_ids = {person.id for person in users}
     all_leaves = list(db.scalars(select(LeaveRequest).where(LeaveRequest.user_id.in_(user_ids))))
-    today = settings.reference_date.isoformat()
+    today = (reference_date or settings.reference_date).isoformat()
     items = []
     for person in users:
         item = user_dict(person)
