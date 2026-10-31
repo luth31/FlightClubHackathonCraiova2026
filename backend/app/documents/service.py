@@ -17,6 +17,7 @@ from app.config import settings
 
 CATEGORIES=['Contract','Referat de necesitate','Caiet de sarcini','Comandă','Factură','Proces-verbal','Raport de mentenanță','Act adițional','Procedură','Audit','Resurse umane','Instruire']
 DEPARTMENTS=['Achiziții','Tehnic','Financiar','Operațiuni','Resurse umane','Conformitate']
+LOCKED_STATUSES=('signed','archived')
 
 def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -33,6 +34,11 @@ def get_document(db, document_id, user, edit=False):
     if edit and not can_edit(user,document):
         raise DomainError('Nu poți modifica acest document.',403)
     return document
+
+def require_unlocked_document(document):
+    # Revisions must not replace signed or archived evidence.
+    if document.status in LOCKED_STATUSES:
+        raise DomainError('Documentele semnate sau arhivate sunt păstrate ca atare. Înregistrează modificările ca documente separate.',409)
 
 def visible_documents(db,user):
     return [d for d in db.scalars(select(Document).where(Document.airport_id==user.airport_id).order_by(desc(Document.updated_at))).all() if can_read(user,d)]
@@ -67,7 +73,8 @@ def serialize(document, db=None, details=False, user=None):
         data['related_documents']=[serialize(d,user=user) for d in [db.get(Document,i) for i in data['related_ids']] if d and (user is None or can_read(user,d))]
     if user:
         from app.people.service import can_review_department
-        data['permissions']={'can_edit':can_edit(user,document),'can_review':can_review_department(db,user,document.department) if db else (has_role(user,'director') or (has_role(user,'reviewer','hr') and user.department==document.department)),'can_sign':has_role(user,'signer'),'can_share':has_role(user,'director','reviewer') and document.department!='Resurse umane'}
+        locked=document.status in LOCKED_STATUSES
+        data['permissions']={'can_edit':can_edit(user,document) and not locked,'can_review':can_review_department(db,user,document.department) if db else (has_role(user,'director') or (has_role(user,'reviewer','hr') and user.department==document.department)),'can_sign':has_role(user,'signer'),'can_share':has_role(user,'director','reviewer') and document.department!='Resurse umane'}
         if db:
             from app.tasks import service as task_service
             for kind,key in [('approval','can_review'),('validation','can_validate'),('signature','can_sign')]:
@@ -77,7 +84,8 @@ def serialize(document, db=None, details=False, user=None):
             active_task=task_service.current_task(db,document,kind) if kind else None
             if active_task and details: data['workflow']['task']=task_service.serialize(db,active_task,user,document)
         data['permissions'].setdefault('can_validate',can_edit(user,document))
-        data['permissions']['can_submit']=can_edit(user,document) and document.validated
+        data['permissions']['can_validate']=data['permissions']['can_validate'] and not locked
+        data['permissions']['can_submit']=can_edit(user,document) and document.validated and not locked
     data=without_private_text(data)
     if user and has_role(user,'technician'):
         data=sanitize_for_technician(data)
@@ -224,7 +232,7 @@ def create_document(db,user,content,filename,title,category,department,supplier=
 def patch_document(db,user,document_id,changes):
     db.execute(text('BEGIN IMMEDIATE'))
     document=get_document(db,document_id,user,edit=True)
-    if document.status in ('signed','archived'): raise DomainError('Un document semnat sau arhivat este imuabil. Creează o versiune nouă.',409)
+    require_unlocked_document(document)
     nullable={'supplier','expires_at','value'}
     changes={k:v for k,v in changes.items() if v is not None or k in nullable}
     if not changes: return document
@@ -246,6 +254,7 @@ def patch_document(db,user,document_id,changes):
 def add_version(db,user,document_id,content,filename,comment):
     db.execute(text('BEGIN IMMEDIATE'))
     document=get_document(db,document_id,user,edit=True)
+    require_unlocked_document(document)
     texts=validate_pdf(content)
     previous=current_version(db,document)
     previous.snapshot=serialize(document)

@@ -8,8 +8,8 @@ Base `/api`. Authenticate with POST `/api/auth/login` JSON `{user_id:'admin',pas
 * GET `/documents/{id}` -> Document with `versions`, `audit`, `workflow`.
 * GET `/documents/{id}/file?download=false` -> authorized PDF bytes.
 * POST `/documents` multipart: `file`, `title` optional, `category` default Contract, `department` default Achiziții, `supplier` optional, `expires_at` optional -> Document (201).
-* PATCH `/documents/{id}` -> `{title?,category?,department?,supplier?,expires_at?,value?,metadata?,summary?,confidentiality?}`. Material edits create version and clear approvals.
-* POST `/documents/{id}/versions` multipart `file`, `comment` optional -> new draft version.
+* PATCH `/documents/{id}` -> `{title?,category?,department?,supplier?,expires_at?,value?,metadata?,summary?,confidentiality?}`. Material edits create version and clear approvals. Signed/archived documents reject edits with 409.
+* POST `/documents/{id}/versions` multipart `file`, `comment` optional -> new draft version. Signed/archived documents reject replacement uploads with 409; preserve the document and register modifications separately.
 * POST `/documents/{id}/actions` JSON `{action:'submit'|'validate'|'approve'|'reject'|'archive'|'sign',comment?:string}` -> Document. Reviewer/admin approval; validation confirms metadata; reject requires reason.
 * GET `/documents/{id}/verify` -> `{integrity, signed, signer?, version, sha256, trust:'demo-certificate'|'unsigned'}`.
 * GET `/contracts` -> `{items:Document[],total}`; each item has contract_status and days_remaining.
@@ -38,6 +38,8 @@ Only director and finance roles access `/api/supplier-reviews`. Initial supplier
 Case status: `clear`, `needs_review`, `verified`, `approved`, `rejected`. `clear` means the implemented comparison rules found no discrepancy; it is not a fraud verdict or payment authorization. A checksum is format verification, never ownership verification. RO format and MOD97 basis: [SWIFT registry](https://www.swift.com/sites/default/files/files/iban-registry-v101.pdf), [BNR Regulation 2/2004, Annex 2](https://legislatie.just.ro/Public/DetaliiDocumentAfis/50006).
 
 Document detail now includes `permissions:{can_edit,can_review,can_sign,can_share}`. Access classification fields (`category`,`department`,`confidentiality`) cannot change through ordinary PATCH; this preserves all historical-version access. GET `/reports/register.csv?category=Contract` exports the contracts view only. Search uses private extracted-text FTS5 with Romanian diacritics normalized; hyphenated identifiers are exact phrases.
+
+Signed/archived document detail reports `can_edit`, `can_validate`, and `can_submit` as false. Historical files remain readable under the existing access rules. Register metadata corrections do not change PDF content or legally amend a contract. This protection does not yet provide a dedicated amendment-creation or post-signing metadata-correction workflow.
 
 ## Persistent assigned work
 

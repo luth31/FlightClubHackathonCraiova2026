@@ -172,6 +172,14 @@ export function DocumentDetail({
     );
   const canValidate = doc?.permissions?.can_validate ?? canEdit;
   const canSubmit = doc?.permissions?.can_submit ?? canEdit;
+  // Keep the preserved document visible while changes are recorded separately.
+  const isLocked = ["signed", "archived"].includes(doc?.status || "");
+  const isContractDocument = ["Contract", "Act adițional"].includes(
+    doc?.category || "",
+  );
+  const lockedNotice = isContractDocument
+    ? "PDF-ul și istoricul acestui document sunt păstrate. Pentru schimbarea clauzelor contractuale, înregistrează un act adițional separat."
+    : "PDF-ul și istoricul acestui document sunt păstrate. Înregistrează eventualele revizii ca documente separate.";
   const canShare =
     doc?.permissions?.can_share ??
     ((user.roles || []).some((r) => ["director", "reviewer"].includes(r)) &&
@@ -330,6 +338,15 @@ export function DocumentDetail({
                         )}
                       {editing ? (
                         <div className="edit-fields">
+                          <div className="note-box">
+                            <Info size={18} />
+                            <p>
+                              Corectează informațiile din registru pe baza
+                              PDF-ului. Această corecție nu modifică fișierul sau
+                              clauzele contractuale. Informațiile corectate vor
+                              necesita o nouă validare și aprobare.
+                            </p>
+                          </div>
                           <label className="field">
                             Titlu
                             <input
@@ -486,16 +503,28 @@ export function DocumentDetail({
                               ))}
                             </div>
                           )}
-                          {canEdit &&
-                            !["signed", "archived"].includes(doc.status) && (
-                              <button
-                                className="text-button edit-metadata"
-                                onClick={() => setEditing(true)}
-                              >
-                                <PenLine size={14} />
-                                Corectează informațiile
-                              </button>
-                            )}
+                          {isLocked && (
+                            <div className="note-box">
+                              <ShieldCheck size={18} />
+                              <p>
+                                <strong>
+                                  {doc.status === "signed"
+                                    ? "Document semnat. "
+                                    : "Document arhivat. "}
+                                </strong>
+                                {lockedNotice}
+                              </p>
+                            </div>
+                          )}
+                          {canEdit && !isLocked && (
+                            <button
+                              className="text-button edit-metadata"
+                              onClick={() => setEditing(true)}
+                            >
+                              <PenLine size={14} />
+                              Corectează informațiile
+                            </button>
+                          )}
                           {doc.extraction_evidence?.length ? (
                             <details className="evidence-details">
                               <summary>
@@ -580,8 +609,9 @@ export function DocumentDetail({
                       <div className="note-box">
                         <ShieldCheck size={18} />
                         <p>
-                          Deciziile se aplică versiunii {doc.version}. O
-                          versiune nouă va necesita o nouă aprobare.
+                          {isLocked
+                            ? lockedNotice
+                            : `Deciziile se aplică versiunii ${doc.version}. O versiune nouă va necesita o nouă aprobare.`}
                         </p>
                       </div>
                       {doc.status === "signed" && (
@@ -666,27 +696,40 @@ export function DocumentDetail({
                           </a>
                         ))}
                       </div>
-                      {canEdit &&
-                        !["signed", "archived"].includes(doc.status) && (
-                          <>
-                            <input
-                              ref={versionInput}
-                              className="sr-only"
-                              type="file"
-                              accept=".pdf"
-                              aria-label="Încarcă o versiune nouă"
-                              onChange={(e) => newVersion(e.target.files?.[0])}
-                            />
-                            <button
-                              className="button secondary full-width"
-                              disabled={busy}
-                              onClick={() => versionInput.current?.click()}
-                            >
-                              <Upload size={15} />
-                              Încarcă o versiune nouă
-                            </button>
-                          </>
-                        )}
+                      {isLocked && (
+                        <div className="note-box">
+                          <ShieldCheck size={18} />
+                          <p>{lockedNotice}</p>
+                        </div>
+                      )}
+                      {canEdit && !isLocked && (
+                        <>
+                          <div className="note-box">
+                            <Info size={18} />
+                            <p>
+                              Încarcă o revizie a PDF-ului înainte de semnare.
+                              Versiunile anterioare rămân în istoric, iar
+                              revizia necesită o nouă validare și aprobare.
+                            </p>
+                          </div>
+                          <input
+                            ref={versionInput}
+                            className="sr-only"
+                            type="file"
+                            accept=".pdf"
+                            aria-label="Încarcă o revizie PDF"
+                            onChange={(e) => newVersion(e.target.files?.[0])}
+                          />
+                          <button
+                            className="button secondary full-width"
+                            disabled={busy}
+                            onClick={() => versionInput.current?.click()}
+                          >
+                            <Upload size={15} />
+                            Încarcă o revizie PDF
+                          </button>
+                        </>
+                      )}
                       <h2 className="tab-title history-title">Activitate</h2>
                       <div className="detail-history">
                         {doc.audit?.map((a) => (
