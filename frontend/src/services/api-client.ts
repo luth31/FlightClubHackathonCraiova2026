@@ -3,6 +3,10 @@ export function setIdentity(id: string) {
   identity = id;
   localStorage.setItem("aerodesk-user", id);
 }
+export function clearIdentity() {
+  identity = "";
+  localStorage.removeItem("aerodesk-user");
+}
 export function getIdentity() {
   return identity;
 }

@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,ShieldCheck,Plane} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
-import {api,setIdentity} from '@/services/api-client';
+import {api,setIdentity,clearIdentity} from '@/services/api-client';
 import {Loading,ErrorMessage,Toast,ViewActiveContext} from '@/components/ui';
 import {DashboardPage} from '@/features/dashboard';
 import {DocumentLibrary,DocumentDetail,UploadDialog} from '@/features/documents';
@@ -22,7 +22,10 @@ export function App() {
     [filter,setFilter]=useState(''), [upload,setUpload]=useState(false),
     [assistant,setAssistant]=useState(false), [revision,setRevision]=useState(0),
     [toast,setToast]=useState(''), [mobileOpen,setMobileOpen]=useState(false),
-    [userMenu,setUserMenu]=useState(false), [switching,setSwitching]=useState(false);
+    [userMenu,setUserMenu]=useState(false), [switching,setSwitching]=useState(false),
+    [loggingOut,setLoggingOut]=useState(false), [logoutError,setLogoutError]=useState('');
+  const logoutPending = useRef(false);
+  const sessionEpoch = useRef(0);
   const canViewSuppliers = !session?.current_user || session.current_user.roles.some(r=>['director','finance'].includes(r));
   const {page,doc,navigate:goToPage,openDocument,returnToOrigin} = useNavigation(session?.current_user?.id,canViewSuppliers);
   const mainRef = useRef<HTMLElement>(null);
@@ -35,11 +38,15 @@ export function App() {
       previous.element.focus({preventScroll:true});
     else mainRef.current?.focus({preventScroll:true});
   },[doc,page,userId]);
-  const refresh=()=>api<Session>('/session').then(s=>{
-    setSession(s);
-    if(s.current_user)setIdentity(s.current_user.id);
-    setError('');
-  }).catch(e=>setError(e.message));
+  const refresh=()=>{
+    const epoch=sessionEpoch.current;
+    return api<Session>('/session').then(s=>{
+      if(epoch!==sessionEpoch.current)return;
+      setSession(s);
+      if(s.current_user)setIdentity(s.current_user.id);
+      setError('');
+    }).catch(e=>{if(epoch===sessionEpoch.current)setError(e.message)});
+  };
   useEffect(()=>{refresh()},[]);
   useEffect(()=>{
     setMobileOpen(false);
@@ -64,6 +71,7 @@ export function App() {
     openDocument(id);setMobileOpen(false);setUserMenu(false);setUpload(false);setAssistant(false);
   };
   async function changeUser(id:string){
+    if(logoutPending.current)return;
     setSwitching(true);
     try{
       await api('/auth/login',{method:'POST',body:JSON.stringify({user_id:id,password:'AeroDesk2026!'})});
@@ -73,6 +81,27 @@ export function App() {
       navigate('home');
       notify('Contul de demonstrație a fost schimbat.');
     }catch(e){notify((e as Error).message)}finally{setSwitching(false)}
+  }
+  async function logout(){
+    if(logoutPending.current||switching)return;
+    logoutPending.current=true;
+    setLoggingOut(true);
+    setLogoutError('');
+    try{
+      const result=await api<{redirect_url?:string|null}>('/auth/logout',{method:'POST'});
+      // Ignore session requests started before this successful logout.
+      sessionEpoch.current++;
+      clearIdentity();
+      returnFocus.current=undefined;
+      setError('');
+      setToast('');
+      navigate('home');
+      setSession(current=>current?{...current,current_user:null,users:current.auth?.mode==='oidc'?[]:current.users}:current);
+      if(result.redirect_url)location.assign(result.redirect_url);
+    }catch(e){setLogoutError((e as Error).message)}finally{
+      logoutPending.current=false;
+      setLoggingOut(false);
+    }
   }
   const changed=()=>setRevision(v=>v+1);
   if(error)return <div className="app-load-error"><ErrorMessage message={error} retry={refresh}/></div>;
@@ -105,17 +134,15 @@ export function App() {
       <div className="sidebar-bottom">
         <div className="demo-label"><span/>Mediu demonstrativ</div><p>Date fictive pentru demonstrație</p>
         <div className="user-switcher">
-          <button className="user-button" onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span className="avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button>
+          <button className="user-button" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span className="avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button>
           {userMenu&&<div className="user-menu">
             <div className="user-menu-heading">{session.auth?.mode==='oidc'?'Contul tău':'Schimbă contul demo'}</div>
-            {session.auth?.mode!=='oidc'&&session.users.map(u=><button disabled={switching} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
-            <button className="logout-button" onClick={async()=>{
-              const result=await api<{redirect_url?:string}>('/auth/logout',{method:'POST'});setUserMenu(false);
-              if(result.redirect_url){location.assign(result.redirect_url);return}
-              await refresh();
-            }}><LogOut size={16}/>Ieși din cont</button>
+            {session.auth?.mode!=='oidc'&&session.users.map(u=><button disabled={switching||loggingOut} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
           </div>}
         </div>
+        <button className="logout-button sidebar-logout" disabled={loggingOut||switching} onClick={()=>void logout()} aria-busy={loggingOut}>
+          <LogOut size={16}/>{loggingOut?'Se deconectează…':'Ieși din cont'}
+        </button>
       </div>
     </aside>
     <div className="app-main">
@@ -128,9 +155,13 @@ export function App() {
         <div className="topbar-actions">
           <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
           <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă AeroDesk</button><span className="avatar top-avatar">{initials(user.name)}</span>
+          <button className="logout-button topbar-logout" disabled={loggingOut||switching} onClick={()=>void logout()} aria-label="Ieși din cont" title="Ieși din cont" aria-busy={loggingOut}>
+            <LogOut size={17}/><span>{loggingOut?'Se deconectează…':'Ieși din cont'}</span>
+          </button>
         </div>
       </header>
       <div className="mobile-demo-banner"><span/>Date fictive pentru demonstrație</div>
+      {logoutError&&<div className="logout-error"><ErrorMessage message={logoutError}/></div>}
       <main className="main-content" key={user.id} ref={mainRef} tabIndex={-1}>
         {/* Keep the originating list mounted so filters, tabs and pagination survive a document visit. */}
         <div className="workspace-view" hidden={!!doc} inert={!!doc}>
