@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { JSDOM } from 'jsdom';
-import { act, createElement } from 'react';
+import { act, createElement, StrictMode } from 'react';
 
 const initialDOM = new JSDOM('<div></div>', {url:'http://aerodesk.test/', pretendToBeVisual:true});
 installDOM(initialDOM.window);
@@ -40,15 +40,24 @@ const supplier={id:'supplier-demo',name:'Demo SRL',document_id:documentRecord.id
   address:'Demo address',category:'Services',state:'active',contracts:[{id:documentRecord.id,title:documentRecord.title,
     version:1,eligible_for_review:true}]};
 
-async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse}={}) {
+async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse}={}) {
   const dom=new JSDOM('<div id="root"></div>',{url:`http://aerodesk.test/${hash}`,pretendToBeVisual:true});
   installDOM(dom.window);
   let currentUser={...user,roles};
   globalThis.fetch=async (input,options={})=>{
     const path=new URL(String(input),dom.window.location.origin).pathname;
     let body;
-    if(path==='/api/session')body={current_user:currentUser,users:[user,technician],airport:'Demo airport',reference_date:'2026-10-30',demo:true};
+    if(path==='/api/session'){
+      const response=Response.json({current_user:currentUser,users:authMode==='oidc'&&!currentUser?[]:[user,technician],airport:'Demo airport',reference_date:'2026-10-30',demo:authMode==='demo',auth:{mode:authMode,login_url:authMode==='oidc'?'/api/auth/oidc/login':null,logout_url:'/api/auth/logout'}});
+      return sessionResponse?await sessionResponse(response):response;
+    }
     else if(path==='/api/auth/login'){currentUser=technician;body={};}
+    else if(path==='/api/auth/logout'){
+      assert.equal(options.method,'POST');
+      const response=logoutResponse?await logoutResponse():Response.json({ok:true,redirect_url:null});
+      if(response.ok)currentUser=null;
+      return response;
+    }
     else if(path==='/api/assistant')body={answer:'Demo answer',sources:[{id:related.id,title:related.title,number:'DEMO-2',page:1,excerpt:'Demo source'}],mode:'local',reference_date:'2026-10-30'};
     else if(path==='/api/supplier-reviews')return reviewResponse?await reviewResponse():Response.json({items:[],total:0,limit:25,offset:0,suppliers:[supplier],counters:{needs_review:0,verified:0,approved:0,clear:0}});
     else if(path==='/api/suppliers')return catalogResponse?await catalogResponse():Response.json({items:[supplier],total:1});
@@ -74,7 +83,7 @@ async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,w
   };
   const root=createRoot(dom.window.document.getElementById('root'));
   t.after(async()=>{await act(async()=>root.unmount());dom.window.close();});
-  await act(async()=>{root.render(createElement(App));await new Promise(resolve=>setTimeout(resolve,10));});
+  await act(async()=>{root.render(strict?createElement(StrictMode,null,createElement(App)):createElement(App));await new Promise(resolve=>setTimeout(resolve,10));});
   await settle(230);
   return dom.window;
 }
@@ -88,6 +97,107 @@ async function setInput(input,value){assert.ok(input);await act(async()=>{
   input.dispatchEvent(new window.Event('input',{bubbles:true}));
 });await settle(280);}
 const heading=()=>[...document.querySelectorAll('main h1')].find(visible)?.textContent;
+
+test('logout is available without opening the account menu and clears the workspace',async t=>{
+  await setup(t,'#document/doc-contract?from=suppliers');
+  assert.equal(localStorage.getItem('aerodesk-user'),'admin');
+  const originalFetch=globalThis.fetch;
+  globalThis.fetch=(input,options)=>{
+    if(String(input)==='/api/session')throw new Error('Session refresh unavailable');
+    return originalFetch(input,options);
+  };
+  await click(find('.topbar button','Ieși din cont'));
+  assert.ok(document.querySelector('.login-page'),'Successful logout should show login without another session request');
+  assert.equal(document.querySelector('.app-shell'),null);
+  assert.equal(localStorage.getItem('aerodesk-user'),null);
+  assert.equal(location.hash,'#home');
+  globalThis.fetch=originalFetch;
+  await click(find('.login-page button','Intră în spațiul de lucru'));
+  assert.ok(find('.user-button',technician.name));
+  assert.equal(heading(),'Bine ai venit, Teo.');
+  assert.equal(document.querySelector('[role="dialog"]'),null);
+});
+
+test('logout prevents repeated requests while the session is being revoked',async t=>{
+  let finish,requests=0;
+  const response=new Promise(resolve=>{finish=resolve});
+  await setup(t,'#home',{logoutResponse:()=>{requests++;return response;}});
+  const button=find('.sidebar-bottom button','Ieși din cont');
+  await click(button);
+  assert.equal(button.disabled,true);
+  assert.equal(document.querySelector('.topbar [aria-label="Ieși din cont"]').disabled,true);
+  assert.equal(document.querySelector('.user-button').disabled,true);
+  await click(button);
+  assert.equal(requests,1);
+  await act(async()=>finish(Response.json({ok:true,redirect_url:null})));
+  await settle();
+  assert.ok(document.querySelector('.login-page'));
+});
+
+test('failed logout keeps the account active and offers a retry',async t=>{
+  let fail=true;
+  await setup(t,'#home',{logoutResponse:()=>Response.json(fail?{detail:'Logout temporarily unavailable'}:{ok:true,redirect_url:null},{status:fail?503:200})});
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.ok(find('[role="alert"]','Logout temporarily unavailable'));
+  assert.ok(find('.user-button',user.name));
+  assert.equal(localStorage.getItem('aerodesk-user'),'admin');
+  assert.equal(find('.sidebar-bottom button','Ieși din cont').disabled,false);
+  fail=false;
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.ok(document.querySelector('.login-page'));
+});
+
+test('OIDC logout clears local content before navigating to the provider',async t=>{
+  const redirect='http://identity.test/realms/demo/protocol/openid-connect/logout?client_id=aerodesk-web';
+  await setup(t,'#home',{authMode:'oidc',logoutResponse:()=>Response.json({ok:true,redirect_url:redirect})});
+  const destinations=[];
+  globalThis.location={search:'',assign:url=>destinations.push(url)};
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.deepEqual(destinations,[redirect]);
+  assert.equal(document.querySelector('.app-shell'),null);
+  assert.ok(document.querySelector('.login-page a.login-button'));
+  assert.equal(document.querySelector('.login-page select'),null);
+  assert.equal(localStorage.getItem('aerodesk-user'),null);
+});
+
+for (const lateResult of ['success','error'])
+  test(`logout ignores a pending session ${lateResult} from StrictMode startup`,async t=>{
+    let finish,requests=0;
+    const pending=new Promise(resolve=>{finish=resolve});
+    await setup(t,'#home',{strict:true,sessionResponse:async response=>{
+      if(++requests===2){
+        await pending;
+        if(lateResult==='error')throw new Error('Stale session request failed');
+      }
+      return response;
+    }});
+    assert.equal(requests,2);
+    await click(find('.topbar button','Ieși din cont'));
+    assert.ok(document.querySelector('.login-page'));
+    await act(async()=>finish());
+    await settle();
+    assert.ok(document.querySelector('.login-page'),'A late session result must not replace the logged-out screen');
+    assert.equal(document.querySelector('.app-shell'),null);
+    assert.equal(localStorage.getItem('aerodesk-user'),null);
+    assert.equal(document.querySelector('.app-load-error'),null);
+  });
+
+test('successful logout clears a startup error received while logout was pending',async t=>{
+  let finishSession,finishLogout,requests=0;
+  const pendingSession=new Promise(resolve=>{finishSession=resolve});
+  const pendingLogout=new Promise(resolve=>{finishLogout=resolve});
+  await setup(t,'#home',{strict:true,sessionResponse:async response=>{
+    if(++requests===2){await pendingSession;throw new Error('Startup session failed');}
+    return response;
+  },logoutResponse:()=>pendingLogout});
+  await click(find('.topbar button','Ieși din cont'));
+  await act(async()=>finishSession());
+  await settle();
+  await act(async()=>finishLogout(Response.json({ok:true,redirect_url:null})));
+  await settle();
+  assert.ok(document.querySelector('.login-page'),'Successful logout should replace a pending startup error');
+  assert.equal(document.querySelector('.app-load-error'),null);
+});
 
 test('catalog failure stays visible after reviews load and can be retried',async t=>{
   let finishReviews;

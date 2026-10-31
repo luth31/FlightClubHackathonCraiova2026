@@ -156,6 +156,10 @@ button {
   flex-direction: column;
   padding: 30px 19px 17px;
   z-index: 30;
+  overflow-y: auto;
+}
+.sidebar > * {
+  flex-shrink: 0;
 }
 .brand {
   display: flex;
@@ -355,7 +359,7 @@ button {
   position: absolute;
   left: 0;
   bottom: 64px;
-  width: 266px;
+  width: 100%;
   padding: 8px;
   background: white;
   border: 1px solid var(--border);
@@ -386,11 +390,37 @@ button {
   color: var(--muted);
   margin-top: 3px;
 }
-.user-menu .logout-button {
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: #8a685e;
+  font-size: 12px;
+}
+.logout-button:hover:not(:disabled) {
+  background: #f5efec;
+}
+.sidebar-logout {
+  width: 100%;
   border-top: 1px solid var(--border);
   margin-top: 7px;
-  padding-top: 13px;
-  color: #8a685e;
+}
+.logout-error {
+  margin: 12px 39px 0;
+}
+@media (max-width: 1200px) {
+  .topbar-logout span {
+    display: none;
+  }
+}
+@media (max-width: 1050px) {
+  .logout-error {
+    margin-left: 22px;
+    margin-right: 22px;
+  }
 }
 .app-main {
   margin-left: 244px;
@@ -410,10 +440,19 @@ button {
 }
 .breadcrumb {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 12px;
   font-size: 11px;
   white-space: nowrap;
+}
+.breadcrumb > span,
+.breadcrumb-parent,
+.breadcrumb strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .breadcrumb > span,
 .breadcrumb > svg {
@@ -434,8 +473,13 @@ button {
 }
 .topbar-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 19px;
+}
+.topbar-actions button {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .quick-search {
   color: #939e96;
@@ -3504,8 +3548,8 @@ button {
     padding: 18px 22px;
   }
   .user-menu {
-    left: 4px;
-    width: 250px;
+    left: 0;
+    width: 100%;
   }
 }
 @media (max-width: 600px) {
