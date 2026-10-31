@@ -24,6 +24,7 @@ import type { User } from "@/types";
 import "./suppliers.css";
 import type { Supplier, Review, Registry } from './types';
 import { ReviewChecks } from './ReviewChecks';
+import { SupplierDetail } from './SupplierDetail';
 const labels: Record<string, string> = {
   needs_review: "Necesită verificare",
   verified: "Verificat independent",
@@ -61,7 +62,9 @@ export function SuppliersPage({
     [query, setQuery] = useState(""),
     [create, setCreate] = useState(false),
     [selected, setSelected] = useState<Review>(),
-    [refresh, setRefresh] = useState(0);
+    [refresh, setRefresh] = useState(0),
+    [registryId,setRegistryId]=useState<string>(),
+    [recheck,setRecheck]=useState<Review>();
   useEffect(() => {
     let active = true;
     api<Registry>("/supplier-reviews")
@@ -265,7 +268,7 @@ export function SuppliersPage({
                         <ArrowUpRight size={14} />
                       </button>
                       <span>
-                        {s.bank_history.length}{" "}
+                        <button className="text-button" onClick={()=>setRegistryId(s.id)}>Istoric complet</button> {s.bank_history.length}{" "}
                         {s.bank_history.length === 1 ? "versiune" : "versiuni"}{" "}
                         de cont păstrate
                       </span>
@@ -287,6 +290,7 @@ export function SuppliersPage({
       {create && data && (
         <NewReview
           suppliers={data.suppliers}
+          initialReview={recheck}
           onClose={() => setCreate(false)}
           onOpen={onOpen}
           onCreated={(c) =>
@@ -299,6 +303,7 @@ export function SuppliersPage({
           }
         />
       )}
+      {registryId&&<SupplierDetail supplierId={registryId} onClose={()=>setRegistryId(undefined)} onOpen={id=>{setRegistryId(undefined);onOpen(id)}} onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(v=>{setRegistryId(undefined);setSelected(v)}).catch(e=>notify(e.message))}}/>}
       {selected && (
         <ReviewDetail
           review={selected}
@@ -306,6 +311,7 @@ export function SuppliersPage({
           onClose={() => setSelected(undefined)}
           onOpen={onOpen}
           onChanged={changed}
+          onRecheck={()=>{setRecheck(selected);setSelected(undefined);setCreate(true)}}
         />
       )}
     </>
@@ -316,18 +322,20 @@ function NewReview({
   onClose,
   onOpen,
   onCreated,
+  initialReview,
 }: {
   suppliers: Supplier[];
+  initialReview?: Review;
   onClose: () => void;
   onOpen: (id: string) => void;
   onCreated: (r: Review) => void;
 }) {
-  const [supplierId, setSupplierId] = useState(suppliers[0]?.id || ""),
-    [sender, setSender] = useState(""),
-    [iban, setIban] = useState(""),
-    [amount, setAmount] = useState(""),
-    [serviceDate, setServiceDate] = useState(""),
-    [message, setMessage] = useState(""),
+  const [supplierId, setSupplierId] = useState(suppliers.find(s=>s.name===initialReview?.supplier_name)?.id||suppliers[0]?.id||""),
+    [sender, setSender] = useState(initialReview?.sender_email||""),
+    [iban, setIban] = useState(initialReview?.observed_iban||""),
+    [amount, setAmount] = useState(initialReview?.invoice_amount!=null?String(initialReview.invoice_amount):""),
+    [serviceDate, setServiceDate] = useState(initialReview?.service_date||""),
+    [message, setMessage] = useState(initialReview?.message||""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const supplier = suppliers.find((s) => s.id === supplierId);
@@ -366,7 +374,8 @@ function NewReview({
         await api<Review>("/supplier-reviews", {
           method: "POST",
           body: JSON.stringify({
-            document_id: supplier.document_id,
+            document_id: initialReview?.document_id||supplier.document_id,
+            previous_review_id: initialReview?.id,
             observed_iban: iban,
             sender_email: sender,
             invoice_amount: amount ? Number(amount) : null,
@@ -541,12 +550,14 @@ function ReviewDetail({
   onClose,
   onOpen,
   onChanged,
+  onRecheck,
 }: {
   review: Review;
   user: User;
   onClose: () => void;
   onOpen: (id: string) => void;
   onChanged: (r: Review, message: string) => void;
+  onRecheck:()=>void;
 }) {
   const [mode, setMode] = useState<"verify" | "approve" | "reject">(),
     [note, setNote] = useState(""),
@@ -696,13 +707,13 @@ function ReviewDetail({
               <strong>Verificare independentă înregistrată</strong>
               <p>{r.verification_note}</p>
               <small>
-                {r.verified_by === user.id ? user.name : r.verified_by} ·{" "}
+                {r.actors?.verified_by?.name||(r.verified_by === user.id ? user.name : r.verified_by)} ·{" "}
                 {r.verified_at ? time(r.verified_at) : ""}
               </small>
             </div>
           </div>
         )}
-        {r.decision_note && (
+        {r.approved_at && (
           <div className="recorded-decision">
             <ClipboardCheck size={17} />
             <div>
@@ -713,7 +724,7 @@ function ReviewDetail({
               </strong>
               <p>{r.decision_note}</p>
               <small>
-                {r.approved_by === user.id ? user.name : r.approved_by}
+                {r.actors?.approved_by?.name||(r.approved_by === user.id ? user.name : r.approved_by)} · {time(r.approved_at!)}
               </small>
             </div>
           </div>
@@ -730,6 +741,7 @@ function ReviewDetail({
         )}
         {!mode && (
           <div className="review-detail-actions">
+            <button className="button secondary" onClick={onRecheck}>Verifică din nou</button>
             {["needs_review", "verified"].includes(r.status) && (
               <button
                 className="button secondary"

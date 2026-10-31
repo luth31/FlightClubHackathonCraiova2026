@@ -25,3 +25,11 @@ def approve(case_id: str,body: Decision,db: Session=Depends(get_db),user=Depends
 @router.post('/{case_id}/reject')
 def reject(case_id: str,body: Decision,db: Session=Depends(get_db),user=Depends(current_user)):
     return service.reject(db,user,case_id,body.comment)
+
+@router.get('/registry/{supplier_id}')
+def registry_detail(supplier_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    return service.registry_detail(db,user,supplier_id)
+
+@router.get('/{case_id}')
+def detail(case_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    return service.detail(db,user,case_id)

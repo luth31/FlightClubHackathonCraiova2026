@@ -4,6 +4,7 @@ from app.suppliers.validation import normalize_email
 class ReviewCreate(BaseModel):
     document_id: str | None=Field(default=None,max_length=100)
     supplier_name: str=Field(default='',max_length=200)
+    previous_review_id: str | None=Field(default=None,max_length=100)
     observed_iban: str=Field(min_length=1,max_length=80)
     sender_email: str=Field(min_length=3,max_length=250)
     invoice_amount: float | None=Field(default=None,ge=0,allow_inf_nan=False)

@@ -34,6 +34,7 @@ class SupplierReview(Base):
     registry_revision: Mapped[int | None]=mapped_column(Integer,nullable=True)
     contract_snapshot: Mapped[dict | None]=mapped_column(JSON,nullable=True)
     checks: Mapped[list | None]=mapped_column(JSON,nullable=True)
+    previous_review_id: Mapped[str | None]=mapped_column(String,nullable=True)
     message: Mapped[str]=mapped_column(Text)
     reasons: Mapped[list]=mapped_column(JSON)
     status: Mapped[str]=mapped_column(String)

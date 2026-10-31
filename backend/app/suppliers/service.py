@@ -14,6 +14,7 @@ from app.core.audit import record,now
 from app.core.exceptions import DomainError
 from app.config import settings
 from app.suppliers.checks import evaluate_checks,review_freshness,BLOCKING
+from app.people.models import User
 
 REASONS={
  'iban_mismatch':'Contul IBAN diferă de contul aprobat al furnizorului.',
@@ -75,8 +76,31 @@ def case_dict(item,user=None,*,freshness=None):
     result['payment_execution']=False
     return result
 
-def serialize_case(db,user,item):
-    return case_dict(item,user,freshness=review_freshness(db,user,item))
+def actors(db,user):
+    return {u.id:{'id':u.id,'name':u.name} for u in db.scalars(select(User).where(User.airport_id==user.airport_id))}
+
+def serialize_case(db,user,item,actor_names=None):
+    result=case_dict(item,user,freshness=review_freshness(db,user,item))
+    names=actor_names if actor_names is not None else actors(db,user)
+    result['actors']={field:names.get(getattr(item,field),{'id':getattr(item,field),'name':getattr(item,field)}) if getattr(item,field) else None for field in ('created_by','verified_by','approved_by')}
+    result['previous_review_id']=item.previous_review_id
+    return result
+
+def detail(db,user,case_id):
+    item,_=get_case(db,user,case_id)
+    result=serialize_case(db,user,item)
+    children=db.scalars(select(SupplierReview).where(SupplierReview.previous_review_id==item.id,SupplierReview.airport_id==user.airport_id)).all()
+    result['rechecks']=[{'id':c.id,'status':c.status,'created_at':c.created_at} for c in children if not c.document_id or ((d:=db.get(Document,c.document_id)) and can_read(user,d))]
+    return result
+
+def registry_detail(db,user,supplier_id):
+    require_role(user,'director','finance')
+    supplier=next((s for s in allowed_suppliers(db,user) if s.id==supplier_id),None)
+    if not supplier: raise DomainError('Furnizorul nu a fost găsit.',404)
+    result=supplier_dict(supplier)
+    names=actors(db,user)
+    result['bank_history']=[{**h,'verified_actor':names.get(h.get('verified_by')),'approved_actor':names.get(h.get('approved_by'))} for h in supplier.bank_history]
+    return result
 
 def require_current(db,user,item):
     freshness=review_freshness(db,user,item)
@@ -97,6 +121,9 @@ def create_review(db,user,body):
     if doc and doc.category!='Contract': raise DomainError('Alege contractul care fundamentează verificarea.',422)
     name=doc.supplier if doc else body.supplier_name.strip() or 'Furnizor necunoscut'
     supplier=db.get(Supplier,supplier_id(name,user.airport_id)) if name else None
+    if body.previous_review_id:
+        previous,_=get_case(db,user,body.previous_review_id)
+        if previous.supplier_id and (not supplier or previous.supplier_id!=supplier.id): raise DomainError('Reevaluarea trebuie să păstreze furnizorul cunoscut.',422)
     expected=supplier.expected_iban if supplier else ''
     contact=supplier.verified_contact if supplier else ''
     observed=normalize_iban(body.observed_iban)
@@ -112,6 +139,7 @@ def create_review(db,user,body):
         'registry_iban':expected,'registry_contact':contact,
         'registry_version':supplier.registry_revision if supplier else None,
         'currency':body.invoice_currency,
+        'previous_review_id':body.previous_review_id,
         'iban':observed,'sender':sender,'amount':body.invoice_amount,
         'date':str(body.service_date),'message':body.message,'supplier':name,
     },sort_keys=True).encode()).hexdigest()
@@ -121,6 +149,7 @@ def create_review(db,user,body):
     codes=list(dict.fromkeys(code for check in checks for code in check['reason_codes']))
     item=SupplierReview(id='review-'+uuid.uuid4().hex[:12],fingerprint=fingerprint,airport_id=user.airport_id,document_id=doc.id if doc else None,source_version=doc.version if doc else None,supplier_id=supplier.id if supplier else None,supplier_name=name or 'Furnizor necunoscut',expected_iban=expected,observed_iban=observed,sender_email=sender,verified_contact=contact,invoice_amount=body.invoice_amount,message=body.message,reasons=[{'code':code,'message':REASONS[code]} for code in codes],status='needs_review' if codes else 'clear',created_by=user.id,created_at=now(),verification_note='',decision_note='')
     item.checks=checks
+    item.previous_review_id=body.previous_review_id
     item.service_date=body.service_date.isoformat() if body.service_date else None
     item.invoice_currency=body.invoice_currency
     item.registry_revision=supplier.registry_revision if supplier else None

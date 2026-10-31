@@ -11,6 +11,9 @@ export interface Supplier {
     created_at: string;
     verified_by?: string;
     approved_by?: string;
+    source_case_id?: string;
+    verified_actor?: {id:string; name:string};
+    approved_actor?: {id:string; name:string};
   }>;
 }
 export interface Review {
@@ -43,6 +46,9 @@ export interface Review {
   can_approve: boolean;
   checks?: Array<{code:string; result:string; message:string}>;
   freshness: {state:string; reasons:string[]};
+  previous_review_id?: string;
+  rechecks?: Array<{id:string;status:string;created_at:string}>;
+  actors?: Record<string,{id:string;name:string}|null>;
   duplicate?: boolean;
 }
 export interface Registry {
