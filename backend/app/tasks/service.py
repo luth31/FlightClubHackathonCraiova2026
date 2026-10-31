@@ -77,7 +77,7 @@ def on_new_version(db,document,user):
 def active_delegates(db,task,document):
     if task.type!='approval' or not task.assigned_to or task.reassignment_required: return []
     principal=db.get(User,task.assigned_to)
-    if not principal or not principal.active or principal.airport_id!=document.airport_id: return []
+    if not principal or not eligible(db,principal,document,'approval'): return []
     today=settings.reference_date.isoformat()
     grants=db.scalars(select(Delegation).where(Delegation.from_user==principal.id,Delegation.active==True,Delegation.starts_at<=today,Delegation.ends_at>=today)).all()
     return [u for grant in grants if (u:=db.get(User,grant.to_user)) and eligible(db,u,document,'approval')]
@@ -86,14 +86,15 @@ def active_delegates(db,task,document):
 def can_act(db,user,task,document):
     if not task or task.reassignment_required or task.status!='pending' or task.document_version!=document.version or not eligible(db,user,document,task.type): return False
     principal=db.get(User,task.assigned_to) if task.assigned_to else None
-    if not principal or not principal.active: return False
+    if not principal or not eligible(db,principal,document,task.type): return False
     if task.assigned_to==user.id: return True
     return any(delegate.id==user.id for delegate in active_delegates(db,task,document))
 
 
 def can_reassign(db,user,task,document):
     if task.status!='pending' or task.document_version!=document.version or not can_read(user,document): return False
-    return has_role(user,'admin','director') or (has_role(user,'reviewer','hr','department_head') and user.department==document.department and can_review_department(db,user,document.department))
+    from app.people.management import is_head
+    return has_role(user,'admin','director') or is_head(db,user,document.department) or (has_role(user,'reviewer','hr','department_head') and user.department==document.department and can_review_department(db,user,document.department))
 
 
 def require_task(db,user,document,kind):
@@ -127,7 +128,9 @@ def list_tasks(db,user,status='pending',mine=False):
     for task in db.scalars(query).all():
         doc=db.get(Document,task.document_id)
         if not doc or not can_read(user,doc): continue
-        if mine and not can_act(db,user,task,doc): continue
+        from app.people.management import is_head
+        personal = has_role(user, 'technician', 'employee') and not is_head(db,user) and not has_role(user,'director','reviewer','finance','hr')
+        if (mine or personal) and not can_act(db,user,task,doc): continue
         result.append(serialize(db,task,user,doc))
     return {'items':result,'total':len(result),'reference_date':str(settings.reference_date)}
 

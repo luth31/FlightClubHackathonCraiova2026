@@ -68,6 +68,17 @@
   ],
   "users": [
     {
+      "id": "0a2d6e9c-66af-5313-a952-91c8442bf828",
+      "username": "technical-head",
+      "firstName": "Sorin",
+      "lastName": "Pavel",
+      "email": "technical-head@carpati.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "FlyLeaf2026!", "temporary": false}]
+    },
+    {
       "id": "ae41e412-8c0a-515c-89d3-b6a87c7c0d83",
       "username": "admin",
       "firstName": "Ana",

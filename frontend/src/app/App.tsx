@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,ShieldCheck,Plane} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
+import {pagePermissions,personalTasks} from '@/services/access';
 import {api,setIdentity,clearIdentity} from '@/services/api-client';
 import {Loading,ErrorMessage,Toast,ViewActiveContext} from '@/components/ui';
 import {DashboardPage} from '@/features/dashboard';
@@ -10,6 +11,7 @@ import {ApprovalsPage} from '@/features/approvals';
 import {SharingPage} from '@/features/sharing';
 import {AuditPage} from '@/features/audit';
 import {SuppliersPage} from '@/features/suppliers';
+import {SupplierCatalogPage} from '@/features/suppliers/SupplierCatalogPage';
 import {PeoplePage} from '@/features/people';
 import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
@@ -26,8 +28,10 @@ export function App() {
     [loggingOut,setLoggingOut]=useState(false), [logoutError,setLogoutError]=useState('');
   const logoutPending = useRef(false);
   const sessionEpoch = useRef(0);
-  const canViewSuppliers = !session?.current_user || session.current_user.roles.some(r=>['director','finance'].includes(r));
-  const {page,doc,navigate:goToPage,openDocument,returnToOrigin} = useNavigation(session?.current_user?.id,canViewSuppliers);
+  const allowedPages = pagePermissions(session?.current_user);
+  const ownTasks = personalTasks(session?.current_user);
+  const labels = {...pageLabels, approvals:ownTasks?'Sarcinile mele':pageLabels.approvals};
+  const {page,doc,navigate:goToPage,openDocument,returnToOrigin} = useNavigation(session?.current_user?.id,allowedPages);
   const mainRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<{element: HTMLElement; page: Page; userId: string} | undefined>(undefined);
   const userId = session?.current_user?.id;
@@ -121,13 +125,13 @@ export function App() {
       <div className="airport-switch"><span className="airport-symbol"><Plane size={18}/></span><div><strong>{airport}</strong><small>Spațiu de lucru</small></div><ShieldCheck size={15}/></div>
       <div className="nav-label">SPAȚIUL MEU</div>
       <nav aria-label="Navigare principală">
-        {nav.filter(n=>n.id!=='suppliers'||canViewSuppliers).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
-          <n.icon size={19}/><span>{n.label}</span>{page===n.id&&<span className="active-dot"/>}
+        {nav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
+          <n.icon size={19}/><span>{labels[n.id as Page]}</span>{page===n.id&&<span className="active-dot"/>}
         </button>)}
       </nav>
-      <div className="nav-label second-label">ÎMPREUNĂ</div>
+      {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">ÎMPREUNĂ</div>}
       <nav aria-label="Colaborare și istoric">
-        {secondNav.map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
+        {secondNav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
           <n.icon size={18}/><span>{n.label}</span>
         </button>)}
       </nav>
@@ -149,7 +153,7 @@ export function App() {
         <div className="breadcrumb">
           <button className="icon-button mobile-menu" onClick={()=>setMobileOpen(true)} aria-label="Deschide meniul"><Menu size={21}/></button>
           <span>Spațiul de lucru</span><ChevronRight size={13}/>
-          {doc?<><button className="breadcrumb-parent" onClick={returnToOrigin}>{pageLabels[page]}</button><ChevronRight size={13}/><strong>Document</strong></>:<strong>{pageLabels[page]}</strong>}
+          {doc?<><button className="breadcrumb-parent" onClick={returnToOrigin}>{labels[page]}</button><ChevronRight size={13}/><strong>Document</strong></>:<strong>{labels[page]}</strong>}
         </div>
         <div className="topbar-actions">
           <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
@@ -169,7 +173,9 @@ export function App() {
           {page==='contracts'&&<ContractsPage initialFilter={filter} onOpen={openDoc} revision={revision} notify={notify}/>}
           {page==='approvals'&&<ApprovalsPage onOpen={openDoc} revision={revision} notify={notify} user={user}/>}
           {page==='sharing'&&<SharingPage revision={revision} onOpen={openDoc} notify={notify}/>}
-          {page==='suppliers'&&<SuppliersPage revision={revision} notify={notify} onOpen={openDoc} user={user}/>}
+          {page==='suppliers'&&(user.roles.some(role=>['director','finance'].includes(role))
+            ? <SuppliersPage revision={revision} notify={notify} onOpen={openDoc} user={user}/>
+            : <SupplierCatalogPage revision={revision} onOpen={openDoc}/>)}
           {page==='people'&&<PeoplePage revision={revision} notify={notify}/>}
           {page==='audit'&&<AuditPage revision={revision} onOpen={openDoc}/>}
           </ViewActiveContext>

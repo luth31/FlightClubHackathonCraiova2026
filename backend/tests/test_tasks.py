@@ -22,7 +22,9 @@ def test_named_principal_and_current_delegate_control_review(admin,pdf_bytes):
     login(admin,'reviewer')
     assert admin.get(f'/api/documents/{id}').json()['permissions']['can_review']
     assert act(admin,id,'approve').status_code==200
-    assert act(admin,id,'sign').status_code==403
+    assert act(admin,id,'sign').status_code==404
+    assert admin.get(f'/api/tasks/{task["id"]}').status_code==404
+    login(admin,'admin')
     completed=admin.get(f'/api/tasks/{task["id"]}').json()
     assert completed['completed_by']=='reviewer' and completed['status']=='completed'
     login(admin,'admin')
@@ -36,7 +38,7 @@ def test_reassignment_requires_scope_and_eligible_recipient(admin,pdf_bytes):
     assert admin.post(url,json=body).status_code==422
     login(admin,'finance')
     body['assigned_to']='admin'
-    assert admin.post(url,json=body).status_code==403
+    assert admin.post(url,json=body).status_code==404
     login(admin,'admin')
     body['comment']='   '
     assert admin.post(url,json=body).status_code==422
@@ -70,8 +72,8 @@ def test_expired_delegation_cannot_complete_assigned_task(admin,pdf_bytes,db):
     try:
         grant.ends_at='2026-10-29';db.commit()
         login(admin,'reviewer')
-        assert act(admin,id,'approve').status_code==403
-        assert not admin.get(f'/api/documents/{id}').json()['permissions']['can_review']
+        assert act(admin,id,'approve').status_code==404
+        assert admin.get(f'/api/documents/{id}').status_code==404
     finally:
         grant.ends_at=previous;db.commit()
 
@@ -84,7 +86,7 @@ def test_disabled_assignee_requires_explicit_reassignment(admin,pdf_bytes,db):
         assert disabled['assignment_state']=='needs_reassignment'
         assert disabled['history'][0]['action']=='Responsabil dezactivat'
         login(admin,'reviewer')
-        assert act(admin,id,'approve').status_code==403
+        assert act(admin,id,'approve').status_code==404
         login(admin,'admin')
         reassigned=admin.post(f'/api/tasks/{task["id"]}/assign',json={'assigned_to':'admin','version':1,'comment':'Preluare după dezactivarea contului responsabilului'})
         assert reassigned.status_code==200,reassigned.text

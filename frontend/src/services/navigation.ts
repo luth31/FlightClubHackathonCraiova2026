@@ -26,9 +26,9 @@ export const documentHref = (id: string, origin: Page) =>
   `#document/${encodeURIComponent(id)}?from=${origin}`;
 
 // Only our own document chain can use history.go. Copied/legacy links stay inside the app.
-export function useNavigation(userId: string | undefined, canViewSuppliers: boolean) {
+export function useNavigation(userId: string | undefined, allowedPages: Record<Page,boolean>) {
   const [route, setRoute] = useState(() => parseRoute(window.location.hash));
-  const page = route.page === 'suppliers' && !canViewSuppliers ? 'documents' : route.page;
+  const page = allowedPages[route.page] ? route.page : 'documents';
   const readState = (): NavigationState | undefined => window.history.state?.flyleafNavigation;
 
   // Restore only after React has revealed the list; scrolling a hidden view clamps to zero.
@@ -58,7 +58,7 @@ export function useNavigation(userId: string | undefined, canViewSuppliers: bool
   }
 
   function navigate(destination: Page) {
-    const allowed = destination === 'suppliers' && !canViewSuppliers ? 'documents' : destination;
+    const allowed = allowedPages[destination] ? destination : 'documents';
     write(`#${allowed}`, {userId, origin: allowed, documentDepth: 0}, window.location.hash === `#${allowed}`);
   }
 

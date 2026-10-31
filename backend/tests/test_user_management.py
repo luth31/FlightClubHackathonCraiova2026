@@ -259,8 +259,12 @@ def test_appointment_scheduled_activation_and_independent_director(client, peopl
     monkeypatch.setattr(settings, 'reference_date', tomorrow)
     assert next(u for u in client.get('/api/people').json()['items'] if u['id'] == 'technician')['is_department_head']
     login(client, 'hr')
-    p = proposal(client, 'admin', 'dept-conducere').json()
-    login(client, 'admin')
+    assert proposal(client, 'admin', 'dept-conducere').status_code == 422
+    p = proposal(client, 'technical-head', 'dept-tehnic').json()
+    candidate = db.get(User, 'technical-head')
+    candidate.roles = list(set(candidate.roles) | {'director'})
+    db.commit()
+    login(client, 'technical-head')
     assert client.post(f"/api/people/appointments/{p['id']}/decision", json={'action': 'approve'}).status_code == 403
 
 
@@ -368,7 +372,7 @@ def test_inactive_head_cannot_transfer_and_gain_authority_without_appointment(cl
     assert client.post(f"/api/people/appointments/{p['id']}/decision",json={'action':'approve'}).status_code==200
     login(client,'hr')
     assert client.patch('/api/people/technician',json={'active':False}).status_code==200
-    assert client.patch('/api/people/technician/profile',json={'department_id':'dept-financiar'}).status_code==409
+    assert client.patch('/api/people/technician/profile',json={'department_id':'dept-achizitii'}).status_code==409
 
 
 def test_hr_cannot_reset_privileged_account_credentials(client, people_state):

@@ -40,7 +40,7 @@ def test_fixture_subjects_survive_brand_changes_and_match_realm_accounts(monkeyp
     monkeypatch.setattr(settings, 'oidc_subject_map', None)
     expected = {user['id']: user['username'] for user in realm['users']
         if not user['username'].startswith('service-account-')}
-    assert len(expected) == 6
+    assert len(expected) == 7
     assert service.subject_map() == expected
 
 
@@ -144,7 +144,9 @@ def test_oidc_success_pkce_pinned_subject_and_local_roles(oidc):
     assert 'code_verifier' not in query
     response=callback(client,state)
     assert response.status_code==303 and response.headers['location']==settings.oidc_frontend_url
-    current=client.get('/api/session').json()['current_user']
+    payload=client.get('/api/session').json()
+    assert [person['id'] for person in payload['users']]==['technician']
+    current=payload['current_user']
     assert current['id']=='technician' and current['roles']==['technician']
     assert client.get('/api/documents/test-hr/file').status_code==404
     assert provider['token_requests']==1

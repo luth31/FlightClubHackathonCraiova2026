@@ -8,13 +8,18 @@ export function AuthorityDialog({person,directory,signing,onClose,onChanged}: {
 }) {
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const enabled=!person.roles.includes('signer');
+  const department=directory.department_records?.find(item=>item.id===person.department_id);
+  const departmentError=!signing&&!department?
+    'Atribuie mai întâi un departament funcțional în „Gestionează angajatul”, apoi propune numirea ca șef.':'';
   async function submit(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault();const fields=Object.fromEntries(new FormData(event.currentTarget));
+    event.preventDefault();
+    if(departmentError){setError(departmentError);return;}
+    const fields=Object.fromEntries(new FormData(event.currentTarget));
     setBusy(true);setError('');
     try {
       const path=signing?`/people/${person.id}/signing-authority`:'/people/appointments';
       await api(path,{method:'POST',body:JSON.stringify(signing?{enabled,reason:fields.reason}:{
-        user_id:person.id,department_id:person.department_id,effective_date:fields.effective_date,reason:fields.reason})});
+        user_id:person.id,department_id:department?.id,effective_date:fields.effective_date,reason:fields.reason})});
       onChanged(signing?'Autoritatea de semnare a fost actualizată.':'Propunerea a fost trimisă directorului.');onClose();
     } catch(e) {setError((e as Error).message);setBusy(false)}
   }
@@ -24,7 +29,7 @@ export function AuthorityDialog({person,directory,signing,onClose,onChanged}: {
         'Directorul aprobă numirea. Până la data intrării în vigoare, responsabilitatea rămâne la șeful actual.'}</p>
       {!signing&&<label className="field">Începând cu<input name="effective_date" type="date" defaultValue={directory.reference_date} min={directory.reference_date} required/></label>}
       <label className="field">Motiv / decizie<textarea name="reason" rows={3} minLength={3} maxLength={1000} required/></label>
-      {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy}>{busy?'Se salvează…':signing?enabled?'Acordă dreptul':'Revocă dreptul':'Trimite propunerea'}</button></div>
+      {(error||departmentError)&&<ErrorMessage message={error||departmentError}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy||!!departmentError}>{busy?'Se salvează…':signing?enabled?'Acordă dreptul':'Revocă dreptul':'Trimite propunerea'}</button></div>
     </form>
   </Modal>;
 }

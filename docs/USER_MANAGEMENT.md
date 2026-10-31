@@ -1,5 +1,7 @@
 # Employee accounts and authority
 
+The demo groups work into four departments under the director. See [the hierarchy and access matrix](DEMO_ACCESS.md). Department heads report to the director; ordinary employee coordinators belong to the employee's department. The launcher adds the new technical-head identity to existing realms without resetting existing accounts.
+
 HR enters **Prenume**, optional **Al doilea prenume**, and **Nume de familie**, then selects a department, function and optional coordinator. The name parts are stored separately and combined for display. **Generează emailul** suggests `<first-name initial>.<surname>@arm.ro` (for example, `Ștefan` / `Mihai` / `Ionescu` → `s.ionescu@arm.ro`). Middle names do not affect the suggestion; surname spaces become hyphens, existing hyphens are preserved and diacritics removed. HR can edit the suggested address or enter one directly to avoid duplicates or inappropriate wording. Name changes do not overwrite the entered email; clicking the button again replaces it with a new suggestion. The backend validates the submitted address and reports duplicates for HR to resolve. Existing account emails stay unchanged when profiles are renamed.
 
 Legacy name parts are initialized from the first and last words, with intervening words as middle names; existing display names remain unchanged during migration. HR can correct inferred boundaries when editing a profile. Keycloak receives first and middle names together as `firstName` and the complete surname as `lastName` during provisioning.

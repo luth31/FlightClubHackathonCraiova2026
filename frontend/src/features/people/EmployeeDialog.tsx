@@ -96,7 +96,8 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
     ...directory.items.filter(p=>p.department_id===departmentId).map(p=>p.job_title).filter(Boolean),
     ...(departmentId===person?.department_id&&person.job_title?[person.job_title]:[]),
   ])];
-  const coordinators=directory.items.filter(p=>p.active&&p.id!==person?.id&&p.department_id===departmentId);
+  const coordinators=directory.items.filter(p=>p.active&&p.id!==person?.id&&(p.department_id===departmentId||
+    (person?.is_department_head&&p.roles?.includes('director'))));
   const suggestedEmail=workEmail(firstName,lastName);
   const failed=result?.user.provisioning_status==='failed';
   return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} subtitle="Datele angajatului și accesul său la FlyLeaf." onClose={onClose}>

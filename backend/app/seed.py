@@ -15,11 +15,12 @@ from app.people.names import split_name
 
 USERS=[
  ('admin','Ana Ionescu','Conducere','Director aeroport',['admin','director','reviewer','signer'],'AI',None),
- ('manager','Mihai Dumitrescu','Achiziții','Șef achiziții',['reviewer'],'MD',None),
- ('reviewer','Elena Popa','Conformitate','Responsabil conformitate',['reviewer'],'EP',None),
- ('finance','Radu Marinescu','Financiar','Responsabil financiar',['finance','reviewer'],'RM',None),
- ('hr','Ioana Stancu','Resurse umane','Responsabil resurse umane',['hr','reviewer'],'IS',None),
- ('technician','Andrei Neagu','Tehnic','Tehnician mentenanță',['technician'],'AN',None),
+ ('manager','Mihai Dumitrescu','Achiziții','Șef achiziții și financiar',['reviewer'],'MD','admin'),
+ ('reviewer','Elena Popa','Conformitate','Responsabil conformitate',['reviewer'],'EP','admin'),
+ ('finance','Radu Marinescu','Financiar','Responsabil financiar',['finance','reviewer'],'RM','manager'),
+ ('hr','Ioana Stancu','Resurse umane','Responsabil resurse umane',['hr','reviewer'],'IS','admin'),
+ ('technical-head','Sorin Pavel','Tehnic','Șef tehnic și operațiuni',['reviewer'],'SP','admin'),
+ ('technician','Andrei Neagu','Tehnic','Tehnician mentenanță',['technician'],'AN','technical-head'),
 ]
 
 
@@ -30,12 +31,18 @@ def seed_owner_id(db, name):
 def seed():
     settings.storage_dir.mkdir(parents=True,exist_ok=True)
     with SessionLocal() as db:
+        initialize_hierarchy = db.get(User, 'technical-head') is None
         for uid,name,department,role,roles,avatar,manager in USERS:
             if not db.get(User,uid):
                 db.add(User(id=uid,name=name,**split_name(name),email=f'{uid}@{settings.airport_id}.example',department=department,role=role,roles=roles,airport_id=settings.airport_id,active=True,password_hash=hash_password('FlyLeaf2026!'),avatar=avatar,manager_id=manager,job_title=role))
         db.flush()
         from app.people.management import seed_departments
-        seed_departments(db)
+        seed_departments(db, initialize_technical_head=initialize_hierarchy)
+        for uid, _, _, _, _, _, manager in USERS if initialize_hierarchy else []:
+            person = db.get(User, uid)
+            # Fill only missing reporting links; never replace an edited manager.
+            if person and not person.manager_id and manager and person.department in ('Achiziții','Conformitate','Financiar','Resurse umane','Tehnic'):
+                person.manager_id = manager
         if not db.get(Delegation,'demo-delegation'):
             db.add(Delegation(id='demo-delegation',from_user='manager',to_user='reviewer',starts_at='2026-10-29',ends_at='2026-11-06',reason='Înlocuire pe perioada concediului aprobat',active=True))
             db.add(LeaveRequest(id='demo-leave',user_id='manager',starts_at='2026-10-29',ends_at='2026-11-06',reason='Concediu de odihnă',status='approved',approver_id='admin'))

@@ -16,7 +16,8 @@ class Login(BaseModel):
     password: str = Field(min_length=1,max_length=200)
 
 def session_payload(db, user):
-    users = db.scalars(select(User).where(User.airport_id == settings.airport_id, User.active == True)).all()
+    # OIDC has no account switcher: only return the signed-in user's capabilities.
+    users = db.scalars(select(User).where(User.airport_id == settings.airport_id, User.active == True)).all() if settings.auth_mode == 'demo' else ([user] if user else [])
     login_url = '/api/auth/oidc/login' if settings.auth_mode == 'oidc' else None
     return {'current_user':user_dict(user) if user else None,
         'users':[user_dict(u) for u in users] if user or settings.auth_mode == 'demo' else [],

@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse,Response
 from sqlalchemy import select,desc
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.core.security import current_user,require_role,can_read
+from app.core.security import current_user,require_role,can_read,require_page
 from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.documents.models import Document
@@ -13,7 +13,10 @@ from app.sharing.models import Share,SharePreview
 from app.sharing.schemas import PreviewRequest,ShareRequest,AnalysisRequest,MatchRequest
 from app.sharing import service,studio
 from app.sharing.suggestions import redaction_suggestions
-router=APIRouter(prefix='/api',tags=['Sharing'])
+def sharing_access(user=Depends(current_user)):
+    require_page(user, 'sharing')
+
+router=APIRouter(prefix='/api',tags=['Sharing'],dependencies=[Depends(sharing_access)])
 
 @router.get('/documents/{document_id}/redaction-layout')
 def redaction_layout(document_id: str,db: Session=Depends(get_db),user=Depends(current_user)):

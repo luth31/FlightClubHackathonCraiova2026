@@ -28,7 +28,7 @@ export function UploadDialog({
           ? "Tehnic"
           : user.department === "Conducere"
             ? "Achiziții"
-            : user.department,
+            : user.business_area || user.department,
     ),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -183,7 +183,7 @@ export function UploadDialog({
                       "Operațiuni",
                       "Resurse umane",
                       "Conformitate",
-                    ]
+                    ].filter(d => d !== 'Resurse umane' && (user.roles.includes('director') || d === (user.business_area || user.department)))
               ).map((d) => (
                 <option key={d}>{d}</option>
               ))}
@@ -191,8 +191,8 @@ export function UploadDialog({
           </label>
         </div>
         <p className="quiet-note">
-          Documentul se salvează ca ciornă. Publicarea și aprobarea rămân în
-          controlul tău.
+          Documentul se salvează ca ciornă. După verificarea informațiilor,
+          ajunge la responsabilul desemnat pentru aprobare.
         </p>
         {error && <ErrorMessage message={error} />}
         <div className="modal-footer">
