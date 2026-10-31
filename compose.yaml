@@ -7,6 +7,9 @@ services:
     environment:
       AERODESK_AIRPORT_ID: dunarea
       AERODESK_AIRPORT_NAME: Aeroportul Dunărea
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AERODESK_OPENAI_MODEL: ${AERODESK_OPENAI_MODEL:-gpt-6-luna}
+      AERODESK_OPENAI_REDACTION_MODEL: ${AERODESK_OPENAI_REDACTION_MODEL:-}
       AERODESK_EXCHANGE_URL: http://dunarea-gateway:8082
       AERODESK_EXCHANGE_TOKEN_FILE: /run/secrets/gateway_token
       AERODESK_AUTH_MODE: oidc
@@ -20,7 +23,7 @@ services:
         target: gateway_token
     volumes:
       - dunarea-state:/state
-    networks: [dunarea-private, dunarea-connector]
+    networks: [dunarea-private, dunarea-connector, llm-egress]
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3)']
@@ -44,6 +47,9 @@ services:
     environment:
       AERODESK_AIRPORT_ID: carpati
       AERODESK_AIRPORT_NAME: Aeroportul Carpați
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AERODESK_OPENAI_MODEL: ${AERODESK_OPENAI_MODEL:-gpt-6-luna}
+      AERODESK_OPENAI_REDACTION_MODEL: ${AERODESK_OPENAI_REDACTION_MODEL:-}
       AERODESK_CORPUS_DIR: /app/peer-data
       AERODESK_SEED_DOCUMENTS: 'false'
       AERODESK_EXCHANGE_URL: http://carpati-gateway:8082
@@ -59,7 +65,7 @@ services:
         target: gateway_token
     volumes:
       - carpati-state:/state
-    networks: [carpati-private, carpati-connector]
+    networks: [carpati-private, carpati-connector, carpati-llm-egress]
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=3)']
@@ -141,6 +147,8 @@ services:
     networks: [carpati-connector, airport-exchange]
     depends_on: [dunarea-api, carpati-api]
 networks:
+  llm-egress:
+  carpati-llm-egress:
   dunarea-web-edge:
   carpati-web-edge:
   dunarea-private:

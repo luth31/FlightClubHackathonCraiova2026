@@ -2,6 +2,8 @@
 
 Recorded **31 October 2026** against the local demonstration. This is evidence for the implemented prototype, not a production certification. The application uses 30 October 2026 as its displayed demonstration reference date; audit events use actual timestamps.
 
+**Luna branch update:** `codex/luna-redaction-studio` adds interactive occurrence selection, source/copy comparison and a real OpenAI Responses integration. The expanded suite passes **99 tests**; lint/build pass. Live `gpt-6-luna` analysis was verified on the fictional corpus. The baseline record below describes the original release; [Luna verification and limits](LUNA_REDACTION.md) describes the additional capability, including the distinction between precise PDF targets and accessible text mode.
+
 ## Quality gate
 
 | Check | Result |

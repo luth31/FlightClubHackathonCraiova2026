@@ -11,7 +11,11 @@ from app.core.security import require_role,can_read
 from app.core.exceptions import DomainError
 from app.config import settings
 
-def preview(db,user,document_id,terms):
+def preview(db,user,document_id,terms,word_ids=None,source_version=None,source_sha256=None):
+    from app.sharing.studio import source as checked_source,page_words
+    if word_ids and (source_version is None or source_sha256 is None):
+        raise DomainError('Selecția trebuie asociată versiunii originale.',422)
+    checked_source(db,user,document_id,source_version,source_sha256)
     require_role(user,'director','reviewer')
     doc=get_document(db,document_id,user)
     if doc.status not in ('approved','signed'): raise DomainError('Aprobă documentul înainte de pregătirea unei copii partajate.',409)
@@ -21,6 +25,17 @@ def preview(db,user,document_id,terms):
         raise DomainError('Integritatea originalului nu poate fi confirmată.',409)
     source=fitz.open(version.file_path)
     redactions=[]
+    selected=set(word_ids or [])
+    word_map={w['id']:(page.number,w) for page in source for w in page_words(page)}
+    if not selected<=word_map.keys():
+        source.close()
+        raise DomainError('Selecția conține fragmente care nu există în original.',422)
+    metadata_terms=list(terms)
+    for word_id in sorted(selected):
+        page_no,word=word_map[word_id]
+        source[page_no].add_redact_annot(fitz.Rect(word['rect']),fill=(0.12,0.17,0.2))
+        redactions.append({'term':word['text'],'occurrences':1,'word_id':word_id,'page':page_no+1})
+        metadata_terms.append(word['text'])
     for term in terms:
         term=term.strip()
         if not term: continue
@@ -36,7 +51,7 @@ def preview(db,user,document_id,terms):
     clean=fitz.open(); clean.insert_pdf(source,links=False,annots=False,widgets=False)
     safe_title=doc.title
     safe_author=settings.airport_name
-    for term in terms:
+    for term in metadata_terms:
         if term.strip():
             safe_title=re.sub(re.escape(term.strip()),'[redactat]',safe_title,flags=re.IGNORECASE)
             safe_author=re.sub(re.escape(term.strip()),'[redactat]',safe_author,flags=re.IGNORECASE)

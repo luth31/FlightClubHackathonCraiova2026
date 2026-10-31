@@ -4,6 +4,8 @@ A Romanian airport workspace for documents, contracts, people, assigned approval
 
 **148 researched, explicitly fictional PDFs** are included: 20 connected procurement cases, maintenance and reception evidence, invoices, amendments, HR, training, procedures and audit records. The archive has 316 pages. See [research and inventory](docs/CORPUS_RESEARCH.md).
 
+**Luna redaction studio:** interactive word/phrase selection, individual or repeated occurrences, undo, source/copy comparison and optional OpenAI suggestions with reviewed legal references. Set `OPENAI_API_KEY` in the ignored root `.env` file to enable `gpt-6-luna`; manual editing works without it. See [setup, behavior and verification](docs/LUNA_REDACTION.md).
+
 ## Run the two-airport demonstration
 
 Requirements: Docker Desktop, and either the installed backend environment or `uv` for the one-time certificate generator.
@@ -56,7 +58,7 @@ All fixture passwords are `AeroDesk2026!`. Never deploy these accounts with real
 2. Upload `data/pdfs/doc-001.pdf`. Compare suggested supplier, value and expiry with the source; correct them, validate and submit.
 3. Sign in as Elena, the manager's authorized delegate. Approve the exact assigned version. Sign in as Ana to explicitly sign it and verify the embedded signature. A changed version requires fresh validation and approval. Coordinators can explicitly reassign eligible tasks with a due date and reason; deactivation leaves outstanding work flagged for reassignment.
 4. Open contracts and their deadlines; ask AeroDesk about the register. Counts come from structured records and answers identify their sources.
-5. Share an approved procedure or contract. Use automatic redaction suggestions, adjust the terms, inspect the actual derivative PDF, choose Carpați and an optional recipient department, and confirm review. Open Carpați's **Partajate → Primite**. Revoke access at Dunărea and verify that Carpați can no longer open it.
+5. Share an approved procedure or contract. In the redaction studio, select a word/phrase, choose one or all occurrences, or ask Luna for suggestions with optional purpose/context. Review its reasons and legal references, apply the selections, inspect each derivative page and compare against the original. Choose Carpați and an optional recipient department, and confirm review. Open Carpați's **Partajate → Primite**. Revoke access at Dunărea and verify that Carpați can no longer open it.
 6. Inspect the audit trail, team directory, leave workflow and scoped delegation. Switch to the technician to demonstrate restricted access.
 7. In **Furnizori**, compare a sample request with the verified fictional registry. A changed IBAN remains under review even from a known sender. Record verification through the known contact, then sign in as another authorized employee to approve the change. Bank history is preserved; no money moves.
 
@@ -100,6 +102,6 @@ The frontend is browser-tested through Chrome DevTools MCP. Fonts are bundled lo
 
 This is a working demonstration foundation. Keycloak runs in development mode with fixture users, a file database and loopback HTTP; production requires hardened identity infrastructure, TLS and provisioning. Separate employee records without logins and HR editing are not implemented. Contracts are document-backed registers with related case files; separate obligation/renewal entities and scheduled reminder delivery/escalation remain future work. Current reminders are derived in-app views.
 
-Self-signed PDF certificates provide testable cryptographic integrity; they are not qualified electronic signatures. The assistant uses deterministic retrieval and structured queries, not an external language model. Metadata and redaction suggestions use text extraction/rules; scanned PDFs require manual metadata because OCR is not configured. There is no real banking, email, e-Factura, operational airport or airline integration. Supplier contact verification records a human attestation; it does not itself prove account ownership.
+Self-signed PDF certificates provide testable cryptographic integrity; they are not qualified electronic signatures. The general register assistant uses deterministic retrieval and structured queries. Optional Luna redaction advice uses OpenAI; metadata extraction remains rule-based. Scanned PDFs require manual metadata because OCR is not configured, and the studio cannot select text inside images. There is no real banking, email, e-Factura, operational airport or airline integration. Supplier contact verification records a human attestation; it does not itself prove account ownership.
 
 Production work includes identity/MFA policies and provider revocation integration, independent security review, malware scanning and isolated PDF processing, backups and recovery objectives, organizational records retention, qualified signing integration where required, production monitoring and approved data protection arrangements. “Archived” is a workflow label, not a claim of legally compliant archiving. The audit table is application-controlled, not an independently immutable archive.
