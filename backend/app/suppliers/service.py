@@ -2,7 +2,7 @@
 RO IBAN format: SWIFT IBAN Registry; MOD 97-10 per BNR Regulation 2/2004 Annex 2.
 A valid checksum says nothing about account ownership.
 """
-import hashlib,json,re,uuid
+import hashlib,json,re,uuid,csv,io
 from decimal import Decimal
 from difflib import SequenceMatcher
 from sqlalchemy import select,desc,text
@@ -109,10 +109,31 @@ def require_current(db,user,item):
 def allowed_suppliers(db,user):
     return [s for s in db.scalars(select(Supplier).where(Supplier.airport_id==user.airport_id)).all() if (d:=db.get(Document,s.document_id)) and can_read(user,d) and d.validated and d.status in ('approved','signed')]
 
-def list_reviews(db,user):
+def list_reviews(db,user,filters=None):
     require_role(user,'director','finance')
-    items=[item for item in db.scalars(select(SupplierReview).where(SupplierReview.airport_id==user.airport_id).order_by(desc(SupplierReview.created_at))).all() if not item.document_id or ((doc:=db.get(Document,item.document_id)) and can_read(user,doc))]
-    return {'items':[serialize_case(db,user,item) for item in items],'total':len(items),'suppliers':[supplier_dict(s) for s in allowed_suppliers(db,user)],'counters':{'needs_review':sum(i.status=='needs_review' for i in items),'verified':sum(i.status=='verified' for i in items),'approved':sum(i.status=='approved' for i in items),'clear':sum(i.status=='clear' for i in items)},'notice':'Verificare de mostre importate. Registrul inițial și toate datele sunt fictive; aplicația nu accesează emailul și nu execută sau blochează plăți externe.'}
+    from app.suppliers.query import ReviewFilters,matching_reviews
+    filters=filters or ReviewFilters()
+    all_items=matching_reviews(db,user,ReviewFilters())
+    items=matching_reviews(db,user,filters)
+    names=actors(db,user)
+    return {'items':[serialize_case(db,user,item,names) for item in items[filters.offset:filters.offset+filters.limit]],
+        'total':len(items),'limit':filters.limit,'offset':filters.offset,
+        'suppliers':[supplier_dict(s) for s in allowed_suppliers(db,user)],
+        'counters':{state:sum(i.status==state for i in all_items) for state in ('needs_review','verified','approved','clear')},
+        'notice':'Date fictive. Nu se execută sau blochează plăți externe.'}
+
+def export_reviews(db,user,filters):
+    from app.suppliers.query import matching_reviews
+    from app.contracts.service import safe_cell
+    buffer=io.StringIO();writer=csv.writer(buffer)
+    writer.writerow(['ID','Furnizor','Stare','Risc orientativ','Creat','Sumă','Monedă','Prestație','Contract','Versiune','Verificator','Aprobator'])
+    names=actors(db,user)
+    for item in matching_reviews(db,user,filters):
+        row=serialize_case(db,user,item,names)
+        writer.writerow([safe_cell(v) for v in (item.id,item.supplier_name,item.status,row['risk_level'],item.created_at,
+            item.invoice_amount,item.invoice_currency,item.service_date,item.document_id,item.source_version,
+            (row['actors']['verified_by'] or {}).get('name'),(row['actors']['approved_by'] or {}).get('name'))])
+    return '\ufeff'+buffer.getvalue()
 
 def create_review(db,user,body):
     require_role(user,'director','finance')

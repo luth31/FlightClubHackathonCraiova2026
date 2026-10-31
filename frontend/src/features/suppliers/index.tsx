@@ -17,7 +17,7 @@ import {
   LoaderCircle,
   X,
 } from "lucide-react";
-import { api } from "@/services/api-client";
+import { api, download } from "@/services/api-client";
 import { Empty, ErrorMessage, Loading, Modal } from "@/components/ui";
 import { date, money, time } from "@/utils/format";
 import type { User } from "@/types";
@@ -64,10 +64,16 @@ export function SuppliersPage({
     [selected, setSelected] = useState<Review>(),
     [refresh, setRefresh] = useState(0),
     [registryId,setRegistryId]=useState<string>(),
-    [recheck,setRecheck]=useState<Review>();
+    [recheck,setRecheck]=useState<Review>(),
+    [status,setStatus]=useState(''),[risk,setRisk]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),
+    [offset,setOffset]=useState(0),[search,setSearch]=useState('');
+  useEffect(()=>{const timer=window.setTimeout(()=>setSearch(query),250);return()=>window.clearTimeout(timer)},[query]);
+  const params=new URLSearchParams({q:search,limit:'25',offset:String(offset)});
+  if(status)params.set('status',status);if(risk)params.set('risk_level',risk);if(from)params.set('created_from',from);if(to)params.set('created_to',to);
+  const request=params.toString();
   useEffect(() => {
     let active = true;
-    api<Registry>("/supplier-reviews")
+    api<Registry>(`/supplier-reviews?${request}`)
       .then((v) => {
         if (active) {
           setData(v);
@@ -80,18 +86,14 @@ export function SuppliersPage({
     return () => {
       active = false;
     };
-  }, [revision, refresh]);
+  }, [revision, refresh, request]);
   const changed = (item: Review, message: string) => {
     setSelected(item);
     setCreate(false);
     setRefresh((n) => n + 1);
     notify(message);
   };
-  const cases = data?.items.filter((c) =>
-    `${c.supplier_name} ${c.sender_email}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
+  const cases = data?.items;
   const suppliers = data?.suppliers.filter((s) =>
     `${s.name} ${s.verified_contact}`
       .toLowerCase()
@@ -108,7 +110,7 @@ export function SuppliersPage({
         <button
           className="button primary"
           disabled={!data}
-          onClick={() => setCreate(true)}
+          onClick={() => {setRecheck(undefined);setCreate(true)}}
         >
           <Plus size={17} />
           Verifică o solicitare
@@ -170,7 +172,7 @@ export function SuppliersPage({
                   aria-label="Caută un furnizor"
                   placeholder="Caută furnizorul sau contactul…"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {setQuery(e.target.value);setOffset(0)}}
                 />
               </label>
               <span className="result-count">
@@ -178,6 +180,12 @@ export function SuppliersPage({
                 rezultate
               </span>
             </div>
+            {tab==='reviews'&&<div className="supplier-query-controls">
+              <label>Stare<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="">Toate</option>{Object.entries(labels).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
+              <label>Risc orientativ<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">Toate</option><option value="high">Ridicat</option><option value="medium">Mediu</option><option value="low">Scăzut</option></select></label>
+              <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
+              <button className="button secondary" onClick={()=>download(`/supplier-reviews/export.csv?${request}`,'verificari-furnizori.csv').catch(e=>notify(e.message))}>Export CSV</button>
+            </div>}
             {tab === "reviews" ? (
               cases?.length ? (
                 <div className="supplier-reviews-list">
@@ -219,7 +227,7 @@ export function SuppliersPage({
                 >
                   <button
                     className="button secondary"
-                    onClick={() => setCreate(true)}
+                    onClick={() => {setRecheck(undefined);setCreate(true)}}
                   >
                     Prima verificare
                     <ArrowRight size={16} />
@@ -280,6 +288,7 @@ export function SuppliersPage({
               <Empty title="Niciun furnizor găsit" />
             )}
           </div>
+          {tab==='reviews'&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
           <p className="supplier-disclaimer">
             Verificări pe date demonstrative. Un rezultat fără diferențe nu
             confirmă legitimitatea mesajului sau proprietarul contului. AeroDesk
