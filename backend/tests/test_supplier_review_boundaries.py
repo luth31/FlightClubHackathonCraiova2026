@@ -47,6 +47,8 @@ def test_non_finite_invoice_amount_cannot_poison_review_listing(admin):
 def test_reimport_after_contract_revision_rechecks_source(admin,pdf_bytes):
     known=supplier(admin)
     document_id=approved(admin,pdf_bytes)
+    source=admin.get(f'/api/documents/{document_id}').json()
+    assert admin.post(f'/api/suppliers/{known["id"]}/contracts',json={'document_id':document_id,'version':source['version']}).status_code==200
     payload=sample(known,document_id)
     first=admin.post('/api/supplier-reviews',json=payload).json()
     assert first['status']=='clear'

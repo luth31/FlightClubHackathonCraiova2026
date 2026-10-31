@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { api, fileUrl, download } from "@/services/api-client";
+import {documentHref, pageLabels} from '@/services/navigation';
 import {
   Loading,
   ErrorMessage,
@@ -25,18 +26,23 @@ import {
   FileIcon,
   Modal,
 } from "@/components/ui";
+import { ExtractedText } from './ExtractedText';
 import { ShareDialog } from "@/features/sharing";
 import { date, time, money, actionLabel } from "@/utils/format";
-import type { DocumentRecord, User } from "@/types";
+import type { DocumentRecord, Page, User } from "@/types";
 export function DocumentDetail({
   id,
   onClose,
+  onOpen,
+  origin,
   onChanged,
   notify,
   user,
 }: {
   id: string;
   onClose: () => void;
+  onOpen: (id: string) => void;
+  origin: Page;
   onChanged: () => void;
   notify: (s: string) => void;
   user: User;
@@ -84,6 +90,20 @@ export function DocumentDetail({
   useEffect(() => {
     load();
   }, [load]);
+  const extractionStatus = doc?.extraction_status;
+  useEffect(() => {
+    if (!['queued', 'processing'].includes(extractionStatus || '')) return;
+    let active = true;
+    const timer = window.setInterval(() => {
+      api<DocumentRecord>(`/documents/${id}`).then(d => {
+        if (active) {
+          setDoc(d);
+          if (!editing) setFields({title:d.title, supplier:d.supplier || '', expires_at:d.expires_at || '', value:d.value?.toString() || '', summary:d.summary || ''});
+        }
+      }).catch(() => {});
+    }, 1500);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [id, extractionStatus, editing]);
   async function act(action: string) {
     setBusy(true);
     setError("");
@@ -180,7 +200,7 @@ export function DocumentDetail({
     <div className="detail-page">
       <button className="back-button" onClick={onClose}>
         <ArrowLeft size={16} />
-        Înapoi la spațiul de lucru
+        Înapoi la {pageLabels[origin]}
       </button>
       {!doc ? (
         error ? (
@@ -321,13 +341,7 @@ export function DocumentDetail({
                           Informații de verificat
                         </div>
                       )}
-                      {!doc.validated &&
-                        doc.extraction_status === "needs-ocr" && (
-                          <p className="scan-notice">
-                            Acest PDF este scanat. Completează informațiile din
-                            document înainte de confirmare.
-                          </p>
-                        )}
+                      <ExtractedText doc={doc} canReadText={!user.roles.includes('technician')} onRetry={load} />
                       {editing ? (
                         <div className="edit-fields">
                           <label className="field">
@@ -830,7 +844,12 @@ export function DocumentDetail({
                     {doc.related_documents.map((rel) => (
                       <a
                         key={rel.id}
-                        href={`#document/${encodeURIComponent(rel.id)}`}
+                        href={documentHref(rel.id, origin)}
+                        onClick={event => {
+                          if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+                          event.preventDefault();
+                          onOpen(rel.id);
+                        }}
                       >
                         <FileIcon category={rel.category} />
                         <span>

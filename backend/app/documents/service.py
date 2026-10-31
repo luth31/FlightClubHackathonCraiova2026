@@ -61,6 +61,10 @@ def serialize(document, db=None, details=False, user=None):
     data.setdefault('source_refs',[])
     data.setdefault('extraction_evidence',[])
     if details and db:
+        from app.extraction.service import summary
+        extraction = summary(db,current_version(db,document))
+        data['extraction_status']=extraction['status']
+        data['extraction']=extraction
         versions=db.scalars(select(DocumentVersion).where(DocumentVersion.document_id==document.id).order_by(desc(DocumentVersion.version))).all()
         data['versions']=[{'version':v.version,'created_at':v.created_at,'created_by':v.created_by,'filename':v.filename,'sha256':v.sha256,'comment':v.comment,'approved_by':v.approved_by,'approved_at':v.approved_at,'signed':bool(v.signed_path),'file_url':f'/api/documents/{document.id}/file?version={v.version}','metadata_snapshot':v.snapshot} for v in versions]
         events=db.scalars(select(AuditEvent).where(AuditEvent.document_id==document.id).order_by(desc(AuditEvent.created_at),desc(AuditEvent.id))).all()
@@ -130,6 +134,7 @@ def reject_active_pdf_content(reader):
             stack.extend(item)
 
 def validate_pdf(content):
+    """Validate the upload envelope and active content; return page count only."""
     if len(content)>25*1024*1024: raise DomainError('Fișierul depășește limita de 25 MB.',413)
     if not content.startswith(b'%PDF-'): raise DomainError('Încarcă un fișier PDF valid.',422)
     try:
@@ -137,9 +142,9 @@ def validate_pdf(content):
         if reader.is_encrypted: raise DomainError('PDF-urile protejate cu parolă nu sunt acceptate.',422)
         if not reader.pages: raise DomainError('PDF-ul nu conține pagini.',422)
         if len(reader.pages)>1000: raise DomainError('PDF-ul depășește limita de 1.000 de pagini.',422)
-        texts=[(p.extract_text() or '')[:30000] for p in reader.pages[:100]]
+        page_count=len(reader.pages)
         reject_active_pdf_content(reader)
-        return texts
+        return page_count
     except DomainError: raise
     except Exception: raise DomainError('Fișierul nu poate fi citit ca PDF.',422)
 
@@ -168,6 +173,9 @@ def store_version(db,document,content,filename,user,comment='',snapshot=None):
     path.write_bytes(content)
     version=DocumentVersion(id=uuid.uuid4().hex,document_id=document.id,version=document.version,file_path=str(path),filename=Path(filename).name,sha256=hashlib.sha256(content).hexdigest(),created_at=now(),created_by=user.id,comment=comment,snapshot=snapshot or {})
     db.add(version)
+    db.flush()
+    from app.extraction.service import enqueue
+    enqueue(db,version,document)
     return version
 
 def suggested_values(evidence):
@@ -208,14 +216,12 @@ def create_document(db,user,content,filename,title,category,department,supplier=
     if department=='Resurse umane' and not has_role(user,'hr'): raise DomainError('Documentele de personal se încarcă de Resurse umane.',403)
     if has_role(user,'technician') and category not in ('Raport de mentenanță','Proces-verbal','Procedură','Instruire'): raise DomainError('Contul tehnic poate încărca rapoarte de mentenanță, procese-verbale, proceduri și instruiri.',403)
     if has_role(user,'technician') and department!='Tehnic': raise DomainError('Poți încărca documente în departamentul Tehnic.',403)
-    texts=validate_pdf(content)
+    page_count=validate_pdf(content)
     if expires_at:
         try: date.fromisoformat(expires_at)
         except ValueError: raise DomainError('Data expirării nu este validă.',422)
     document_id='doc-'+uuid.uuid4().hex[:12]
-    evidence=evidence_from_text(texts)
-    suggestions=suggested_values(evidence)
-    document=Document(id=document_id,title=(title or Path(filename).stem)[:300],number=f'AD-{settings.reference_date.year}-{uuid.uuid4().hex[:6].upper()}',category=category,department=department,status='draft',created_at=now(),updated_at=now(),expires_at=expires_at or suggestions.get('expires_at'),supplier=supplier or suggestions.get('supplier'),value=suggestions.get('value'),currency='RON',owner=user.name,created_by=user.id,searchable_text='\n'.join(texts),confidentiality='restricted' if department=='Resurse umane' else 'internal',summary='Document introdus în registru.',version=1,validated=False,airport_id=user.airport_id,extra={'filename':Path(filename).name,'tags':['Nou'],'metadata':{},'extraction_evidence':evidence,'page_count':len(texts),'related_ids':[],'source_refs':[],'extraction_status':'text-extracted' if any(texts) else 'needs-ocr','extraction_notice':'Extracție de text și reguli; valorile necesită verificare umană.' if any(texts) else 'PDF scanat: completează manual metadatele; OCR nu este configurat.'})
+    document=Document(id=document_id,title=(title or Path(filename).stem)[:300],number=f'AD-{settings.reference_date.year}-{uuid.uuid4().hex[:6].upper()}',category=category,department=department,status='draft',created_at=now(),updated_at=now(),expires_at=expires_at or None,supplier=supplier or None,value=None,currency='RON',owner=user.name,created_by=user.id,searchable_text='',confidentiality='restricted' if department=='Resurse umane' else 'internal',summary='Document introdus în registru.',version=1,validated=False,airport_id=user.airport_id,extra={'filename':Path(filename).name,'tags':['Nou'],'metadata':{},'extraction_evidence':[],'page_count':page_count,'related_ids':[],'source_refs':[],'extraction_status':'queued','extraction_notice':'Textul se extrage local, în fundal.'})
     db.add(document); db.flush()
     store_version(db,document,content,filename,user,'Încărcare inițială',snapshot=serialize(document))
     from app.tasks.service import on_new_version
@@ -236,6 +242,7 @@ def patch_document(db,user,document_id,changes):
             raise DomainError('Tipul, departamentul și nivelul de acces sunt fixe pentru toate versiunile. Pentru un public nou, pregătește o copie revizuită prin partajare.',403)
     old=current_version(db,document)
     old.snapshot=serialize(document)
+    document.extra={**document.extra,'edited_fields':list(set(document.extra.get('edited_fields',[])) | set(changes))}
     document.version+=1; document.status='draft'; document.validated=False; document.updated_at=now()
     for key,value in changes.items():
         if key=='metadata': document.extra={**document.extra,'metadata':value}
@@ -249,17 +256,17 @@ def patch_document(db,user,document_id,changes):
 def add_version(db,user,document_id,content,filename,comment):
     db.execute(text('BEGIN IMMEDIATE'))
     document=get_document(db,document_id,user,edit=True)
-    texts=validate_pdf(content)
+    page_count=validate_pdf(content)
     previous=current_version(db,document)
     previous.snapshot=serialize(document)
     document.version+=1; document.status='draft'; document.validated=False; document.updated_at=now()
-    document.searchable_text='\n'.join(texts)
-    document.extra={**document.extra,'filename':Path(filename).name,'extraction_evidence':evidence_from_text(texts),'page_count':len(texts),'extraction_status':'text-extracted' if any(texts) else 'needs-ocr','extraction_notice':'Extracție de text și reguli; valorile necesită verificare umană.' if any(texts) else 'PDF scanat: completează manual metadatele; OCR nu este configurat.'}
+    document.searchable_text=''
+    document.extra={**document.extra,'filename':Path(filename).name,'extraction_evidence':[],'page_count':page_count,'extraction_status':'queued','extraction_notice':'Textul se extrage local, în fundal.'}
     document.extra.pop('text_excerpt',None)
-    suggestions=suggested_values(document.extra['extraction_evidence'])
-    document.supplier=suggestions.get('supplier')
-    document.expires_at=suggestions.get('expires_at')
-    document.value=suggestions.get('value')
+    document.extra.pop('edited_fields',None)
+    document.supplier=None
+    document.expires_at=None
+    document.value=None
     store_version(db,document,content,filename,user,comment or 'Versiune nouă',snapshot=serialize(document))
     from app.tasks.service import on_new_version
     on_new_version(db,document,user)

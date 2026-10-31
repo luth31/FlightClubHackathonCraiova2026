@@ -9,6 +9,8 @@ from app.core.signing import verify_file
 def upload(client,pdf_bytes):
     response=client.post('/api/documents',files={'file':('contract.pdf',pdf_bytes,'application/pdf')},data={'title':'Contract nou mentenanță','category':'Contract','department':'Achiziții'})
     assert response.status_code==201,response.text
+    from app.extraction.worker import drain
+    drain()
     return response.json()['id']
 
 def act(client,id,action,**kwargs):
@@ -115,6 +117,8 @@ def test_pdf_full_text_search_updates_with_version(admin):
     record=admin.get(f'/api/documents/{id}').json()
     assert 'searchable_text' not in str(record) and 'text_excerpt' not in str(record)
     admin.post(f'/api/documents/{id}/versions',files={'file':('new.pdf',make_pdf('ReplacementArchiveToken'),'application/pdf')})
+    from app.extraction.worker import drain
+    drain()
     assert not any(d['id']==id for d in admin.get('/api/documents?q=UniqueArchiveToken').json()['items'])
     assert any(d['id']==id for d in admin.get('/api/documents?q=ReplacementArchiveToken').json()['items'])
 

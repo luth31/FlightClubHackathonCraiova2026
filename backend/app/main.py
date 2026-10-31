@@ -19,6 +19,8 @@ from app.people.router import router as people_router
 from app.exchange.router import router as exchange_router
 from app.suppliers.router import router as suppliers_router
 from app.tasks.router import router as tasks_router
+from app.suppliers.catalog_router import router as catalog_router
+from app.suppliers.registration_router import router as registration_router
 
 @asynccontextmanager
 async def lifespan(app):
@@ -29,7 +31,17 @@ async def lifespan(app):
     config=Config(str(Path(__file__).resolve().parents[1]/'alembic.ini'))
     command.upgrade(config,'head')
     seed()
-    yield
+    from app.database import SessionLocal
+    from app.extraction.service import backfill
+    from app.extraction.worker import start
+    with SessionLocal() as db: backfill(db)
+    worker = start() if settings.extraction_enabled else None
+    try:
+        yield
+    finally:
+        if worker:
+            worker[0].set()
+            worker[1].join(timeout=2)
 
 app=FastAPI(title='AeroDesk API',version='0.1.0',description='Local demonstration workspace. Synthetic airport documents; session-based access control.',lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origins,allow_credentials=True,allow_methods=['GET','POST','PATCH','DELETE','OPTIONS'],allow_headers=['Content-Type'])
@@ -49,7 +61,7 @@ async def security_headers(request: Request,call_next):
     response.headers['Cache-Control']='no-store'
     return response
 
-for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router):
+for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router,catalog_router,registration_router):
     app.include_router(router)
 
 @app.get('/api/health')

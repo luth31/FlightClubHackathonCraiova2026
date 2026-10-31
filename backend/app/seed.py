@@ -9,7 +9,6 @@ from app.people.models import User,Delegation,LeaveRequest
 from app.documents.models import Document,DocumentVersion
 from app.core.models import AuditEvent
 from app.core.security import hash_password
-from app.documents.service import validate_pdf,current_version
 from app.suppliers.service import seed_suppliers
 from app.tasks.service import seed_tasks
 
@@ -46,7 +45,7 @@ def seed():
                 extra['extraction_evidence']=source_fields
                 extra['extraction_status']='seed-reviewed'
                 extra['extraction_notice']='Metadate din corpusul fictiv, pregătite pentru demonstrație.'
-                document=Document(id=item['id'],title=item['title'],number=item.get('number',item['id'].upper()),category=item.get('category','Contract'),department=item.get('department','Achiziții'),status=status,created_at=item.get('created_at','2026-10-01'),updated_at=item.get('updated_at',item.get('created_at','2026-10-01')),expires_at=item.get('expires_at') or None,supplier=item.get('supplier') or None,value=item.get('value'),currency=item.get('currency','RON'),owner=item.get('owner','Elena Popa'),created_by='seed',confidentiality=item.get('confidentiality','internal'),summary=item.get('summary',''),searchable_text='\n'.join(validate_pdf(path.read_bytes())),version=1,validated=item.get('validated',status!='draft'),airport_id=settings.airport_id,extra=extra)
+                document=Document(id=item['id'],title=item['title'],number=item.get('number',item['id'].upper()),category=item.get('category','Contract'),department=item.get('department','Achiziții'),status=status,created_at=item.get('created_at','2026-10-01'),updated_at=item.get('updated_at',item.get('created_at','2026-10-01')),expires_at=item.get('expires_at') or None,supplier=item.get('supplier') or None,value=item.get('value'),currency=item.get('currency','RON'),owner=item.get('owner','Elena Popa'),created_by='seed',confidentiality=item.get('confidentiality','internal'),summary=item.get('summary',''),searchable_text='',version=1,validated=item.get('validated',status!='draft'),airport_id=settings.airport_id,extra=extra)
                 db.add(document); db.flush()
                 version_folder=settings.storage_dir/'documents'/document.id
                 version_folder.mkdir(parents=True,exist_ok=True)
@@ -55,10 +54,6 @@ def seed():
                 db.add(DocumentVersion(id=uuid.uuid4().hex,document_id=document.id,version=1,file_path=str(stored_path),filename=path.name,sha256=hashlib.sha256(path.read_bytes()).hexdigest(),created_at=document.created_at,created_by='seed',comment='Document fictiv din corpusul de demonstrație',snapshot=item,approved_by='manager' if status in ('approved','archived') else None,approved_at=document.created_at if status in ('approved','archived') else None))
                 db.add(AuditEvent(actor='Elena Popa',actor_id='reviewer',action='Document înregistrat',document_id=document.id,document_title=document.title,created_at=document.created_at,detail='Corpus fictiv pentru demonstrație · versiunea 1',airport_id=settings.airport_id))
         db.flush()
-        for document in db.scalars(select(Document).where(Document.searchable_text=='')):
-            version=current_version(db,document)
-            path=Path(version.file_path)
-            if path.is_file(): document.searchable_text='\n'.join(validate_pdf(path.read_bytes()))
         seed_suppliers(db)
         seed_tasks(db)
         db.commit()

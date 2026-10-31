@@ -1,0 +1,92 @@
+import {useEffect, useLayoutEffect, useState} from 'react';
+import type {Page} from '@/types';
+
+export const pageLabels: Record<Page, string> = {
+  home: 'Acasă', documents: 'Documente', contracts: 'Contracte', suppliers: 'Furnizori',
+  approvals: 'Aprobări', people: 'Echipă', sharing: 'Partajate cu aeroporturi', audit: 'Jurnal de activitate',
+};
+type Route = {page: Page; doc?: string};
+type NavigationState = {userId?: string; origin: Page; documentDepth: number; scroll?: [number, number]};
+const isPage = (value: string): value is Page => Object.hasOwn(pageLabels, value);
+
+export function parseRoute(hash: string): Route {
+  const [path, query = ''] = hash.replace(/^#/, '').split('?');
+  if (path === 'document') return {page: 'documents'};
+  if (!path.startsWith('document/')) return {page: isPage(path) ? path : 'home'};
+  const origin = new URLSearchParams(query).get('from') || 'documents';
+  try {
+    const doc = decodeURIComponent(path.slice('document/'.length));
+    return doc ? {page: isPage(origin) ? origin : 'documents', doc} : {page: 'documents'};
+  } catch {
+    return {page: 'documents'};
+  }
+}
+
+export const documentHref = (id: string, origin: Page) =>
+  `#document/${encodeURIComponent(id)}?from=${origin}`;
+
+// Only our own document chain can use history.go. Copied/legacy links stay inside the app.
+export function useNavigation(userId: string | undefined, canViewSuppliers: boolean) {
+  const [route, setRoute] = useState(() => parseRoute(window.location.hash));
+  const page = route.page === 'suppliers' && !canViewSuppliers ? 'documents' : route.page;
+  const readState = (): NavigationState | undefined => window.history.state?.aerodeskNavigation;
+
+  // Restore only after React has revealed the list; scrolling a hidden view clamps to zero.
+  useLayoutEffect(() => {
+    const state: NavigationState | undefined = window.history.state?.aerodeskNavigation;
+    const scroll = !route.doc && state?.userId === userId && state?.origin === page ? state.scroll : undefined;
+    window.scrollTo(...(scroll || [0, 0]));
+  }, [route, page, userId]);
+
+  useEffect(() => {
+    const sync = () => setRoute(parseRoute(window.location.hash));
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    window.addEventListener('popstate', sync);
+    window.addEventListener('hashchange', sync);
+    return () => {
+      window.history.scrollRestoration = previousRestoration;
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener('hashchange', sync);
+    };
+  }, [userId]);
+
+  function write(hash: string, state: NavigationState, replace = false) {
+    const method = replace ? 'replaceState' : 'pushState';
+    window.history[method]({...window.history.state, aerodeskNavigation: state}, '', hash);
+    setRoute(parseRoute(hash));
+  }
+
+  function navigate(destination: Page) {
+    const allowed = destination === 'suppliers' && !canViewSuppliers ? 'documents' : destination;
+    write(`#${allowed}`, {userId, origin: allowed, documentDepth: 0}, window.location.hash === `#${allowed}`);
+  }
+
+  function openDocument(id: string) {
+    if (!id || route.doc === id) return;
+    let depth = 0;
+    if (!route.doc) {
+      // Canonicalize restricted/unknown list hashes before creating a return entry.
+      window.history.replaceState({...window.history.state, aerodeskNavigation: {
+        userId, origin: page, documentDepth: 0, scroll: [window.scrollX, window.scrollY],
+      }}, '', `#${page}`);
+      depth = 1;
+    } else {
+      const previous = readState();
+      if (previous && previous.userId === userId && previous.origin === page && previous.documentDepth > 0)
+        depth = previous.documentDepth + 1;
+    }
+    write(documentHref(id, page), {userId, origin: page, documentDepth: depth});
+  }
+
+  function returnToOrigin() {
+    const state = readState();
+    if (route.doc && state && state.userId === userId && state.origin === page && state.documentDepth > 0) {
+      window.history.go(-state.documentDepth);
+    } else {
+      write(`#${page}`, {userId, origin: page, documentDepth: 0}, true);
+    }
+  }
+
+  return {page, doc: route.doc, navigate, openDocument, returnToOrigin};
+}
