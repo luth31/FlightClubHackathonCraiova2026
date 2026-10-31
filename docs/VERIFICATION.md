@@ -190,3 +190,19 @@ Fresh checks after integration:
 | Alembic heads | One: `20261031_supplier_ocr_merge` |
 
 The API image was rebuilt from the committed dependency lock before testing to include the upstream `pdf-inspector` dependency. Backend checks used temporary databases and files; previous verification counts above remain historical records.
+
+## Navigation regression fix — 31 October 2026
+
+The `fix-navigation` branch fixes the document router's discarded origin and unconditional return to Documente. Supplier contracts now return to Furnizori with their existing list state. Documents opened from other sections and related-document chains retain their own origin, including direct links with `?from=...`. The shell retains its active workspace, reveals it before restoring scroll, selects the parent in the sidebar and provides a parent breadcrumb. Inactive workspace dialogs close and release their focus/scroll effects.
+
+The original supplier return failure was reproduced by a failing DOM interaction test before implementation. Additional failing checks exposed retained-dialog scroll locks and missing focus transfer; each passed after its fix. The regression contract and browser checklist are in [NAVIGATION.md](NAVIGATION.md).
+
+| Check | Observed result |
+|---|---|
+| Combined frontend test gate (`npm --prefix frontend test`) | **29 passed**: 25 real-App DOM interaction tests and 4 existing supplier render checks |
+| TypeScript and Vite production build | Passed |
+| Frontend ESLint | Passed |
+| `git diff --check` | Passed |
+| Browser interaction/layout checks | **Not executed**: browser access host unavailable |
+
+The DOM suite covers document entry points across sections, supplier query/tab/scroll retention, Back/Forward, related chains, breadcrumb and sidebar selection, all eight sidebar destinations and mobile drawer cleanup, modified anchor clicks, workflow links, overlays, safe origin/route fallbacks, account changes and keyboard focus. API responses are fixtures at the fetch boundary; jsdom does not establish native layout, actual scroll limits, PDF behavior or browser accessibility. No backend code changed in this fix. Previous browser results in this file apply to their recorded versions.

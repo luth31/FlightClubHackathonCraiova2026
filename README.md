@@ -76,12 +76,15 @@ docker compose start dunarea-gateway carpati-gateway
 backend/.venv/bin/python -m pytest backend/tests -q
 npm --prefix frontend run build
 npm --prefix frontend run lint
+npm --prefix frontend test
 backend/.venv/bin/python scripts/generate_corpus.py
 ```
 
 Tests use separate temporary databases and files. The PDF generator is deterministic and does not reset application data. It uses ReportLab and pypdf, with Arial on macOS or DejaVu Sans on Linux. Corpus PDFs already copied into document-version storage are immutable: regenerating the source corpus does not change approved application versions.
 
 Python direct dependencies live in `backend/requirements.txt`; the cross-platform, fully pinned `backend/requirements.lock` includes package hashes and is used for development and Docker installation. The frontend uses `npm ci` and its lockfile. See [verification evidence](docs/VERIFICATION.md) for the recorded quality gate.
+
+Feature changes must follow the [navigation contract](docs/NAVIGATION.md): document visits retain their originating section and list state, and new entry points require interaction regression coverage.
 
 The frontend is browser-tested through Chrome DevTools MCP. Fonts are bundled locally. All displayed document totals respect the active user's permissions; the director sees fewer than 148 records because sensitive HR records remain restricted.
 
