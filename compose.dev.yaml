@@ -1,31 +1,31 @@
 # Opt in with: docker compose -f compose.yaml -f compose.dev.yaml up -d --build
 services:
-  dunarea-api:
+  craiova-api:
     command: ['sh', '-c', 'python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log --reload --reload-dir /app/backend/app --reload-delay 0.5']
     volumes:
       - ./backend:/app/backend:ro
-  carpati-api:
+  sibiu-api:
     command: ['sh', '-c', 'python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log --reload --reload-dir /app/backend/app --reload-delay 0.5']
     volumes:
       - ./backend:/app/backend:ro
-  dunarea-web:
+  craiova-web:
     build:
       target: development
     environment:
-      AERODESK_DOCKER_DEV: 'true'
-      AERODESK_API_PROXY_TARGET: http://dunarea-api:8000
+      FLYLEAF_DOCKER_DEV: 'true'
+      FLYLEAF_API_PROXY_TARGET: http://craiova-api:8000
     volumes:
       - ./frontend/src:/app/src:ro
       - ./frontend/public:/app/public:ro
       - ./frontend/index.html:/app/index.html:ro
       - ./frontend/vite.config.ts:/app/vite.config.ts:ro
       - ./frontend/tsconfig.json:/app/tsconfig.json:ro
-  carpati-web:
+  sibiu-web:
     build:
       target: development
     environment:
-      AERODESK_DOCKER_DEV: 'true'
-      AERODESK_API_PROXY_TARGET: http://carpati-api:8000
+      FLYLEAF_DOCKER_DEV: 'true'
+      FLYLEAF_API_PROXY_TARGET: http://sibiu-api:8000
     volumes:
       - ./frontend/src:/app/src:ro
       - ./frontend/public:/app/public:ro

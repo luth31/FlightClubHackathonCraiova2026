@@ -3,7 +3,7 @@ from app.sharing.models import Share
 from conftest import login
 
 
-def gateway_headers(monkeypatch, tmp_path, airport='carpati', roles='reviewer'):
+def gateway_headers(monkeypatch, tmp_path, airport='sibiu', roles='reviewer'):
     token = tmp_path/'token'; token.write_text('local-test-exchange-secret')
     monkeypatch.setattr(settings, 'exchange_token_file', token)
     return {'Authorization':'Bearer local-test-exchange-secret', 'X-Peer-Airport':airport,
@@ -22,7 +22,7 @@ def test_peer_share_read_and_immediate_revocation(admin, monkeypatch, tmp_path):
     preview = admin.post('/api/documents/test-procedure/share-preview', json={'redact_terms':['SecretAccount123']})
     assert preview.status_code == 200, preview.text
     created = admin.post('/api/documents/test-procedure/shares', json={'preview_id':preview.json()['preview_id'],
-        'reviewed':True,'expires_at':'2026-12-31','recipient_airport_id':'carpati','recipient_airport':'Aeroportul Carpați'})
+        'reviewed':True,'expires_at':'2026-12-31','recipient_airport_id':'sibiu','recipient_airport':'Aeroportul Sibiu'})
     assert created.status_code == 201, created.text
     share_id = created.json()['id']
     assert any(s['id']==share_id for s in admin.get('/api/exchange/shares', headers=headers).json()['items'])
@@ -48,7 +48,7 @@ def test_department_scoped_share_excludes_other_reviewers_and_directors(admin,mo
     headers=gateway_headers(monkeypatch,tmp_path)
     preview=admin.post('/api/documents/test-procedure/share-preview',json={'redact_terms':[]}).json()
     response=admin.post('/api/documents/test-procedure/shares',json={'preview_id':preview['preview_id'],
-        'reviewed':True,'expires_at':'2026-12-31','recipient_airport_id':'carpati','recipient_department':'Achiziții'})
+        'reviewed':True,'expires_at':'2026-12-31','recipient_airport_id':'sibiu','recipient_department':'Achiziții'})
     assert response.status_code==201,response.text
     identifier=response.json()['id']
     allowed={**headers,'X-Requester-Department':quote('Achiziții',safe='')}
@@ -59,5 +59,5 @@ def test_department_scoped_share_excludes_other_reviewers_and_directors(admin,mo
         assert all(s['id']!=identifier for s in admin.get('/api/exchange/shares',headers=denied).json()['items'])
         assert admin.get(f'/api/exchange/shares/{identifier}/file',headers=denied).status_code==404
     bad=admin.post('/api/documents/test-procedure/shares',json={'preview_id':preview['preview_id'],
-        'reviewed':True,'expires_at':'2026-12-31','recipient_airport_id':'carpati','recipient_department':'Unknown department'})
+        'reviewed':True,'expires_at':'2026-12-31','recipient_airport_id':'sibiu','recipient_department':'Unknown department'})
     assert bad.status_code==422

@@ -1,5 +1,4 @@
 """The approved demo access model, exercised through its public API."""
-from uuid import NAMESPACE_URL, uuid5
 import json
 from pathlib import Path
 
@@ -50,7 +49,7 @@ def test_technician_session_and_section_boundaries(client):
     login(client, 'technician')
     user = client.get('/api/session').json()['current_user']
     assert {page for page, allowed in user['permissions']['pages'].items() if allowed} == {
-        'home', 'documents', 'approvals', 'people'}
+        'home', 'operations', 'documents', 'approvals', 'people'}
     assert client.get('/api/contracts').status_code == 403
     assert client.get('/api/audit').status_code == 403
     assert client.get('/api/shares').status_code == 403
@@ -125,10 +124,11 @@ def test_own_technical_draft_is_visible_but_not_another_technicians_draft(client
 
 def test_fresh_realms_include_stable_technical_head_identity():
     root = Path(__file__).resolve().parents[2]
-    for airport in ('dunarea', 'carpati'):
+    from app.identity.service import DEMO_SUBJECTS
+    for airport in ('craiova', 'sibiu'):
         realm = json.loads((root / 'deploy' / 'keycloak' / f'{airport}-realm.json').read_text(encoding='utf-8'))
         account = next(user for user in realm['users'] if user.get('username') == 'technical-head')
-        assert account['id'] == str(uuid5(NAMESPACE_URL, f'aerodesk:{airport}:technical-head'))
+        assert DEMO_SUBJECTS[airport][account['id']] == 'technical-head'
         assert account['credentials'][0]['value'] == 'FlyLeaf2026!'
 
 
@@ -150,7 +150,8 @@ def test_repeated_seeding_preserves_custom_head_and_reporting_links(client, db):
         db.commit()
 
 
-def test_existing_realm_upgrade_does_not_reset_existing_account_credentials(client, db, monkeypatch):
+@pytest.mark.parametrize('seeded_identity', [False, True])
+def test_existing_realm_upgrade_does_not_reset_existing_account_credentials(client, db, monkeypatch, seeded_identity):
     from app.config import settings
     from app.identity import provisioning
     from app.people.sync_demo_organization import sync_technical_head
@@ -163,14 +164,19 @@ def test_existing_realm_upgrade_does_not_reset_existing_account_credentials(clie
     monkeypatch.setattr(provisioning, 'owned_user', lambda base, headers, person: remote.get(person.identity_subject))
     import httpx
     monkeypatch.setattr(provisioning, 'request', lambda method, url, **kwargs:
-        httpx.Response(200, json=remote.get(url.rsplit('/', 1)[-1], {})))
+        httpx.Response(200 if url.rsplit('/', 1)[-1] in remote else 404,
+                       json=remote.get(url.rsplit('/', 1)[-1], {})))
     def provision(person):
         created.append(person.id)
         remote['new-stable-subject'] = {'id': 'new-stable-subject', 'username': 'technical-head'}
         return {'subject': 'new-stable-subject', 'temporary_password': 'once-only'}
     monkeypatch.setattr(provisioning, 'provision', provision)
     try:
-        head.identity_subject, head.identity_issuer = None, None
+        from app.identity.service import DEMO_SUBJECTS
+        fixture_subject = next(subject for subject, user in DEMO_SUBJECTS[head.airport_id].items()
+                               if user == 'technical-head')
+        head.identity_subject = fixture_subject if seeded_identity else None
+        head.identity_issuer = None
         db.commit()
         result = sync_technical_head(db)
         assert result['temporary_password'] == 'once-only'

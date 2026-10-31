@@ -25,7 +25,7 @@ from app.people.models import User
 
 # Fixture subjects stay fixed across product renames and match the realm imports.
 DEMO_SUBJECTS = {
-    "dunarea": {
+    "craiova": {
         "af4c2bc9-6243-53f5-8051-574255e83321": "admin",
         "cfb97976-e57b-585e-aeba-f8f62eea15d9": "manager",
         "214b2438-a8ab-57d3-8557-354f2c26d698": "reviewer",
@@ -34,7 +34,7 @@ DEMO_SUBJECTS = {
         "c3906149-d2d1-5e03-8a52-b8b04a11867f": "technician",
         "78f3f62f-9942-57a0-b610-8bc449514179": "technical-head"
     },
-    "carpati": {
+    "sibiu": {
         "ae41e412-8c0a-515c-89d3-b6a87c7c0d83": "admin",
         "f116602c-c29c-5511-a885-b8f20a20dfaa": "manager",
         "84ace447-6e3f-5b8b-bf26-d38741cc816f": "reviewer",

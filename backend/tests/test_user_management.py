@@ -114,7 +114,7 @@ def test_hr_cannot_grant_privileged_roles_or_duplicate_email(client):
     login(client, 'hr')
     assert client.post('/api/people', json=employee(roles=['signer'])).status_code == 422
     assert client.post('/api/people', json=employee(access_profile='director')).status_code == 422
-    assert client.post('/api/people', json=employee(email=' HR@DUNAREA.EXAMPLE ')).status_code == 409
+    assert client.post('/api/people', json=employee(email=' HR@CRAIOVA.EXAMPLE ')).status_code == 409
     assert client.post('/api/people', json=employee(department_id='foreign-department')).status_code == 422
     assert client.post('/api/people', json=employee(manager_id='missing')).status_code == 404
 
@@ -477,7 +477,7 @@ def test_hr_offboards_locally_even_if_keycloak_is_down(client, people_state, db,
     from app.core.exceptions import DomainError
     person = db.get(User, 'technician')
     person.identity_subject = 'owned-tech'
-    person.identity_issuer = 'https://identity.example/realms/dunarea'
+    person.identity_issuer = 'https://identity.example/realms/craiova'
     db.commit()
     login(client, 'hr')
     monkeypatch.setattr(provisioning, 'set_enabled', lambda person: (_ for _ in ()).throw(DomainError('Indisponibil', 502)))

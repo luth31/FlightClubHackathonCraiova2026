@@ -16,10 +16,10 @@ def sync_technical_head(db):
         from urllib.parse import quote
         response = provisioning.request('GET', base + '/' + quote(person.identity_subject, safe=''), headers=headers)
         if response.status_code == 404:
-            # Seeded UUID5 subjects are absent in realms imported before this account existed.
-            from uuid import NAMESPACE_URL, uuid5
-            seeded = str(uuid5(NAMESPACE_URL, f'aerodesk:{person.airport_id}:technical-head'))
-            if person.identity_subject != seeded:
+            # Fixture subjects remain stable across airport renames.
+            from app.identity.service import DEMO_SUBJECTS
+            fixture_user = DEMO_SUBJECTS.get(person.airport_id, {}).get(person.identity_subject)
+            if fixture_user != person.id:
                 raise DomainError('Identitatea asociată lipsește; verifică realm-ul înainte de a continua.', 409)
             person.identity_subject, person.identity_issuer = None, None
             person.provisioning_status = 'pending'

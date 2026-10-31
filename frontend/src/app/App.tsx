@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,ShieldCheck,Plane} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
@@ -17,7 +17,16 @@ import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
 import {initials,roleLabel} from '@/utils/format';
 import type {Page,Session} from '@/types';
-const nav=[{id:'home',label:'Acasă',icon:House},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound}];
+const OperationsPage = lazy(()=>import('@/features/operations').then(module=>({default:module.OperationsPage})));
+function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:string)=>void}) {
+  const [visited,setVisited]=useState(visible);
+  useEffect(()=>{if(visible)setVisited(true)},[visible]);
+  if(!visited&&!visible)return null;
+  return <div hidden={!visible} inert={!visible}><ViewActiveContext value={visible}>
+    <Suspense fallback={<Loading/>}><OperationsPage notify={notify}/></Suspense>
+  </ViewActiveContext></div>;
+}
+const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound}];
 const secondNav=[{id:'sharing',label:'Partajate cu aeroporturi',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
@@ -111,7 +120,7 @@ export function App() {
   if(error)return <div className="app-load-error"><ErrorMessage message={error} retry={refresh}/></div>;
   if(!session)return <Loading/>;
   if(!session.current_user)return <LoginPage session={session} onLogin={s=>{setSession(s);setRevision(v=>v+1)}}/>;
-  const user=session.current_user,airport=typeof session.airport==='string'?session.airport:session.airport?.name||'Aeroportul Dunărea';
+  const user=session.current_user,airport=typeof session.airport==='string'?session.airport:session.airport?.name||'Aeroportul Craiova';
   return <div className="app-shell">
     {mobileOpen&&<div className="sidebar-overlay" onClick={()=>setMobileOpen(false)}/>}
     <aside className={`sidebar ${mobileOpen?'open':''}`}>
@@ -180,6 +189,8 @@ export function App() {
           {page==='audit'&&<AuditPage revision={revision} onOpen={openDoc}/>}
           </ViewActiveContext>
         </div>
+        {/* Retain tiles in this session; hidden operations stop polling and rendering. */}
+        <RetainedOperations visible={page==='operations'&&!doc} notify={notify}/>
         {doc&&<DocumentDetail key={doc} id={doc} origin={page} onOpen={openDoc} onClose={returnToOrigin} onChanged={changed} notify={notify} user={user}/>}
       </main>
       <footer className="workspace-footer"><span>FlyLeaf <span>·</span> Mai multă ordine. Mai mult timp pentru echipă.</span></footer>

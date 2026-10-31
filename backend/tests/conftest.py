@@ -9,9 +9,9 @@ TEST_ROOT=Path(tempfile.mkdtemp(prefix='flyleaf-tests-'))
 os.environ['FLYLEAF_DATABASE_URL']=f'sqlite:///{TEST_ROOT}/test.db'
 os.environ['FLYLEAF_STORAGE_DIR']=str(TEST_ROOT/'storage')
 os.environ['FLYLEAF_CORPUS_DIR']=str(TEST_ROOT/'corpus')
-os.environ['FLYLEAF_AIRPORT_ID']='dunarea'
+os.environ['FLYLEAF_AIRPORT_ID']='craiova'
 os.environ['FLYLEAF_EXTRACTION_ENABLED']='false'
-os.environ['FLYLEAF_AIRPORT_NAME']='Aeroportul Dunărea'
+os.environ['FLYLEAF_AIRPORT_NAME']='Aeroportul Craiova'
 from reportlab.pdfgen import canvas
 corpus=TEST_ROOT/'corpus'; (corpus/'pdfs').mkdir(parents=True)
 records=[]

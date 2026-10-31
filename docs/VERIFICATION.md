@@ -104,9 +104,9 @@ Provider-only account disablement does not revoke an already issued application 
 
 The two airports have separate databases, files, signing keys and identities. Their gateways alone join the exchange network and authenticate each other with mutual TLS. Requests are authenticated and access is checked at the source on every read.
 
-- An approved contract was redacted, visually reviewed across all three pages, shared, read from Carpați and revoked. The revoked remote file subsequently returned 403 and disappeared from the received list.
+- An approved contract was redacted, visually reviewed across all three pages, shared, read from Sibiu and revoked. The revoked remote file subsequently returned 403 and disappeared from the received list.
 - The retained active example is the two-page **“Șablon partajabil - proces-verbal de recepție”**, source `doc-145`, grant `share-dcad0b0312f9`. A suggested name redaction was applied, both derivative pages were visually inspected and human review was explicitly confirmed.
-- The active grant permits **Carpați → Conformitate** until 1 December 2026. Elena's Carpați account can list and open the reviewed copy. A Carpați director in Conducere cannot list or open it, even when attempting to supply forged requester headers. Recipient original-file access returned 404.
+- The active grant permits **Sibiu → Conformitate** until 1 December 2026. Elena's Sibiu account can list and open the reviewed copy. A Sibiu director in Conducere cannot list or open it, even when attempting to supply forged requester headers. Recipient original-file access returned 404.
 - Grant reads enforce version, expiry, revocation and file hash. Redaction removes text from the derivative rather than drawing an overlay; the original signature is not represented as a signature of the altered copy.
 - With both gateways stopped, local document and people requests returned 200 while remote access failed closed with 503. Restarting the gateways restored access.
 - After restarting all services, the active received copy still opened successfully.
@@ -215,7 +215,7 @@ A fresh whole-branch code review identified five Important groups: history/prede
 Reproduce the current backend gate from the repository root in PowerShell (the deployment mount supplies the existing OIDC test fixtures):
 
 ```powershell
-docker compose run --rm --no-deps -e FLYLEAF_AUTH_MODE=demo -e FLYLEAF_EXCHANGE_URL= -v "${PWD}/backend:/app/backend:ro" -v "${PWD}/deploy:/app/deploy:ro" dunarea-api python -m pytest tests -q -p no:cacheprovider
+docker compose run --rm --no-deps -e FLYLEAF_AUTH_MODE=demo -e FLYLEAF_EXCHANGE_URL= -v "${PWD}/backend:/app/backend:ro" -v "${PWD}/deploy:/app/deploy:ro" craiova-api python -m pytest tests -q -p no:cacheprovider
 npm --prefix frontend run build
 npm --prefix frontend run lint
 npm --prefix frontend run test:suppliers
@@ -272,7 +272,7 @@ The catalog now owns its loading and error state, retains a retryable error acro
 
 Fresh checks: **37 frontend tests passed** (33 DOM and 4 supplier render checks), production build and ESLint passed, and **150 backend tests passed** with the same two dependency deprecation warnings. A separate read-only code review reported no findings and independently passed the two new tests. `git diff --check` passed.
 
-Both local API images were rebuilt. Each database was backed up inside its existing state volume before recreation; startup upgraded revision `714af828c311` to `20261031_supplier_ocr_merge`, and both APIs became healthy. Live OpenAPI checks confirm both catalog and registration routes. Read-only catalog serialization against the deployed databases under the local director account returned **20 suppliers and 15 review choices for Dunărea**, with all registry-card fields present; Carpați returned zero of each, consistent with its separate dataset.
+Both local API images were rebuilt. Each database was backed up inside its existing state volume before recreation; startup upgraded revision `714af828c311` to `20261031_supplier_ocr_merge`, and both APIs became healthy. Live OpenAPI checks confirm both catalog and registration routes. Read-only catalog serialization against the deployed databases under the local director account returned **20 suppliers and 15 review choices for Craiova**, with all registry-card fields present; Sibiu returned zero of each, consistent with its separate dataset.
 
 Both web containers were also rebuilt and recreated. HTTP checks on ports 8080 and 8081 confirm `/assets/index-CprXs4Sz.js` matches the local production asset by SHA-256 and `/api/health` succeeds through each web proxy. Reload the browser before checking the registry. [NAVIGATION.md](NAVIGATION.md) now requires coordinated API deployment when frontend changes depend on new routes or migrations. Native browser interaction/layout verification remains unavailable; the live catalog checks above are read-only service/schema checks, not an authenticated browser session.
 

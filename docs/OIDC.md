@@ -2,14 +2,16 @@
 
 FlyLeaf oferă două moduri explicite: `demo` pentru autentificarea locală de dezvoltare și `oidc` pentru autentificarea reală printr-un realm Keycloak al aeroportului. În modul OIDC, ruta de autentificare prin parolă locală este dezactivată, iar sesiunile create anterior în modul demo nu sunt acceptate. Documentele și conturile de demonstrație rămân fictive, indiferent de modul autentificării.
 
+Pentru acces din tailnet, folosește [configurația Tailscale](TAILSCALE.md). Doar deployment-ul separat pentru prezentare folosește aceeași origine HTTPS pentru website, API și autentificare. Configurația locală implicită își păstrează porturile și fluxul de autentificare.
+
 ## Configurare
 
-Exemplu Dunărea pentru demonstrația locală Docker:
+Exemplu Craiova pentru demonstrația locală Docker:
 
 ```dotenv
 FLYLEAF_AUTH_MODE=oidc
-FLYLEAF_OIDC_ISSUER=http://127.0.0.1:8180/realms/dunarea
-FLYLEAF_OIDC_INTERNAL_ISSUER=http://dunarea-identity:8080/realms/dunarea
+FLYLEAF_OIDC_ISSUER=http://127.0.0.1:8180/realms/craiova
+FLYLEAF_OIDC_INTERNAL_ISSUER=http://craiova-identity:8080/realms/craiova
 FLYLEAF_OIDC_CLIENT_ID=flyleaf-web
 FLYLEAF_OIDC_REDIRECT_URI=http://127.0.0.1:8080/api/auth/oidc/callback
 FLYLEAF_OIDC_FRONTEND_URL=http://127.0.0.1:8080/
@@ -17,7 +19,7 @@ FLYLEAF_OIDC_SESSION_MINUTES=60
 FLYLEAF_COOKIE_SECURE=false
 ```
 
-Pentru Carpați se folosesc realm-ul `carpati`, porturile publice 8181/8081 și transportul intern `carpati-identity:8080`. Numele diferite de realm evită suprapunerea cookie-urilor Keycloak când două servicii locale folosesc același host pe porturi diferite. Issuer-ul public este identitatea verificată în token; adresa internă este exclusiv transportul backendului. Nu se acceptă un issuer diferit din discovery sau din token.
+Pentru Sibiu se folosesc realm-ul `sibiu`, porturile publice 8181/8081 și transportul intern `sibiu-identity:8080`. Numele diferite de realm evită suprapunerea cookie-urilor Keycloak când două servicii locale folosesc același host pe porturi diferite. Issuer-ul public este identitatea verificată în token; adresa internă este exclusiv transportul backendului. Nu se acceptă un issuer diferit din discovery sau din token.
 
 Clientul Keycloak trebuie să fie **public**, cu Standard Flow activ, Implicit Flow și Direct Access Grants dezactivate, PKCE S256 obligatoriu și redirect URI exact. Nu se configurează wildcard-uri de redirect. Configurația curentă acceptă tokenuri ID semnate RS256, algoritmul implicit al realm-ului demonstrativ. În afara loopback-ului, URL-urile publice necesită HTTPS; pentru HTTPS se cere `FLYLEAF_COOKIE_SECURE=true`. Traficul HTTP intern este adecvat doar rețelei de demonstrație controlate.
 
@@ -25,7 +27,7 @@ Lista explicită `defaultClientScopes` trebuie să includă **`basic`**. Din Key
 
 ## Asocierea identității cu permisiunile
 
-Implicit, numai cele șase conturi locale fictive sunt asociate prin harta explicită `DEMO_SUBJECTS` din `backend/app/identity/service.py`. UUID-urile rămân stabile la schimbarea numelui produsului și coincid cu ID-urile din importurile realm-urilor `dunarea` și `carpati`. Un aeroport necunoscut nu primește automat asocieri demonstrative.
+Implicit, numai cele șase conturi locale fictive sunt asociate prin harta explicită `DEMO_SUBJECTS` din `backend/app/identity/service.py`. UUID-urile rămân stabile la schimbarea numelui produsului și coincid cu ID-urile din importurile realm-urilor `craiova` și `sibiu`. Un aeroport necunoscut nu primește automat asocieri demonstrative.
 
 Pentru o instalare reală se configurează explicit `FLYLEAF_OIDC_SUBJECT_MAP` ca obiect JSON `{"provider-subject":"local-user-id"}`. O hartă goală nu permite niciun cont. Angajații provisionați folosesc asocierile persistente `(identity_issuer, identity_subject)` din baza de date.
 

@@ -10,6 +10,9 @@ from cryptography.x509.oid import NameOID, ExtendedKeyUsageOID
 ROOT = Path(__file__).resolve().parents[1] / '.runtime' / 'exchange'
 ROOT.mkdir(parents=True, exist_ok=True, mode=0o700)
 if (ROOT / 'ready').exists():
+    if not all((ROOT / f'{airport}.{suffix}').is_file()
+               for airport in ('craiova', 'sibiu') for suffix in ('crt', 'key', 'token')):
+        raise SystemExit('Gateway credentials use previous airport names. Run scripts/migrate_airports.py before starting the renamed stack.')
     print('Existing local gateway credentials retained.')
     raise SystemExit(0)
 
@@ -23,7 +26,7 @@ ca = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(
         key_agreement=False,key_cert_sign=True,crl_sign=True,encipher_only=False,decipher_only=False),critical=True)
     .sign(ca_key,hashes.SHA256()))
 (ROOT/'ca.crt').write_bytes(ca.public_bytes(serialization.Encoding.PEM))
-for airport in ('dunarea','carpati'):
+for airport in ('craiova','sibiu'):
     key = rsa.generate_private_key(public_exponent=65537,key_size=2048)
     subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,f'{airport}-gateway')])
     cert = (x509.CertificateBuilder().subject_name(subject).issuer_name(ca.subject).public_key(key.public_key())

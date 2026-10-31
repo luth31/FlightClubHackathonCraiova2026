@@ -1,0 +1,66 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-31T22:04:48Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+    {
+      "type": "way",
+      "id": 84575246,
+      "center": {
+        "lat": 44.3187633,
+        "lon": 23.8872403
+      },
+      "tags": {
+        "CLC:code": "124",
+        "CLC:explanation": "See http://wiki.openstreetmap.org/wiki/Romania_CLC_Import.",
+        "CLC:shapeId": "1087",
+        "CLC:year": "2006",
+        "aerodrome": "international",
+        "aerodrome:type": "international",
+        "aeroway": "aerodrome",
+        "closest_town": "Craiova",
+        "ele": "191",
+        "iata": "CRA",
+        "icao": "LRCV",
+        "name": "Aeroportul Interna\u021bional Craiova",
+        "name:en": "Craiova Airport",
+        "name:pl": "Port lotniczy Krajowa",
+        "name:ro": "Aeroportul Interna\u021bional Craiova",
+        "name:ru": "\u041c\u0435\u0436\u0434\u0443\u043d\u0430\u0440\u043e\u0434\u043d\u044b\u0439 \u0410\u044d\u0440\u043e\u043f\u043e\u0440\u0442 \u041a\u0440\u0430\u0439\u043e\u0432\u0430",
+        "operator": "Consiliul Jude\u021bean Dolj",
+        "ref": "CRA",
+        "source": "European Environment Agency (EEA), CORINE Land Cover, 2006",
+        "source:ro": "Agen\u0163ia European\u0103 de Mediu, CORINE Land Cover, 2006",
+        "wikidata": "Q1431146",
+        "wikipedia": "ro:Aeroportul Interna\u021bional Craiova"
+      }
+    },
+    {
+      "type": "way",
+      "id": 231704730,
+      "center": {
+        "lat": 45.7871614,
+        "lon": 24.0866433
+      },
+      "tags": {
+        "aerodrome": "international",
+        "aerodrome:type": "international",
+        "aeroway": "aerodrome",
+        "contact:email": "secretariat@sibiuairport.ro",
+        "contact:website": "https://www.sibiuairport.ro/",
+        "ele": "463",
+        "iata": "SBZ",
+        "icao": "LRSB",
+        "name": "Aeroportul Interna\u021bional Sibiu",
+        "name:de": "Flughafen Hermannstadt",
+        "name:en": "Sibiu International Airport",
+        "phone": "+40 732 650 901",
+        "wikidata": "Q946418",
+        "wikipedia": "ro:Aeroportul Interna\u021bional Sibiu"
+      }
+    }
+  ]
+}

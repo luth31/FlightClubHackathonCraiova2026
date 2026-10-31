@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     seed_documents: bool = True
     extraction_enabled: bool = True
     tessdata_dir: Path = ROOT / "data" / "tessdata"
-    airport_id: str = 'dunarea'
-    airport_name: str = 'Aeroportul Dunărea'
+    airport_id: str = 'craiova'
+    airport_name: str = 'Aeroportul Craiova'
     cookie_secure: bool = False
     auth_mode: Literal['demo', 'oidc'] = 'demo'
     oidc_issuer: str = ''
@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = Field(default=SecretStr(''), validation_alias=AliasChoices('FLYLEAF_OPENAI_API_KEY','OPENAI_API_KEY'))
     openai_model: str = 'gpt-6-luna'
     openai_redaction_model: str = ''
+    google_maps_api_key: SecretStr = Field(default=SecretStr(''), validation_alias=AliasChoices('FLYLEAF_GOOGLE_MAPS_API_KEY', 'GOOGLE_MAPS_API_KEY'))
     exchange_url: str = ''
     exchange_token_file: Path | None = None
     cors_origins: list[str] = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173', 'http://127.0.0.1:4173']

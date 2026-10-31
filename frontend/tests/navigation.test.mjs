@@ -17,7 +17,7 @@ const {App}=module.exports;
 initialDOM.window.close();
 
 function installDOM(window) {
-  for (const key of ['window','document','navigator','location','localStorage','HTMLElement','HTMLInputElement','Event','MouseEvent','FormData','File'])
+  for (const key of ['window','document','navigator','location','localStorage','sessionStorage','HTMLElement','HTMLInputElement','Event','MouseEvent','FormData','File'])
     Object.defineProperty(globalThis,key,{value:key==='window'?window:window[key],configurable:true,writable:true});
   globalThis.IS_REACT_ACT_ENVIRONMENT=true;
   window.scrollTo=(x,y)=>{
@@ -110,7 +110,7 @@ test('technician sidebar contains only personal work and forbidden hashes do not
     return response;
   }});
   assert.deepEqual([...document.querySelectorAll('aside nav button')].map(e=>e.textContent),
-    ['Acasă','Documente','Sarcinile mele','Echipă']);
+    ['Acasă','Operațiuni la sol','Documente','Sarcinile mele','Echipă']);
   assert.equal(heading(),'Documente');
   assert.ok(!paths.includes('/api/audit'));
   await click(find('aside button','Sarcinile mele'));

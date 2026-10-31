@@ -4,6 +4,7 @@ import type {Page} from '@/types';
 export const pageLabels: Record<Page, string> = {
   home: 'Acasă', documents: 'Documente', contracts: 'Contracte', suppliers: 'Furnizori',
   approvals: 'Aprobări', people: 'Echipă', sharing: 'Partajate cu aeroporturi', audit: 'Jurnal de activitate',
+  operations: 'Operațiuni la sol',
 };
 type Route = {page: Page; doc?: string};
 type NavigationState = {userId?: string; origin: Page; documentDepth: number; scroll?: [number, number]};

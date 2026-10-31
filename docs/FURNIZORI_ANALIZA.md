@@ -252,7 +252,7 @@ Testele au rulat pe codul local montat doar pentru citire într-un container tem
 Comanda de reproducere a suitei dedicate, din rădăcina proiectului pe Windows:
 
 ```powershell
-docker compose run --rm --no-deps -e FLYLEAF_AUTH_MODE=demo -e FLYLEAF_EXCHANGE_URL= -v "${PWD}/backend:/app/backend:ro" dunarea-api python -m pytest tests/test_suppliers.py tests/test_supplier_review_boundaries.py -q -p no:cacheprovider
+docker compose run --rm --no-deps -e FLYLEAF_AUTH_MODE=demo -e FLYLEAF_EXCHANGE_URL= -v "${PWD}/backend:/app/backend:ro" craiova-api python -m pytest tests/test_suppliers.py tests/test_supplier_review_boundaries.py -q -p no:cacheprovider
 ```
 
 Aceste teste acoperă IBAN-ul, diferențele de expeditor, deduplicarea, verificarea prin contactul cunoscut, separarea persoanelor, restricțiile de rol, neconcordanțele de sumă și referințele modificate, inclusiv concurența aprobărilor.

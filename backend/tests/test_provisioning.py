@@ -11,11 +11,11 @@ from pathlib import Path
 
 @pytest.fixture
 def provider(monkeypatch):
-    monkeypatch.setattr(settings, 'oidc_issuer', 'http://127.0.0.1:8180/realms/dunarea')
-    monkeypatch.setattr(settings, 'oidc_internal_issuer', 'http://dunarea-identity:8080/realms/dunarea')
+    monkeypatch.setattr(settings, 'oidc_issuer', 'http://127.0.0.1:8180/realms/craiova')
+    monkeypatch.setattr(settings, 'oidc_internal_issuer', 'http://craiova-identity:8080/realms/craiova')
     monkeypatch.setattr(settings, 'keycloak_provisioning_client_secret', SecretStr('private-service-secret'))
     monkeypatch.setattr(settings, 'keycloak_activation_email', False)
-    person=SimpleNamespace(id='emp-test',name='Mara Test',email='mara@example.test',airport_id='dunarea',
+    person=SimpleNamespace(id='emp-test',name='Mara Test',email='mara@example.test',airport_id='craiova',
         identity_subject=None,identity_issuer=None,active=False)
     calls=[]
     users=[]
@@ -160,12 +160,12 @@ def test_username_rename_collision_preserves_existing_identity(provider, monkeyp
 
 def test_offboarding_does_not_touch_another_identity(provider):
     person,calls,users=provider
-    person.identity_issuer='https://wrong.example/realms/dunarea'
+    person.identity_issuer='https://wrong.example/realms/craiova'
     with pytest.raises(DomainError): provisioning.set_enabled(person)
     assert not calls
 
 
-@pytest.mark.parametrize('airport',['dunarea','carpati'])
+@pytest.mark.parametrize('airport',['craiova','sibiu'])
 def test_realm_service_client_has_only_user_management_scope(airport):
     realm=json.loads((Path(__file__).resolve().parents[2]/'deploy/keycloak'/f'{airport}-realm.json').read_text(encoding='utf-8'))
     client=next(c for c in realm['clients'] if c['clientId']=='flyleaf-provisioner')

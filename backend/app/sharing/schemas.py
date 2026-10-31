@@ -14,8 +14,8 @@ class AnalysisRequest(StudioRequest):
     context: str=Field(default='',max_length=3000)
     purpose: str=Field(default='Schimb controlat cu aeroportul partener',max_length=300)
 class ShareRequest(BaseModel):
-    recipient_airport: str=Field(default='Aeroportul Carpați',max_length=200)
-    recipient_airport_id: str=Field(default='carpati',max_length=100)
+    recipient_airport: str=Field(default='Aeroportul Sibiu',max_length=200)
+    recipient_airport_id: str=Field(default='sibiu',max_length=100)
     recipient_department: str | None=Field(default=None,max_length=100)
     expires_at: date
     preview_id: str
