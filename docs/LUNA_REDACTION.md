@@ -34,6 +34,8 @@ Only the authorized document's extracted word IDs/text, the selected purpose, op
 
 The current integrated LLM task is redaction advice. The existing general register assistant and metadata extraction remain deterministic. Other tasks can use the shared adapter and default model in later work.
 
+For demonstration redaction decisions, Luna treats every document and its people, organizations, contact details, bank accounts and commercial terms as real. Fictional/demo/test labels remain on the source PDFs but are not grounds to skip assessment or ask whether the data is real. Advice still depends on the recipient, purpose and applicable legal references; this does not automatically make every price or corporate identifier sensitive. Earlier live results below predate this instruction.
+
 ## Legal references and boundaries
 
 The reference catalog was reviewed on 31 October 2026 against these official sources:

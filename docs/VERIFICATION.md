@@ -131,3 +131,9 @@ Chrome DevTools checks on a synthetic two-page PDF with four occurrences of “E
 - Tab and Shift+Tab wrapped within the dialog, skipping disabled/closed disclosure controls. PDF overlays do not create hundreds of Tab stops; search and Text selectabil provide keyboard access.
 - Production build and ESLint passed. All 27 existing redaction/OCR/cache integration tests passed. No API contract, original-PDF mutation or publication behavior changed.
 - Both Compose web images were rebuilt and recreated. After a fresh Keycloak login on port 8080, the deployed bundle displayed the new editor, loaded the PDF and found three occurrences for a clicked word in the single shared panel. No browser warnings/errors or horizontal overflow were observed. A new preview after returning to edit reset human-review confirmation and kept sharing disabled.
+
+## Luna treats demo data as real — 31 October 2026
+
+- Redaction instructions now treat every document and its entities as real, regardless of fictional/demo/test labels. Labels remain on source PDFs. Purpose, necessity and legal-reference checks still apply; fields are not automatically classified as personal or confidential.
+- All 15 redaction integration tests passed. Both API images were rebuilt, recreated and became healthy.
+- Chrome DevTools exercised a real `gpt-6-luna` call against the signed maintenance contract `doc-64921a2fe49b`, with the exact context “Destinatarul este curios de un model de contract de mentenanta.” The source retained fictional labels. The 200 response suggested the initiator's name, payment account and contact email based on the recipient's need for a model, without fictional-data exemptions or conditions about whether the person/data is real. It retained the distinction between unnecessary detail and an automatic legal redaction obligation. No redactions or shares were applied by this check.
