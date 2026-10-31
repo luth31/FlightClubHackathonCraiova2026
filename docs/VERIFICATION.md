@@ -141,3 +141,35 @@ Chrome DevTools checks on a synthetic two-page PDF with four occurrences of “E
 ## Luna suggestion scroll position — 31 October 2026
 
 Removed the selection handler's unconditional scroll-to-top of the actions panel. Chrome DevTools replayed the previously captured real maintenance-contract analysis to isolate the UI behavior: before the fix, clicking a suggestion moved the right panel from 528 px to 0. Afterward, repeated clicks between the name, account and email kept each suggestion's viewport position within 0.5 px; native scroll anchoring accommodates changing selection-card height. The PDF independently changed pages/scrolled to the highlighted words. Production build and ESLint passed, and both Compose web instances were rebuilt and updated. The temporary response replay was removed after verification.
+
+## Supplier improvements — 31 October 2026
+
+The `suppliers-improvements` branch implements all seven tasks: persisted review context and checks, live reference freshness, history and linked rechecks, filtered pagination/CSV, supplier profiles and explicit contract links, independently approved initial registration, and assignments/deadlines. The API contract is documented in [backend/API_CONTRACT.md](../backend/API_CONTRACT.md).
+
+Fresh verification after the seven feature commits and final review fixes:
+
+| Check | Observed result |
+|---|---|
+| Full backend regression suite | **121 passed**, 2 dependency deprecation warnings |
+| Supplier UI render regression checks | **4 passed** using Node's built-in test runner and React server rendering |
+| Frontend TypeScript and production build | Passed |
+| Frontend ESLint | Passed |
+| Populated legacy migration and repeated upgrade | Passed; old IDs/history/decision retained, absent context remains null; explicit sources take precedence and other uploads are not auto-associated |
+| Repeated supplier seed | Passed; existing identity/history retained |
+| Concurrent registration approval | Passed; one CUI registration succeeds and the conflicting approval returns 409 |
+| Desktop and 390 px UI interaction checks | **Not executed**: browser host unavailable and native Chrome access denied |
+
+The regression suite uses temporary databases/files and covers stale source/registry references, distinct verifier/approver identities, accessible history/list/export/evidence boundaries, multiple contracts, ambiguous legal names with distinct CUIs, and assignment/offboarding behavior. Build/lint do not establish visual or interaction correctness. Earlier browser and Lighthouse results elsewhere in this document apply to the previous application version.
+
+A fresh whole-branch code review identified five Important groups: history/predecessor source disclosure, hidden supplier resolution by name, inferred migration links, forms disappearing after errors, and missing lineage/onboarding navigation. Each was reproduced by a failing regression check and fixed; the full backend suite, four UI render checks, build and lint passed afterward. No Critical or Minor findings were reported. The UI checks assert rendered controls and navigation, and do not replace browser interaction testing.
+
+Reproduce the current backend gate from the repository root in PowerShell (the deployment mount supplies the existing OIDC test fixtures):
+
+```powershell
+docker compose run --rm --no-deps -e AERODESK_AUTH_MODE=demo -e AERODESK_EXCHANGE_URL= -v "${PWD}/backend:/app/backend:ro" -v "${PWD}/deploy:/app/deploy:ro" dunarea-api python -m pytest tests -q -p no:cacheprovider
+npm --prefix frontend run build
+npm --prefix frontend run lint
+npm --prefix frontend run test:suppliers
+```
+
+The features are local application controls: no mailbox integration, external payment execution, account-holder verification or cumulative invoice register was added. Review assignments do not extend decision authority. Deadlines use the configured demonstration reference date.
