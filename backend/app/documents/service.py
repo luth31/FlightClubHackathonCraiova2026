@@ -11,13 +11,14 @@ from pypdf.generic import IndirectObject, DictionaryObject, ArrayObject
 from app.documents.models import Document, DocumentVersion
 from app.documents.classification import classify, case_id
 from app.core.models import AuditEvent
-from app.core.security import can_read, can_edit, require_role, has_role
+from app.core.security import can_read, can_read_version, can_edit, require_role, has_role, page_permissions
 from app.core.exceptions import DomainError
 from app.core.audit import record, now, serialize as serialize_event
 from app.config import settings
+from app.people.organization import DEPARTMENTS as ORGANIZATION_DEPARTMENTS, canonical_department
 
 CATEGORIES=['Contract','Referat de necesitate','Caiet de sarcini','Comandă','Factură','Proces-verbal','Raport de mentenanță','Act adițional','Procedură','Audit','Resurse umane','Instruire']
-DEPARTMENTS=['Achiziții','Tehnic','Financiar','Operațiuni','Resurse umane','Conformitate']
+DEPARTMENTS=[name for _, name, _ in ORGANIZATION_DEPARTMENTS]
 
 def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -44,6 +45,9 @@ def serialize(document, db=None, details=False, user=None):
     data.update(document.extra or {})
     data['flow']=classify(document)
     data['flow_case_id']=case_id(document)
+    if user:
+        data['business_area'] = document.department
+        data['department'] = canonical_department(document.department)
     data.pop('text_excerpt',None)
     data['file_url']=f'/api/documents/{document.id}/file'
     data['days_remaining']=(date.fromisoformat(document.expires_at[:10])-settings.reference_date).days if document.expires_at else None
@@ -66,15 +70,16 @@ def serialize(document, db=None, details=False, user=None):
         data['extraction_status']=extraction['status']
         data['extraction']=extraction
         versions=db.scalars(select(DocumentVersion).where(DocumentVersion.document_id==document.id).order_by(desc(DocumentVersion.version))).all()
+        if user: versions = [version for version in versions if can_read_version(user, document, version)]
         data['versions']=[{'version':v.version,'created_at':v.created_at,'created_by':v.created_by,'filename':v.filename,'sha256':v.sha256,'comment':v.comment,'approved_by':v.approved_by,'approved_at':v.approved_at,'signed':bool(v.signed_path),'file_url':f'/api/documents/{document.id}/file?version={v.version}','metadata_snapshot':v.snapshot} for v in versions]
         events=db.scalars(select(AuditEvent).where(AuditEvent.document_id==document.id).order_by(desc(AuditEvent.created_at),desc(AuditEvent.id))).all()
-        data['audit']=[serialize_event(e) for e in events]
+        data['audit']=[serialize_event(e) for e in events] if user is None or can_read(user, document, include_assignment=False) else []
         steps=[('Încărcare','done'),('Validare metadate','done' if document.validated else 'current'),('Avizare','done' if document.status in ('approved','signed','archived') else 'current' if document.status=='in_review' else 'pending'),('Semnare','done' if document.status=='signed' else 'pending')]
         data['workflow']={'steps':[{'label':a,'status':b} for a,b in steps],'current_step':document.status}
         data['related_documents']=[serialize(d,user=user) for d in [db.get(Document,i) for i in data['related_ids']] if d and (user is None or can_read(user,d))]
     if user:
         from app.people.service import can_review_department
-        data['permissions']={'can_edit':can_edit(user,document),'can_review':can_review_department(db,user,document.department) if db else (has_role(user,'director') or (has_role(user,'reviewer','hr') and user.department==document.department)),'can_sign':has_role(user,'signer'),'can_share':has_role(user,'director','reviewer') and document.department!='Resurse umane'}
+        data['permissions']={'can_edit':can_edit(user,document),'can_review':can_review_department(db,user,document.department) if db else (has_role(user,'director') or (has_role(user,'reviewer','hr') and user.department==document.department)),'can_sign':has_role(user,'signer'),'can_share':page_permissions(user)['sharing'] and document.department!='Resurse umane'}
         if db:
             from app.tasks import service as task_service
             for kind,key in [('approval','can_review'),('validation','can_validate'),('signature','can_sign')]:
@@ -210,7 +215,9 @@ def matching_document_ids(db,query):
     return set(db.execute(text('SELECT document_id FROM document_search WHERE document_search MATCH :query'),{'query':expression}).scalars())
 
 def create_document(db,user,content,filename,title,category,department,supplier=None,expires_at=None):
-    if category not in CATEGORIES or department not in DEPARTMENTS: raise DomainError('Tipul sau departamentul nu este valid.',422)
+    if category not in CATEGORIES or canonical_department(department) not in DEPARTMENTS: raise DomainError('Tipul sau departamentul nu este valid.',422)
+    if not has_role(user,'director') and canonical_department(department)!=canonical_department(user.department):
+        raise DomainError('Poți încărca documente numai în propriul departament.',403)
     if category=='Resurse umane' and department!='Resurse umane': raise DomainError('Documentele de personal aparțin departamentului Resurse umane.',422)
     if has_role(user,'hr') and department!='Resurse umane': raise DomainError('Contul de resurse umane încarcă documente numai în propriul departament.',403)
     if department=='Resurse umane' and not has_role(user,'hr'): raise DomainError('Documentele de personal se încarcă de Resurse umane.',403)

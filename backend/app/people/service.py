@@ -48,8 +48,9 @@ def can_review_leave(db, user, leave):
     if leave.user_id == user.id:
         return False
     subject = local_user(db, leave.user_id)
-    return has_role(user, 'hr') or (has_role(user, 'reviewer', 'director', 'department_head') and
-        (getattr(subject, 'manager_id', None) == user.id or subject.department == user.department or has_role(user, 'director')))
+    from app.people.management import is_head
+    return has_role(user, 'hr', 'director') or (is_head(db, user, subject.department) or
+        (has_role(user, 'reviewer', 'department_head') and getattr(subject, 'manager_id', None) == user.id))
 
 
 def directory(db, user):
@@ -63,11 +64,16 @@ def directory(db, user):
             HeadAppointment.status.in_(['pending', 'approved'])))}
     can_propose_heads = has_role(user, 'admin', 'hr')
     can_view_appointments = has_role(user, 'admin', 'hr', 'director')
+    privileged_directory = has_role(user, 'admin', 'hr', 'director')
+    records = department_records(db)
+    current_department_ids = {record['id'] for record in records}
     items = []
     for person in users:
         item = employee_dict(db, person)
         appointment = open_appointments.get(person.department_id)
-        item['can_propose_head'] = can_propose_heads and person.active and not item['is_department_head'] and appointment is None
+        item['can_propose_head'] = (can_propose_heads and person.active
+            and person.department_id in current_department_ids
+            and not item['is_department_head'] and appointment is None)
         item['head_appointment'] = {'status': appointment.status, 'effective_date': appointment.effective_date} if can_view_appointments and appointment and appointment.user_id == person.id else None
         item['manager_id'] = getattr(person, 'manager_id', None)
         manager = db.get(User, item['manager_id']) if item['manager_id'] else None
@@ -76,8 +82,12 @@ def directory(db, user):
         item['availability'] = 'inactive' if not person.active else 'away' if any(
             leave.user_id == person.id and leave.status == 'approved' and leave.starts_at <= today <= leave.ends_at
             for leave in all_leaves) else 'available'
+        if not privileged_directory and person.id != user.id:
+            for field in ('roles', 'permissions', 'login_username', 'sign_in_url', 'identity_sync_pending', 'provisioning_status'):
+                item.pop(field, None)
         items.append(item)
-    delegations = [delegation_dict(db, d) for d in db.scalars(select(Delegation).where(Delegation.from_user.in_(user_ids)))]
+    delegations = [delegation_dict(db, d) for d in db.scalars(select(Delegation).where(Delegation.from_user.in_(user_ids)))
+        if privileged_directory or d.from_user == user.id or d.to_user == user.id]
     leaves = []
     for leave in all_leaves:
         if leave.user_id != user.id and not can_review_leave(db, user, leave):
@@ -86,7 +96,9 @@ def directory(db, user):
         leaves.append({'id': leave.id, 'user_id': leave.user_id, 'name': person.name, 'department': person.department,
             'starts_at': leave.starts_at, 'ends_at': leave.ends_at, 'reason': leave.reason, 'status': leave.status,
             'approver_id': leave.approver_id, 'can_decide': leave.status == 'pending' and can_review_leave(db, user, leave)})
-    return {'items': items, 'total': len(items), 'departments': sorted({p.department for p in users}),
+    return {'items': items, 'total': len(items), 'departments': [d['name'] for d in records],
+        'organization_leaders': [{'id': person.id, 'name': person.name, 'job_title': person.job_title}
+            for person in users if person.active and has_role(person, 'director')],
         'delegations': delegations, 'leaves': leaves, 'current_user_id': user.id,
         'can_manage_accounts': has_role(user, 'admin', 'hr'),
         'can_admin_delegations': has_role(user, 'admin'),
@@ -94,7 +106,7 @@ def directory(db, user):
         'can_propose_heads': can_propose_heads,
         'can_manage_signing': has_role(user, 'director'),
         'can_view_appointments': can_view_appointments,
-        'department_records': department_records(db),
+        'department_records': records,
         'auth_mode': settings.auth_mode,
         'can_manage_delegations': has_role(user, 'admin', 'director', 'reviewer', 'department_head'),
         'reference_date': today}

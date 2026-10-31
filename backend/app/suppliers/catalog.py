@@ -2,7 +2,7 @@
 from sqlalchemy import select,text
 from app.suppliers.models import Supplier,SupplierContract
 from app.documents.models import Document
-from app.core.security import require_role,can_read,has_role
+from app.core.security import require_role,can_read,has_role,require_page
 from app.core.exceptions import DomainError
 from app.core.audit import record,now
 
@@ -17,7 +17,7 @@ def eligible(document,supplier):
     return document.category=='Contract' and same_name(document.supplier,supplier.name) and document.validated and document.status in ('approved','signed') and supplier.state=='active'
 
 def get_supplier(db,user,identifier):
-    require_role(user,'director','finance')
+    require_page(user,'suppliers')
     item=db.get(Supplier,identifier)
     if not item or item.airport_id!=user.airport_id or not contracts(db,user,item): raise DomainError('Furnizorul nu a fost găsit.',404)
     return item
@@ -25,7 +25,7 @@ def get_supplier(db,user,identifier):
 def contract_list(db,user,identifier):
     item=get_supplier(db,user,identifier)
     items=[{'id':d.id,'title':d.title,'version':d.version,'value':d.value,'currency':d.currency,'expires_at':d.expires_at,
-        'eligible_for_review':eligible(d,item),'unavailable_reason':None if eligible(d,item) else 'Furnizor suspendat, sursă modificată sau contract neaprobat.'} for d in contracts(db,user,item)]
+        'eligible_for_review':has_role(user,'director','finance') and eligible(d,item),'unavailable_reason':None if eligible(d,item) else 'Furnizor suspendat, sursă modificată sau contract neaprobat.'} for d in contracts(db,user,item)]
     return {'items':items,'total':len(items)}
 
 def choice_dict(db,user,item):
@@ -33,10 +33,18 @@ def choice_dict(db,user,item):
     visible=contracts(db,user,item)
     visible.sort(key=lambda d:(d.id!=item.document_id,d.id))
     usable=[d for d in visible if eligible(d,item)]
-    return {**supplier_dict(item),'document_id':(usable or visible)[0].id,'tax_id':item.tax_id,
+    result = {**supplier_dict(item),'document_id':(usable or visible)[0].id,'tax_id':item.tax_id,
         'address':item.address,'category':item.category,'state':item.state,
         'can_manage':has_role(user,'director'),'contracts':contract_list(db,user,item.id)['items'],
-        'bank_history':visible_bank_history(db,user,item)}
+        'can_review_bank':has_role(user,'director','finance')}
+    if result['can_review_bank']:
+        result['bank_history'] = visible_bank_history(db,user,item)
+    else:
+        result.pop('expected_iban', None)
+        result.pop('bank_history', None)
+        for contract in result['contracts']:
+            contract['eligible_for_review'] = False
+    return result
 
 def visible_bank_history(db,user,item):
     from app.suppliers.service import actors,can_access_case
@@ -59,7 +67,7 @@ def detail(db,user,identifier):
     return choice_dict(db,user,get_supplier(db,user,identifier))
 
 def listing(db,user):
-    require_role(user,'director','finance')
+    require_page(user,'suppliers')
     items=[choice_dict(db,user,s) for s in db.scalars(select(Supplier).where(Supplier.airport_id==user.airport_id)) if contracts(db,user,s)]
     return {'items':items,'total':len(items)}
 

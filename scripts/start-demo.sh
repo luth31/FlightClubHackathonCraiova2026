@@ -44,4 +44,6 @@ for url in ['http://carpati-api:8000/api/health', 'http://carpati-identity:8080/
                 raise SystemExit('Services are still starting. Inspect: docker compose logs --tail=30 carpati-api carpati-identity')
             time.sleep(1)
 PY
+docker compose exec -T dunarea-api python -m app.people.sync_demo_organization
+docker compose exec -T carpati-api python -m app.people.sync_demo_organization
 printf '%s\n' 'Dunărea: http://127.0.0.1:8080' 'Carpați: http://127.0.0.1:8081'

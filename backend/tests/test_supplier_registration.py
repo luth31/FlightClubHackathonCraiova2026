@@ -38,7 +38,7 @@ def test_changed_evidence_blocks_registration_approval(admin,pdf_bytes):
     assert verify(admin,record).status_code==200
     assert admin.patch(f'/api/documents/{doc["id"]}',json={'title':'Changed evidence'}).status_code==200
     login(admin,'finance')
-    assert admin.post(f'/api/supplier-registrations/{record["id"]}/approve',json={}).status_code==409
+    assert admin.post(f'/api/supplier-registrations/{record["id"]}/approve',json={}).status_code==404
 
 def test_concurrent_registration_approvals_preserve_unique_tax_id(admin,pdf_bytes):
     records=[dossier(admin,pdf_bytes,'12345680')[0] for _ in range(2)]

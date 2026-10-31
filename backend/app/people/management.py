@@ -12,11 +12,8 @@ from app.core.security import has_role, require_role, user_dict, hash_password
 from app.people.models import User, Department, HeadAppointment, Session, Delegation
 from app.people.names import person_names, display_name
 from app.identity import provisioning
+from app.people.organization import DEPARTMENTS, DEPARTMENT_LABELS, LEGACY_IDS, canonical_department, department_areas
 
-DEPARTMENTS = [('dept-conducere', 'Conducere', 'admin'), ('dept-achizitii', 'Achiziții', 'manager'),
-    ('dept-tehnic', 'Tehnic', None), ('dept-financiar', 'Financiar', 'finance'),
-    ('dept-operatiuni', 'Operațiuni', None), ('dept-hr', 'Resurse umane', 'hr'),
-    ('dept-conformitate', 'Conformitate', 'reviewer')]
 
 JOB_TITLES = {
     'dept-conducere': ['Director aeroport', 'Director adjunct', 'Asistent conducere'],
@@ -29,14 +26,42 @@ JOB_TITLES = {
 }
 
 
-def seed_departments(db):
+def seed_departments(db, initialize_technical_head=False):
     for did, name, head in DEPARTMENTS:
         if not db.get(Department, did):
             db.add(Department(id=did, name=name, airport_id=settings.airport_id, head_user_id=head, revision=1))
+        elif did == 'dept-tehnic' and initialize_technical_head:
+            existing = db.get(Department, did)
+            if existing.head_user_id is None and db.get(User, 'technical-head'):
+                existing.head_user_id = 'technical-head'
+    db.flush()
+    # Consolidate organizational records, not historical document/PDF labels.
+    for old_id, new_id in LEGACY_IDS.items():
+        old = db.get(Department, old_id)
+        if old:
+            if old.id == 'dept-financiar' and old.head_user_id == 'finance' and old.revision == 1:
+                old.head_user_id = None
+            for person in db.scalars(select(User).where(User.airport_id == settings.airport_id, User.department_id == old_id)):
+                person.department_id = new_id
+            for appointment in db.scalars(select(HeadAppointment).where(HeadAppointment.airport_id == settings.airport_id, HeadAppointment.department_id == old_id)):
+                appointment.department_id = new_id
+                # A proposal for a retired department cannot replace the merged head.
+                if appointment.status in ('pending', 'approved'):
+                    appointment.status = 'cancelled'
+                    appointment.decision_comment = 'Departament consolidat; propune o numire pentru departamentul comun.'
+            # Keep the old area-head reference: it conveys only the original
+            # area's authority under the merged head, never the whole department.
+    leadership = db.get(Department, 'dept-conducere')
+    if leadership:
+        for person in db.scalars(select(User).where(User.airport_id == settings.airport_id, User.department_id == leadership.id)):
+            person.department_id = None
+        for appointment in db.scalars(select(HeadAppointment).where(HeadAppointment.department_id == leadership.id)):
+            if appointment.status in ('pending', 'approved'): appointment.status = 'cancelled'
+        db.delete(leadership)
     db.flush()
     by_name = {d.name: d.id for d in db.scalars(select(Department))}
     for person in db.scalars(select(User).where(User.airport_id == settings.airport_id)):
-        if not person.department_id: person.department_id = by_name.get(person.department)
+        if not person.department_id: person.department_id = by_name.get(canonical_department(person.department))
     if settings.auth_mode == 'oidc':
         from app.identity.service import subject_map
         for subject, uid in subject_map().items():
@@ -53,6 +78,7 @@ def local_person(db, uid):
 
 
 def department(db, did):
+    did = LEGACY_IDS.get(did, did)
     item = db.get(Department, did)
     if not item or item.airport_id != settings.airport_id:
         raise DomainError('Departamentul nu este valid.', 422)
@@ -63,25 +89,34 @@ def department_records(db):
     titles = {}
     for person in db.scalars(select(User).where(User.airport_id == settings.airport_id)):
         if person.job_title: titles.setdefault(person.department_id, set()).add(person.job_title)
-    return [{'id': d.id, 'name': d.name, 'head_user_id': d.head_user_id,
+    return [{'id': d.id, 'name': d.name, 'label': DEPARTMENT_LABELS.get(d.name, d.name),
+        'areas': sorted(department_areas(d.name)), 'head_user_id': d.head_user_id,
         'head_name': db.get(User, d.head_user_id).name if d.head_user_id and db.get(User, d.head_user_id) else None,
-        'revision': d.revision, 'job_titles': sorted(set(JOB_TITLES.get(d.id, ['Angajat'])) | titles.get(d.id, set()))} for d in db.scalars(select(Department).where(
-            Department.airport_id == settings.airport_id).order_by(Department.name))]
+        'revision': d.revision, 'job_titles': sorted(set(JOB_TITLES.get(d.id, ['Angajat'])) | titles.get(d.id, set()) |
+            (set(JOB_TITLES['dept-operatiuni']) if d.id == 'dept-tehnic' else set(JOB_TITLES['dept-financiar']) if d.id == 'dept-achizitii' else set()))} for d in db.scalars(select(Department).where(
+            Department.airport_id == settings.airport_id, Department.id.not_in(list(LEGACY_IDS))).order_by(Department.name))]
 
 
-def is_head(db, person, department_name=None):
+def is_head(db, person, department_name=None, include_areas=True):
     if not person.active: return False
     query = select(Department).where(Department.airport_id == person.airport_id,
         Department.head_user_id == person.id, Department.id == person.department_id)
-    if department_name is not None: query = query.where(Department.name == department_name)
-    return db.scalar(query) is not None
+    if department_name is not None: query = query.where(Department.name == canonical_department(department_name))
+    if db.scalar(query) is not None: return True
+    if not include_areas: return False
+    for area in db.scalars(select(Department).where(Department.airport_id == person.airport_id,
+            Department.id.in_(list(LEGACY_IDS)), Department.head_user_id == person.id)):
+        if person.department_id == LEGACY_IDS[area.id] and (department_name is None or area.name == department_name):
+            return True
+    return False
 
 
 def employee_dict(db, person):
     data = user_dict(person)
     data.update(person_names(person))
     data.update({'department_id': person.department_id, 'job_title': person.job_title,
-        'manager_id': person.manager_id, 'is_department_head': is_head(db, person),
+        'manager_id': person.manager_id, 'is_department_head': is_head(db, person, include_areas=False),
+        'is_area_head': is_head(db, person) and not is_head(db, person, include_areas=False),
         'provisioning_status': person.provisioning_status, 'identity_sync_pending': person.identity_sync_pending,
         'login_username': provisioning.username(person) if person.identity_subject else person.id,
         'sign_in_url': provisioning.sign_in_url(person)})
@@ -93,7 +128,9 @@ def validate_manager(db, mid, department_id, person_id=None):
     target = local_person(db, mid)
     if not target.active or target.id == person_id:
         raise DomainError('Alege un coordonator activ, diferit de persoana administrată.', 422)
-    if target.department_id != department_id:
+    current_person = db.get(User, person_id) if person_id else None
+    reports_to_director = has_role(target, 'director') and current_person is not None and is_head(db, current_person)
+    if target.department_id != department_id and not reports_to_director:
         raise DomainError('Coordonatorul trebuie să facă parte din departamentul selectat.', 422)
     seen = {person_id} if person_id else set()
     current = target
@@ -317,7 +354,10 @@ def appointment_dict(db, item, actor):
     def name(uid):
         person = db.get(User, uid) if uid else None
         return person.name if person else ''
-    dept = department(db, item.department_id)
+    dept = db.get(Department, item.department_id)
+    if not dept or dept.airport_id != item.airport_id:
+        dept = SimpleNamespace(name={'dept-conducere': 'Conducere', 'dept-financiar': 'Financiar',
+            'dept-operatiuni': 'Operațiuni'}.get(item.department_id, 'Departament retras'))
     return {key: getattr(item, key) for key in ('id', 'department_id', 'user_id', 'effective_date', 'reason',
         'status', 'created_at', 'proposed_by', 'decided_by', 'decided_at', 'decision_comment')} | {
         'department': dept.name, 'name': name(item.user_id), 'proposer_name': name(item.proposed_by),

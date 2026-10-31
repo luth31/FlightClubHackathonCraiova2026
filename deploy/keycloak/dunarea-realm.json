@@ -68,6 +68,17 @@
   ],
   "users": [
     {
+      "id": "78f3f62f-9942-57a0-b610-8bc449514179",
+      "username": "technical-head",
+      "firstName": "Sorin",
+      "lastName": "Pavel",
+      "email": "technical-head@dunarea.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "FlyLeaf2026!", "temporary": false}]
+    },
+    {
       "id": "af4c2bc9-6243-53f5-8051-574255e83321",
       "username": "admin",
       "firstName": "Ana",

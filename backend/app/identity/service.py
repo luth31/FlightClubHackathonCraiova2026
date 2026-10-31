@@ -31,7 +31,8 @@ DEMO_SUBJECTS = {
         "214b2438-a8ab-57d3-8557-354f2c26d698": "reviewer",
         "c88526c8-e1d2-53bc-a857-a12237d1aae1": "finance",
         "b7b6d88d-a20c-5dbd-83ff-0636b59c4ad8": "hr",
-        "c3906149-d2d1-5e03-8a52-b8b04a11867f": "technician"
+        "c3906149-d2d1-5e03-8a52-b8b04a11867f": "technician",
+        "78f3f62f-9942-57a0-b610-8bc449514179": "technical-head"
     },
     "carpati": {
         "ae41e412-8c0a-515c-89d3-b6a87c7c0d83": "admin",
@@ -39,7 +40,8 @@ DEMO_SUBJECTS = {
         "84ace447-6e3f-5b8b-bf26-d38741cc816f": "reviewer",
         "2d4ed3c9-d08e-55ab-b0fb-e0525978a7e6": "finance",
         "c8461524-70c7-57e2-b67e-db9fc8b56da3": "hr",
-        "78bf8f1f-a282-5448-9157-d3979caa5015": "technician"
+        "78bf8f1f-a282-5448-9157-d3979caa5015": "technician",
+        "0a2d6e9c-66af-5313-a952-91c8442bf828": "technical-head"
     }
 }
 FLOW_SECONDS = 300
