@@ -12,6 +12,13 @@
 .department-filter-option:first-child{margin-bottom:5px;border-bottom:1px solid var(--border);border-radius:5px 5px 0 0;padding-bottom:12px}
 @media(max-width:700px){.department-filter{flex:1;min-width:0}.department-filter-trigger{height:38px}.department-filter-option{min-height:40px}}
 .person-authority { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.search-input.people-search { min-width:0; height:46px; padding-right:0; }
+.people-search>svg { flex:none; }
+.people-search input { flex:1; min-width:0; }
+.people-search .people-search-clear { align-items:center; justify-content:center; flex:none; width:44px; height:44px; padding:0; border:0; border-radius:5px; background:transparent; color:var(--forest); }
+.people-search-clear:hover { background:var(--green-soft); }
+.people-search-clear:focus-visible { outline:2px solid var(--forest); outline-offset:-4px; }
+.search-input.people-search:focus-within { border-color:var(--forest); }
 .person-authority span { padding:4px 8px; background:var(--surface-alt, #edf3ee); color:var(--green, #174c3f); border-radius:6px; font-size:11px; }
 .person-card { display:flex; flex-direction:column; }
 .person-department { align-self:flex-start; }

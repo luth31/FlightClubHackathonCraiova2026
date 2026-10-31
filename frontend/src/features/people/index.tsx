@@ -1,4 +1,4 @@
-import {useEffect, useState, type FormEvent} from 'react';
+import {useEffect, useRef, useState, type FormEvent} from 'react';
 import {ArrowRight, CalendarDays, Check, Plus, Search, ShieldCheck, UserRound, UserRoundPlus, Users, X} from 'lucide-react';
 import {api} from '@/services/api-client';
 import {Empty, ErrorMessage, Loading, Modal, Status} from '@/components/ui';
@@ -18,6 +18,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   const [refresh,setRefresh]=useState(0);
   const [tab,setTab]=useState('directory');
   const [query,setQuery]=useState('');
+  const searchInput=useRef<HTMLInputElement>(null);
   const [department,setDepartment]=useState('');
   const [dialog,setDialog]=useState<Dialog>(null);
   const [decision,setDecision]=useState<Leave>();
@@ -46,7 +47,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
     <div className="people-overview"><div><Users size={20}/><span><strong>{data.items.filter(p=>p.active).length}</strong> colegi activi</span></div><div><CalendarDays size={20}/><span><strong>{data.items.filter(p=>p.availability==='away').length}</strong> în concediu</span></div><div><ShieldCheck size={20}/><span><strong>{data.delegations.filter(d=>d.status==='active').length}</strong> delegări active</span></div></div>
     <div className="people-tabs" role="tablist" aria-label="Informații echipă">{[['directory','Colegi'],['delegations','Delegări'],['leave','Concedii'],...(data.can_view_appointments?[['appointments','Numiri']]:[])].map(([key,label])=><button key={key} role="tab" aria-selected={tab===key} onClick={()=>setTab(key)}>{label}{key==='leave'&&pending.length>0&&<span>{pending.length}</span>}</button>)}</div>
     {error&&<ErrorMessage message={error}/>}
-    {tab==='directory'&&<div className="panel"><div className="filters"><label className="search-input"><Search size={18}/><input aria-label="Caută un coleg" placeholder="Caută un coleg…" value={query} onChange={e=>setQuery(e.target.value)}/></label><DepartmentFilter departments={data.departments} value={department} onChange={setDepartment}/><span className="result-count">{people.length} persoane</span></div><div className="people-grid">{people.map(p=><article className="person-card" key={p.id}>
+    {tab==='directory'&&<div className="panel"><div className="filters"><div className="search-input people-search"><Search size={18} aria-hidden="true"/><input ref={searchInput} aria-label="Caută un coleg" placeholder="Caută un coleg…" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button type="button" className="people-search-clear" aria-label="Șterge căutarea" title="Șterge căutarea" onClick={()=>{setQuery('');searchInput.current?.focus()}}><X size={16} aria-hidden="true"/></button>}</div><DepartmentFilter departments={data.departments} value={department} onChange={setDepartment}/><span className="result-count">{people.length} persoane</span></div><div className="people-grid">{people.map(p=><article className="person-card" key={p.id}>
       <div className="person-card-top"><span className="person-avatar">{initials(p.name)}</span><span className={`availability availability-${p.availability}`}><i/>{p.availability==='away'?'În concediu':p.availability==='inactive'?'Cont inactiv':'Disponibil'}</span></div>
       <h2>{p.name}</h2><p className="person-job">{p.job_title}</p><span className="person-department">{p.department}</span>
       <div className="person-authority">{p.is_department_head&&<span>Șef de departament</span>}{data.can_view_appointments&&p.head_appointment&&<span>{p.head_appointment.status==='approved'?`Numire aprobată · din ${date(p.head_appointment.effective_date)}`:'Numire în aprobare'}</span>}{p.roles.includes('signer')&&<span>Semnatar autorizat</span>}{p.provisioning_status==='failed'&&<span>Activare de reîncercat</span>}{p.identity_sync_pending&&<span>Sincronizare în așteptare</span>}</div>
