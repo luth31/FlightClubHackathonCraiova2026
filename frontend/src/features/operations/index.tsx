@@ -48,8 +48,9 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   const actualDelay=data.flights.filter(flight=>flight.actual_departure_seconds!=null).reduce((sum,flight)=>sum+(flight.delay_minutes||0),0);
   const chosen=data.flights.find(flight=>flight.id===selected)||data.flights[0];
   const gate=data.gates.find(item=>item.id===chosen?.gate_id),assigned=data.staff.find(person=>person.id===gate?.assigned_staff_id),openedBy=data.staff.find(person=>person.id===gate?.opened_by);
-  if(view==='station')return <section className={`operations-page ${viewActive?'ops-station-mode':''}`}>{error&&<ErrorMessage message={error}/>}<NfcStation data={data} busy={busy} onScan={scan} onBack={()=>navigate('shift')}/></section>;
-  return <section className="operations-page">
+  return <section className={`operations-page ${view==='station'&&viewActive?'ops-station-mode':''}`}>
+    {view==='station'&&<>{error&&<ErrorMessage message={error}/>}<NfcStation data={data} busy={busy} onScan={scan} onBack={()=>navigate('shift')}/></>}
+    <div hidden={view==='station'} inert={view==='station'}>
     <header className="ops-heading"><div><div className="eyebrow">{data.airport.icao} · OPERAȚIUNI CONECTATE</div><h1>O tură, văzută în întregime<span>.</span></h1><p>De la prima alocare până la ultima plecare.</p></div><div className="ops-heading-actions"><button className="ops-phone-link" onClick={()=>navigate('station')}><Smartphone size={16}/>Stație mobilă</button><div className="ops-clock"><Clock3 size={17}/><div><strong>{eventTime(data.simulation.clock_time)}</strong><span>Ora turei · {isInteractive?'interactivă':'replay'}</span></div></div></div></header>
     <nav className="ops-tabs" aria-label="Vizualizări operaționale">{([{id:'shift',label:'Tura curentă',icon:Map},{id:'ledger',label:'Registru operațional',icon:ClipboardList},{id:'strategies',label:'Proceduri & îmbunătățiri',icon:BookOpen}] as const).map(tab=><button key={tab.id} className={view===tab.id?'active':''} aria-current={view===tab.id?'page':undefined} onClick={()=>{setFocusLedger(null);navigate(tab.id)}}><tab.icon size={17}/>{tab.label}</button>)}<span className="ops-demo-indicator"><i/>Spațiu demonstrativ</span></nav>
     {error&&<div className="ops-inline-error" role="alert">{error} Ultima stare este păstrată.</div>}
@@ -66,6 +67,7 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
     </div>
     {showNfc&&<Modal title="Pontaj NFC" onClose={()=>setShowNfc(false)} className="ops-nfc-modal"><NfcStation data={data} busy={busy} onScan={scan} onBack={()=>setShowNfc(false)}/></Modal>}
     {confirmReset&&<Modal title="O nouă repetiție" onClose={()=>setConfirmReset(false)}><div className="ops-reset-body"><p>Tura începe din nou la 08:00. Evenimentele precedente rămân păstrate în istoric.</p><label><input type="radio" name="scenario" checked={resetMode==='interactive'} onChange={()=>setResetMode('interactive')}/><span><strong>Interactivă</strong><small>Scanați cardurile și deschideți porțile pe scenă.</small></span></label><label><input type="radio" name="scenario" checked={resetMode==='replay'} onChange={()=>setResetMode('replay')}/><span><strong>Replay automat</strong><small>O repetiție completă, cu evenimente automate.</small></span></label><button className="ops-primary" disabled={busy} onClick={()=>void control('reset',{scenario_mode:resetMode})}><RotateCcw size={16}/>Începe o tură nouă</button></div></Modal>}
+    </div>
   </section>;
 }
 function Chevron(){return <ArrowRight className="ops-chain-arrow" size={18}/>}

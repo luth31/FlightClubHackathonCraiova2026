@@ -11,12 +11,12 @@ import './airport-scene.css';
 import type {TilesRenderer} from '3d-tiles-renderer';
 
 type FlightObject={mesh:THREE.Group;target:THREE.Vector3;heading:number;flight:SceneFlight;ground:number;base:THREE.Vector3;projection:THREE.Line;footprint:THREE.Mesh};
-type SceneHandle={wake:()=>void;syncFlights:()=>void;overview:()=>void;airport:()=>void;traffic:()=>void;focus:()=>void;zoom:(factor:number)=>void};
+type SceneHandle={wake:()=>void;syncFlights:()=>void;overview:()=>void;airport:()=>void;traffic:()=>void;focus:()=>void;zoom:(factor:number)=>void;checkLoadingTimeout:()=>void};
 type Notice={status:'loading'|'ready'|'error';message:string};
 const modelCache=new Map<string,AirportGeoJSON>();
 const statusLabel={neutral:'Fără alertă',caution:'Atenție',critical:'Prioritate'};
 
-/** Owns one WebGL context, including tiles and aircraft; never persists Google content. */
+/** Owns one WebGL context; Google controls HTTP cache lifetime through its headers. */
 export function AirportScene(props:AirportSceneProps){
   const {airportId,mapMode='model',googleApiKey,active=true,focusRequest,overviewRequest}=props;
   const host=useRef<HTMLDivElement>(null),labelLayer=useRef<HTMLDivElement>(null),compass=useRef<HTMLSpanElement>(null),airportAnchor=useRef<HTMLButtonElement>(null);
@@ -27,6 +27,11 @@ export function AirportScene(props:AirportSceneProps){
   useEffect(()=>{latest.current=props;handle.current?.syncFlights();handle.current?.wake();},[props]);
   useEffect(()=>{handle.current?.focus();},[focusRequest]);
   useEffect(()=>{handle.current?.overview();},[overviewRequest]);
+  useEffect(()=>{
+    if(!active||mapMode!=='photorealistic')return;
+    const timer=window.setTimeout(()=>handle.current?.checkLoadingTimeout(),45000);
+    return()=>window.clearTimeout(timer);
+  },[active,mapMode,airportId,googleApiKey,restart]);
 
   useEffect(()=>{
     const container=host.current;if(!container)return;
@@ -52,7 +57,7 @@ export function AirportScene(props:AirportSceneProps){
     const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=!reducedMotion;controls.dampingFactor=.12;
     controls.minDistance=75;controls.maxDistance=250000;controls.maxPolarAngle=Math.PI*.475;controls.minPolarAngle=.1;controls.target.set(-100,0,120);
     controls.screenSpacePanning=false;controls.panSpeed=.7;controls.zoomSpeed=.7;
-    const removeWheelBoundary=installMapWheelBoundary(container.closest<HTMLElement>('.ops-map-area')||container,renderer.domElement);
+    const removeWheelBoundary=installMapWheelBoundary(container.closest<HTMLElement>('.ops-map-area')||container,renderer.domElement,()=>latest.current.active!==false);
     const ambient=new THREE.HemisphereLight('#f0f4ff','#68745d',.95);scene.add(ambient);
     const sun=new THREE.DirectionalLight('#fff1d7',2.1);sun.position.set(-1600,2200,1400);sun.castShadow=true;
     sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-2100;sun.shadow.camera.right=2100;sun.shadow.camera.top=1400;sun.shadow.camera.bottom=-1400;sun.shadow.camera.near=10;sun.shadow.camera.far=7000;sun.shadow.normalBias=1;sun.shadow.bias=-.00008;scene.add(sun,sun.target);
@@ -183,7 +188,7 @@ export function AirportScene(props:AirportSceneProps){
       if(controlsChanged||moving||settleFrames-->0)wake();
     }
     const onControls=()=>{settleFrames=12;wake();};controls.addEventListener('change',onControls);
-    const observer=new ResizeObserver(()=>{dimensions={width:Math.max(1,container.clientWidth),height:Math.max(1,container.clientHeight)};renderer.setSize(dimensions.width,dimensions.height);camera.aspect=dimensions.width/dimensions.height;camera.updateProjectionMatrix();tiles?.setResolutionFromRenderer(camera,renderer);if(latest.current.trafficMode&&trafficFramed)trafficOverview();wake();});observer.observe(container);
+    const observer=new ResizeObserver(()=>{const width=container.clientWidth,height=container.clientHeight;if(!width||!height||width===dimensions.width&&height===dimensions.height)return;dimensions={width,height};renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();tiles?.setResolutionFromRenderer(camera,renderer);if(latest.current.trafficMode&&trafficFramed)trafficOverview();wake();});observer.observe(container);
     const onVisibility=()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else wake();};document.addEventListener('visibilitychange',onVisibility);
     const onContextLost=(event:Event)=>{event.preventDefault();contextLost=true;cancelAnimationFrame(raf);raf=0;report('error','Sesiunea grafică a fost întreruptă. Reîncarcă harta pentru a continua.');};
     renderer.domElement.addEventListener('webglcontextlost',onContextLost);
@@ -197,7 +202,8 @@ export function AirportScene(props:AirportSceneProps){
     };
     renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
     const keyDown=(e:KeyboardEvent)=>{if(e.key==='+'||e.key==='='){e.preventDefault();zoom(.8);}if(e.key==='-'){e.preventDefault();zoom(1.2);}if(e.key==='Home'){e.preventDefault();overview();}};renderer.domElement.addEventListener('keydown',keyDown);
-    handle.current={wake,syncFlights,overview,airport:airportOverview,traffic:trafficOverview,focus,zoom};syncFlights();overview();
+    const checkLoadingTimeout=()=>{if(!mapReady&&!disposed){tileFailure=true;report('error','Harta fotorealistă răspunde prea lent. Poți continua cu modelul aeroportului.');}};
+    handle.current={wake,syncFlights,overview,airport:airportOverview,traffic:trafficOverview,focus,zoom,checkLoadingTimeout};syncFlights();overview();
     if(mapMode==='model'){
       const load=async()=>{
         try{
@@ -209,7 +215,10 @@ export function AirportScene(props:AirportSceneProps){
       const loadTiles=async()=>{
         try{
           const [{TilesRenderer:Renderer},{GoogleCloudAuthPlugin},{ReorientationPlugin}]=await Promise.all([import('3d-tiles-renderer'),import('3d-tiles-renderer/core/plugins'),import('3d-tiles-renderer/three/plugins')]);
-          if(disposed)return;tiles=new Renderer();tiles.fetchOptions={cache:'no-store'};
+          if(disposed)return;tiles=new Renderer();
+          // Browser HTTP cache honours Google's Cache-Control and ETag headers.
+          // No application-managed persistent/offline cache or forced stale reuse.
+          tiles.fetchOptions={cache:'default'};
           tiles.registerPlugin(new GoogleCloudAuthPlugin({apiToken:googleApiKey,autoRefreshToken:true}));
           tiles.registerPlugin(new ReorientationPlugin({lat:reference.lat*Math.PI/180,lon:reference.lon*Math.PI/180,height:reference.elevation+REFERENCE_GEOID_OFFSET_M}));
           // Plugin's local frame is west/north; our flight coordinates are east/south.
@@ -221,9 +230,8 @@ export function AirportScene(props:AirportSceneProps){
         }catch{if(!disposed)report('error','Harta fotorealistă nu a putut porni. Modelul aeroportului rămâne disponibil.');}
       };void loadTiles();
     }else report('error','Harta fotorealistă nu este configurată pentru această instalare.');
-    const loadingTimeout=window.setTimeout(()=>{if(!mapReady&&!disposed&&mapMode==='photorealistic'){tileFailure=true;report('error','Harta fotorealistă răspunde prea lent. Poți continua cu modelul aeroportului.');}},45000);
     return()=>{
-      window.clearTimeout(loadingTimeout);disposed=true;abort.abort();cancelAnimationFrame(raf);handle.current=null;observer.disconnect();document.removeEventListener('visibilitychange',onVisibility);
+      disposed=true;abort.abort();cancelAnimationFrame(raf);handle.current=null;observer.disconnect();document.removeEventListener('visibilitychange',onVisibility);
       renderer.domElement.removeEventListener('webglcontextlost',onContextLost);renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.domElement.removeEventListener('keydown',keyDown);
       removeWheelBoundary();controls.removeEventListener('change',onControls);controls.dispose();tiles?.dispose();
       if(mapObject){disposeObject(mapObject);const textures=new Set<THREE.Texture>();mapObject.traverse(o=>{if(o instanceof THREE.Mesh){const materials=Array.isArray(o.material)?o.material:[o.material];for(const material of materials)if('map'in material&&material.map instanceof THREE.Texture)textures.add(material.map);}});textures.forEach(t=>t.dispose());}

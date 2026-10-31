@@ -42,6 +42,10 @@ The model uses independently sourced OSM airport geometry; Google mode streams 3
 
 Google Maps can be enabled through the ignored root `.env` in native development, default Docker and the separate presentation deployment. An optional `.env.tailscale` overrides presentation values only. See [sources and licensing](AIRPORT_3D_SOURCES.md) and the [API contract](OPERATIONS_API.md).
 
+Each map style is created only when first displayed, then retained in the current page session across the ledger, SOPs, mobile NFC station and style switches. Hidden scenes pause rendering and tile updates; opening a station or ledger link directly does not initialize a hidden map. At most two scenes are retained, and leaving the authenticated application disposes them. Reloading the browser still creates a new renderer/session.
+
+Google tile requests use the browser's normal HTTP cache, respecting the provider's `Cache-Control` and `ETag` headers. There is no offline tile store, service-worker cache or forced reuse of expired content. In-memory tiles and camera state survive navigation. Cache hits reduce network transfers; avoiding new root tileset requests reduces billable starts. Check the Photorealistic 3D Tiles SKU in Cloud Billing rather than equating the API's aggregate tile traffic with billed usage.
+
 ## Verification
 
 Focused tests cover default interactive behavior, NFC request idempotency, missing prerequisites, the 18-minute causal chain and successful early intervention, interrupted boarding, off-block/takeoff ordering, server-clock concurrency, ledger seeding/filtering/KPI arithmetic, actual SOP PDF generation, evidence snapshots and access controls. Whole-application and browser verification are recorded in the change's completion report; older verification counts are not claims about this implementation.

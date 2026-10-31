@@ -60,3 +60,20 @@ test('overlay coordinates agree with the actual tile library reorientation at bo
     assert.ok(actual.distanceTo(expected)<.001,actual.distanceTo(expected));
   }
 });
+
+test('retained hidden scene ignores wheel gestures while the active style zooms exactly once',async()=>{
+  const {installMapWheelBoundary}=await load('../src/features/operations/map-input.ts');
+  const dom=new JSDOM('<main><div id="map"><canvas id="model"></canvas><canvas id="google"></canvas><button>Style</button></div></main>');
+  const boundary=dom.window.document.querySelector('#map');
+  let active='google';const counts={model:0,google:0},cleanups=[];
+  for(const style of ['model','google']){
+    const canvas=boundary.querySelector('#'+style);
+    canvas.addEventListener('wheel',()=>counts[style]++);
+    cleanups.push(installMapWheelBoundary(boundary,canvas,()=>active===style));
+  }
+  const wheel=()=>new dom.window.WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:80});
+  boundary.querySelector('button').dispatchEvent(wheel());assert.deepEqual(counts,{model:0,google:1});
+  active='model';boundary.querySelector('button').dispatchEvent(wheel());assert.deepEqual(counts,{model:1,google:1});
+  boundary.querySelector('#model').dispatchEvent(wheel());assert.deepEqual(counts,{model:2,google:1});
+  for(const cleanup of cleanups)cleanup();dom.window.close();
+});

@@ -1,6 +1,7 @@
 /** Keep wheel gestures inside the complete map, including its HTML overlays. */
-export function installMapWheelBoundary(boundary:HTMLElement,canvas:HTMLCanvasElement) {
+export function installMapWheelBoundary(boundary:HTMLElement,canvas:HTMLCanvasElement,isActive:()=>boolean=()=>true) {
   const wheel=(event:WheelEvent)=>{
+    if(!isActive())return;
     event.preventDefault();
     if(event.target===canvas)return; // OrbitControls owns zooming this event.
     event.stopPropagation();
@@ -13,7 +14,7 @@ export function installMapWheelBoundary(boundary:HTMLElement,canvas:HTMLCanvasEl
       ctrlKey:event.ctrlKey,shiftKey:event.shiftKey,altKey:event.altKey,metaKey:event.metaKey,
     }));
   };
-  const contain=(event:WheelEvent)=>event.stopPropagation();
+  const contain=(event:WheelEvent)=>{if(isActive())event.stopPropagation()};
   boundary.addEventListener('wheel',wheel,{capture:true,passive:false});
   boundary.addEventListener('wheel',contain,{passive:true});
   return ()=>{boundary.removeEventListener('wheel',wheel,true);boundary.removeEventListener('wheel',contain);};

@@ -1,10 +1,19 @@
 import {AlertTriangle,ArrowUpRight,Clock3,DoorOpen,Expand,Focus,Layers3,Plane,Play,Radio} from 'lucide-react';
-import {useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {AirportScene} from './AirportScene';
-import type {SceneFlight} from './scene-types';
+import type {AirportSceneProps,SceneFlight} from './scene-types';
 import type {Flight,LiveTraffic,MapConfig,OperationsData} from './types';
 import {clock} from './format';
 const phases:Record<string,string>={at_gate:'La stand',parked:'La stand',boarding:'Îmbarcare',waiting:'În așteptare',waiting_gate:'Poarta este închisă',blocked:'Așteaptă echipa',taxiing:'Rulare spre pistă',takeoff:'Decolare',departed:'Plecat de la stand',airborne:'În aer',approach:'Apropiere',landing:'Aterizare',arrived:'Sosit',scheduled:'Programat',ready:'Pregătit'};
+// At most two scenes per airport, created on first use and disposed with the page.
+// Keeping a hidden style mounted preserves its camera, tile cache and Google session.
+function SceneSlot(props:AirportSceneProps){
+  const [visited,setVisited]=useState(Boolean(props.active));
+  useEffect(()=>{if(props.active)setVisited(true)},[props.active]);
+  return <div className="ops-scene-slot" hidden={!props.active} inert={!props.active}>
+    {(visited||props.active)&&<AirportScene {...props}/>}
+  </div>;
+}
 export function FlightMap({data,mode,onMode,mapConfig,mapMode,onMapMode,traffic,trafficError,selected,onSelect,active,busy,onEvent,onInvestigate,notify}:{
   data:OperationsData;mode:'simulation'|'live';onMode:(mode:'simulation'|'live')=>void;mapConfig?:MapConfig;mapMode:'model'|'photorealistic';onMapMode:(mode:'model'|'photorealistic')=>void;
   traffic?:LiveTraffic;trafficError:string;selected:string|null;onSelect:(id:string)=>void;active:boolean;busy:boolean;onEvent:(kind:string,extra:Record<string,unknown>)=>void;onInvestigate:(id:string)=>void;notify:(message:string)=>void;
@@ -25,7 +34,7 @@ export function FlightMap({data,mode,onMode,mapConfig,mapMode,onMapMode,traffic,
   return <div className="ops-workspace">
     <div className="ops-map-area" ref={sceneRef}>
       <div className="ops-map-toolbar"><div className="ops-segment" aria-label="Sursa traficului"><button className={mode==='simulation'?'active':''} onClick={()=>onMode('simulation')}><Play size={13}/>Simulare</button><button className={mode==='live'?'active':''} onClick={()=>onMode('live')}><Radio size={13}/>Trafic ADS-B</button></div><div className="ops-map-style"><label><Layers3 size={15}/><select aria-label="Stil hartă" value={mapMode} onChange={event=>onMapMode(event.target.value as 'model'|'photorealistic')}><option value="model">Model 3D</option><option value="photorealistic" disabled={!mapConfig?.photorealistic_available}>Fotorealist</option></select></label><button title="Tot ecranul" aria-label="Tot ecranul" onClick={fullscreen}><Expand size={16}/></button></div></div>
-      <AirportScene airportId={data.airport.id} flights={sceneFlights} selectedFlightId={chosen?.id||null} onSelectFlight={id=>{if(id)onSelect(id)}} active={active} focusRequest={focusRequest} trafficMode={mode==='live'} googleApiKey={mapConfig?.google_api_key||undefined} mapMode={mapMode} onMapModeChange={onMapMode}/>
+      {(['model','photorealistic'] as const).map(style=><SceneSlot key={`${data.airport.id}-${style}`} airportId={data.airport.id} flights={sceneFlights} selectedFlightId={chosen?.id||null} onSelectFlight={id=>{if(id)onSelect(id)}} active={active&&mapMode===style} focusRequest={focusRequest} trafficMode={mode==='live'} googleApiKey={style==='photorealistic'?mapConfig?.google_api_key||undefined:undefined} mapMode={style} onMapModeChange={onMapMode}/>)}
       <div className="ops-scene-caption"><span>{data.airport.name}</span><small>{mode==='live'?'Poziții recepționate · altitudinea raportată de aeronavă':'Trafic demonstrativ · geometrie reală a aeroportului'}</small></div><div className="ops-legend"><span><i/>Fără alertă</span>{mode==='simulation'&&<span><i className="yellow"/>1–14 min</span>}<span><i className="red"/>{mode==='simulation'?'≥15 min / incident':'Alertă raportată'}</span></div>
     </div>
     <aside className="ops-flight-panel"><div className="ops-panel-heading"><div><h2>{mode==='live'?'Trafic în raza aeroportului':'Zborurile turei'}</h2><span>{flights.length} aeronave · {mode==='live'?'25 mile nautice':'plecări și sosiri'}</span></div><Plane size={18}/></div>
