@@ -1,25 +1,25 @@
-name: aerodesk
+name: flyleaf
 services:
   dunarea-api:
     build:
       context: .
       dockerfile: deploy/Dockerfile.api
     environment:
-      AERODESK_AIRPORT_ID: dunarea
-      AERODESK_AIRPORT_NAME: Aeroportul Dunărea
+      FLYLEAF_AIRPORT_ID: dunarea
+      FLYLEAF_AIRPORT_NAME: Aeroportul Dunărea
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      AERODESK_OPENAI_MODEL: ${AERODESK_OPENAI_MODEL:-gpt-6-luna}
-      AERODESK_OPENAI_REDACTION_MODEL: ${AERODESK_OPENAI_REDACTION_MODEL:-}
-      AERODESK_EXCHANGE_URL: http://dunarea-gateway:8082
-      AERODESK_EXCHANGE_TOKEN_FILE: /run/secrets/gateway_token
-      AERODESK_AUTH_MODE: oidc
-      AERODESK_OIDC_ISSUER: http://127.0.0.1:8180/realms/dunarea
-      AERODESK_OIDC_INTERNAL_ISSUER: http://dunarea-identity:8080/realms/dunarea
-      AERODESK_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${AERODESK_DUNAREA_PROVISIONING_SECRET:-aerodesk-dunarea-provisioning-demo}
-      AERODESK_KEYCLOAK_ACTIVATION_EMAIL: ${AERODESK_KEYCLOAK_ACTIVATION_EMAIL:-false}
-      AERODESK_OIDC_CLIENT_ID: aerodesk-web
-      AERODESK_OIDC_REDIRECT_URI: http://127.0.0.1:8080/api/auth/oidc/callback
-      AERODESK_OIDC_FRONTEND_URL: http://127.0.0.1:8080/
+      FLYLEAF_OPENAI_MODEL: ${FLYLEAF_OPENAI_MODEL:-gpt-6-luna}
+      FLYLEAF_OPENAI_REDACTION_MODEL: ${FLYLEAF_OPENAI_REDACTION_MODEL:-}
+      FLYLEAF_EXCHANGE_URL: http://dunarea-gateway:8082
+      FLYLEAF_EXCHANGE_TOKEN_FILE: /run/secrets/gateway_token
+      FLYLEAF_AUTH_MODE: oidc
+      FLYLEAF_OIDC_ISSUER: http://127.0.0.1:8180/realms/dunarea
+      FLYLEAF_OIDC_INTERNAL_ISSUER: http://dunarea-identity:8080/realms/dunarea
+      FLYLEAF_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${FLYLEAF_DUNAREA_PROVISIONING_SECRET:-flyleaf-dunarea-provisioning-demo}
+      FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL: ${FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL:-false}
+      FLYLEAF_OIDC_CLIENT_ID: flyleaf-web
+      FLYLEAF_OIDC_REDIRECT_URI: http://127.0.0.1:8080/api/auth/oidc/callback
+      FLYLEAF_OIDC_FRONTEND_URL: http://127.0.0.1:8080/
     secrets:
       - source: dunarea-token
         target: gateway_token
@@ -47,23 +47,23 @@ services:
       context: .
       dockerfile: deploy/Dockerfile.api
     environment:
-      AERODESK_AIRPORT_ID: carpati
-      AERODESK_AIRPORT_NAME: Aeroportul Carpați
+      FLYLEAF_AIRPORT_ID: carpati
+      FLYLEAF_AIRPORT_NAME: Aeroportul Carpați
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      AERODESK_OPENAI_MODEL: ${AERODESK_OPENAI_MODEL:-gpt-6-luna}
-      AERODESK_OPENAI_REDACTION_MODEL: ${AERODESK_OPENAI_REDACTION_MODEL:-}
-      AERODESK_CORPUS_DIR: /app/peer-data
-      AERODESK_SEED_DOCUMENTS: 'false'
-      AERODESK_EXCHANGE_URL: http://carpati-gateway:8082
-      AERODESK_EXCHANGE_TOKEN_FILE: /run/secrets/gateway_token
-      AERODESK_AUTH_MODE: oidc
-      AERODESK_OIDC_ISSUER: http://127.0.0.1:8181/realms/carpati
-      AERODESK_OIDC_INTERNAL_ISSUER: http://carpati-identity:8080/realms/carpati
-      AERODESK_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${AERODESK_CARPATI_PROVISIONING_SECRET:-aerodesk-carpati-provisioning-demo}
-      AERODESK_KEYCLOAK_ACTIVATION_EMAIL: ${AERODESK_KEYCLOAK_ACTIVATION_EMAIL:-false}
-      AERODESK_OIDC_CLIENT_ID: aerodesk-web
-      AERODESK_OIDC_REDIRECT_URI: http://127.0.0.1:8081/api/auth/oidc/callback
-      AERODESK_OIDC_FRONTEND_URL: http://127.0.0.1:8081/
+      FLYLEAF_OPENAI_MODEL: ${FLYLEAF_OPENAI_MODEL:-gpt-6-luna}
+      FLYLEAF_OPENAI_REDACTION_MODEL: ${FLYLEAF_OPENAI_REDACTION_MODEL:-}
+      FLYLEAF_CORPUS_DIR: /app/peer-data
+      FLYLEAF_SEED_DOCUMENTS: 'false'
+      FLYLEAF_EXCHANGE_URL: http://carpati-gateway:8082
+      FLYLEAF_EXCHANGE_TOKEN_FILE: /run/secrets/gateway_token
+      FLYLEAF_AUTH_MODE: oidc
+      FLYLEAF_OIDC_ISSUER: http://127.0.0.1:8181/realms/carpati
+      FLYLEAF_OIDC_INTERNAL_ISSUER: http://carpati-identity:8080/realms/carpati
+      FLYLEAF_KEYCLOAK_PROVISIONING_CLIENT_SECRET: ${FLYLEAF_CARPATI_PROVISIONING_SECRET:-flyleaf-carpati-provisioning-demo}
+      FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL: ${FLYLEAF_KEYCLOAK_ACTIVATION_EMAIL:-false}
+      FLYLEAF_OIDC_CLIENT_ID: flyleaf-web
+      FLYLEAF_OIDC_REDIRECT_URI: http://127.0.0.1:8081/api/auth/oidc/callback
+      FLYLEAF_OIDC_FRONTEND_URL: http://127.0.0.1:8081/
     secrets:
       - source: carpati-token
         target: gateway_token
@@ -91,14 +91,14 @@ services:
     command: ['start-dev', '--import-realm']
     environment:
       KC_HOSTNAME: http://127.0.0.1:8180
-      AERODESK_KEYCLOAK_PROVISIONING_SECRET: ${AERODESK_DUNAREA_PROVISIONING_SECRET:-aerodesk-dunarea-provisioning-demo}
+      FLYLEAF_KEYCLOAK_PROVISIONING_SECRET: ${FLYLEAF_DUNAREA_PROVISIONING_SECRET:-flyleaf-dunarea-provisioning-demo}
       KC_HTTP_ENABLED: 'true'
       JAVA_OPTS_KC_HEAP: -Xms128m -Xmx384m
     ports: ['127.0.0.1:8180:8080']
     volumes:
       - dunarea-identity:/opt/keycloak/data
       - ./deploy/keycloak/dunarea-realm.json:/opt/keycloak/data/import/dunarea-realm.json:ro
-      - ./deploy/keycloak/theme/aerodesk:/opt/keycloak/themes/aerodesk:ro
+      - ./deploy/keycloak/theme/flyleaf:/opt/keycloak/themes/flyleaf:ro
     networks: [dunarea-private, dunarea-web-edge]
     restart: unless-stopped
   carpati-identity:
@@ -106,14 +106,14 @@ services:
     command: ['start-dev', '--import-realm']
     environment:
       KC_HOSTNAME: http://127.0.0.1:8181
-      AERODESK_KEYCLOAK_PROVISIONING_SECRET: ${AERODESK_CARPATI_PROVISIONING_SECRET:-aerodesk-carpati-provisioning-demo}
+      FLYLEAF_KEYCLOAK_PROVISIONING_SECRET: ${FLYLEAF_CARPATI_PROVISIONING_SECRET:-flyleaf-carpati-provisioning-demo}
       KC_HTTP_ENABLED: 'true'
       JAVA_OPTS_KC_HEAP: -Xms128m -Xmx384m
     ports: ['127.0.0.1:8181:8080']
     volumes:
       - carpati-identity:/opt/keycloak/data
       - ./deploy/keycloak/carpati-realm.json:/opt/keycloak/data/import/carpati-realm.json:ro
-      - ./deploy/keycloak/theme/aerodesk:/opt/keycloak/themes/aerodesk:ro
+      - ./deploy/keycloak/theme/flyleaf:/opt/keycloak/themes/flyleaf:ro
     networks: [carpati-private, carpati-web-edge]
     restart: unless-stopped
   dunarea-gateway:

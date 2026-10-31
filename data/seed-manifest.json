@@ -159,8 +159,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "396116690568e1cb1f6efb9a4ff34c9879691e7d30da352c06847fc555ed61b1",
-      "text_length": 3884
+      "sha256": "ce3d131821ad5cd2fa69a943fcdd8a3fedd76282760b0ea04a3151efce74cffb",
+      "text_length": 3881
     },
     {
       "id": "doc-002",
@@ -239,8 +239,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "e43fb8c69b06f4b8a0b5dd5fab5304323f6f46f1ae4ceb1e0ef9443c83fa163e",
-      "text_length": 2556
+      "sha256": "874fbe4aead3de966220a0fba2fc90a70f455e0fff50e80975871a3abc1f99a0",
+      "text_length": 2554
     },
     {
       "id": "doc-003",
@@ -319,8 +319,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "58551682127952b178e004627257a5476285e39f0d58cfb6fb0a808cc450c920",
-      "text_length": 2549
+      "sha256": "e37ee0ccbe996f2cd900e3272960151dfb5b489ad599c093d6e968d4922d7363",
+      "text_length": 2546
     },
     {
       "id": "doc-004",
@@ -398,8 +398,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "2eca759dfa2ccec3dca79ab2c75edd43ea6747b37dfcbcc489c45773cbd28e9d",
-      "text_length": 2408
+      "sha256": "17442829fd8e4af454543d35939ac98fb7bfa40409d191be98ee124ec01c5a96",
+      "text_length": 2406
     },
     {
       "id": "doc-005",
@@ -480,8 +480,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "839243edec99dc0616be865be217e914b9da956f0e16204c8c707bd6ffe1c053",
-      "text_length": 2339
+      "sha256": "8b012b540dba26c3cb0d2a0c917c1e2e0f2c01688245a2172c08fd668a137cd1",
+      "text_length": 2336
     },
     {
       "id": "doc-006",
@@ -562,8 +562,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "e9e68d08b4051ecf545cf4907c4396cd2d7a95164e21888ca759ab824d4980fd",
-      "text_length": 2491
+      "sha256": "d478632d78830df7c419caf69b82866223c94d0488bd592ec40f0419f2aa3059",
+      "text_length": 2489
     },
     {
       "id": "doc-007",
@@ -665,8 +665,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "055b6fa37f71d0e4cd2b403a47adf4bec0458a9862cf28834f1c790baa13cb9a",
-      "text_length": 3943
+      "sha256": "4dbc587ac8c426e6e69c36bdefcfe03c52649177978c4de2010c4ab55964ac70",
+      "text_length": 3940
     },
     {
       "id": "doc-008",
@@ -745,8 +745,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "53cadb2c376f0b0ab4f960789a4ab7a46be6cc1d10a5195128dd8ac450b9f588",
-      "text_length": 2547
+      "sha256": "063c011319249fef35c5711478b63c83cb68c39e8b036081d41b4affbe7926c0",
+      "text_length": 2545
     },
     {
       "id": "doc-009",
@@ -825,8 +825,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "d544be66241a97ad5f6dfc9ff399bd05843113d379db158a642222be4007da18",
-      "text_length": 2608
+      "sha256": "7d8f3eaebe7864189f70f8c150f1b4a50fed79e73bd580c6d4190a37e7ed2c65",
+      "text_length": 2605
     },
     {
       "id": "doc-010",
@@ -904,8 +904,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "fb1ad89feeded1e8e52a48d89ec6a27dc5a4b16d54f12ebb960c7977817c4baa",
-      "text_length": 2417
+      "sha256": "fb7db137074e4301511137e92af63db0480aff3aec83e45d3da6e5287e2dd8a6",
+      "text_length": 2415
     },
     {
       "id": "doc-011",
@@ -986,8 +986,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "aca6d30c20f238aaf0fb182eaa71f1145a3d87388fa6a476755a7a1fbc3bc2f6",
-      "text_length": 2411
+      "sha256": "3aa46d4ecb4e12d6c773f35179cdfeaf21070526e15c07c0948ab5ef65d9c2b4",
+      "text_length": 2408
     },
     {
       "id": "doc-012",
@@ -1068,8 +1068,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "96b6966e74ca9326b44e0a0032e6b5147f8d756bd7ec3254632b62a2a42ea731",
-      "text_length": 2557
+      "sha256": "c66e04ea4e1625ea49d7ab920b2be5f09346cf8f2f98ec8a395f468e69bd3a97",
+      "text_length": 2555
     },
     {
       "id": "doc-013",
@@ -1172,8 +1172,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "178718f498bdda4d536a9a865d3fae2c6b149a34cc742b608b1c4d48c6f729c8",
-      "text_length": 3891
+      "sha256": "55bf44a378434b3ac0c25cf71c1ed1597ece5e9520ba837356fcc67b8e2f56ae",
+      "text_length": 3888
     },
     {
       "id": "doc-014",
@@ -1252,8 +1252,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "73f08ae7eaf37f2dda237039451b3d6b898782f5b30362e750c2dfc660aa09b4",
-      "text_length": 2569
+      "sha256": "25661242c9e306786c1c57f53c49534a4d9155a6b38082525a08a98e962bbe3c",
+      "text_length": 2567
     },
     {
       "id": "doc-015",
@@ -1332,8 +1332,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "c01edf47c466fc4ed131307d10521bf771c1018d4f005c46fc69547b591ad627",
-      "text_length": 2537
+      "sha256": "f0887ee2c6f6146555edeaf7f1bdb62cffcb4e6047a9da87c00972d42712d282",
+      "text_length": 2534
     },
     {
       "id": "doc-016",
@@ -1411,8 +1411,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "0b71abd920efbd08c59f059bb849a11122eb3c6d7c4ecb919f007492eb2e96e5",
-      "text_length": 2415
+      "sha256": "3962f0adcabb24cde02e0e630b8f5e16fac1d0409291b8cbfa2b64a41a78706b",
+      "text_length": 2413
     },
     {
       "id": "doc-017",
@@ -1493,8 +1493,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "2c5662f134e806ec5f4d0f7c4dc533fbc1d81cea37aa351e34887f1f91afd105",
-      "text_length": 2332
+      "sha256": "296da8ecaff3b27e727f0f1d235e0251d32e29fc8d9b4621491db81470a71269",
+      "text_length": 2329
     },
     {
       "id": "doc-018",
@@ -1575,8 +1575,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "4f9608e1542e0e6e731f36eb130bf17663fe60d59db292eff99e6af4b29b6f78",
-      "text_length": 2497
+      "sha256": "0b58181dc53bfe84750ea9895d5c6037dd77e0af704f407bbdef0d0b54979320",
+      "text_length": 2495
     },
     {
       "id": "doc-019",
@@ -1678,8 +1678,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "bfc0daef479206fb06c6719d4ac01a85872626f94aa5b123bbb1c2050d79b9cf",
-      "text_length": 3893
+      "sha256": "4fba6e82b0e352f2ec91be170014094a9d4588227cb0c8f2939928b1489f979f",
+      "text_length": 3890
     },
     {
       "id": "doc-020",
@@ -1758,8 +1758,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "5723b9526db314325bc1b661caf0c72252d8861e0ec522bf5bd5183f5053c2af",
-      "text_length": 2592
+      "sha256": "82763a5750539dd66b5a67b36ca51a2e9abf25e15a3dbdaf6dbf328086ba508d",
+      "text_length": 2590
     },
     {
       "id": "doc-021",
@@ -1838,8 +1838,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "8ac85939e3d1a820e1d6d980e03ae235a4873db74fe63fa893ce2fe342717521",
-      "text_length": 2526
+      "sha256": "15f34a3f114987f29b0f0d996306f3ec1ef3c955dd2fec11a4f404d44f5e0348",
+      "text_length": 2523
     },
     {
       "id": "doc-022",
@@ -1917,8 +1917,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "5a4208db9d7038aaf1b49617b70fa8155e8ee2b90e8833b56c06ffe94fdaa7b1",
-      "text_length": 2424
+      "sha256": "304a340624c9b1f85cf5c2ec4954777dd20d4797d92ba418dc37f864bf76247c",
+      "text_length": 2422
     },
     {
       "id": "doc-023",
@@ -1999,8 +1999,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "5055de12473344adfbab9050340a2efcd1a9e88883dab623483404215fafb2e9",
-      "text_length": 2257
+      "sha256": "84aa7bcfac139ca679b0abee87ca68d6efb1130abfef81338baf3a27ea6fd716",
+      "text_length": 2254
     },
     {
       "id": "doc-024",
@@ -2081,8 +2081,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "3332858f8002c89df4fe7e471a158b7cd623464e7234c2fe00487a51f863f888",
-      "text_length": 2511
+      "sha256": "5ddd181284b09a88602ebf72371c145a7dfde31489c90c9ad4f87def6d05d95a",
+      "text_length": 2509
     },
     {
       "id": "doc-025",
@@ -2184,8 +2184,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "20be15695317b3f080f7e3b8519324ff1460f99e2947befab94b13d23abf05d8",
-      "text_length": 3865
+      "sha256": "aee9c37d266e174af8728b428b50a90bc786f216bd421d609ef3cb46c0b997fc",
+      "text_length": 3862
     },
     {
       "id": "doc-026",
@@ -2264,8 +2264,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "021be9729d75d521992b2c158b7916a24d45b7bd9a2c62d4895118448a425689",
-      "text_length": 2586
+      "sha256": "d63b67f8bfe46cc1a7cb7abac78fc4a30a8620a9c5578b2810cd930c11ba4fd0",
+      "text_length": 2584
     },
     {
       "id": "doc-027",
@@ -2344,8 +2344,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "63ea1a2e8ca6150d0fb0a9cf9a4f379219adf9ebed42030f82eca61184af1b19",
-      "text_length": 2505
+      "sha256": "5663f2f70a26e9d6ead62c9b9d52ab512f7db7c09a422cf98c396ead8b512177",
+      "text_length": 2502
     },
     {
       "id": "doc-028",
@@ -2423,8 +2423,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "2c036de9e6530aaa2574fdd7727070102a1a3454bf2d95e39b0d687af63c7a31",
-      "text_length": 2406
+      "sha256": "d91a03b29c8a3f8916a12f77acb669738e01581c1b517a5b2f27bd8997cc65a9",
+      "text_length": 2404
     },
     {
       "id": "doc-029",
@@ -2505,8 +2505,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "e76aec82b3cf97064093c4cf9545647929a9005bd17e66c7a9f2d02298b4a12e",
-      "text_length": 2286
+      "sha256": "5e21674fe3cea95fc7c9561abd2b584586436fce6e16c3a131bde402f92c849c",
+      "text_length": 2283
     },
     {
       "id": "doc-030",
@@ -2587,8 +2587,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "c03d8fe94b354882c2010d656e1d7d85017acd5be1ee20ad405204c5d709b408",
-      "text_length": 2466
+      "sha256": "941572c8643db33df4b500af13459f575f1e2f110038a30f939035e58fa959ec",
+      "text_length": 2464
     },
     {
       "id": "doc-031",
@@ -2690,8 +2690,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "a6028ea496b2af5124f118dac512fdc0cdd5df6ffd6733f92d617a42897a3925",
-      "text_length": 3877
+      "sha256": "6a7020a3b119dd5108fbcd609cd0851ca50851a14c22b3ac39cb1d73416e699f",
+      "text_length": 3874
     },
     {
       "id": "doc-032",
@@ -2770,8 +2770,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "8a128b211b9910979e438a96655fce6195ce4bc2a23f8252bba7123424d0863d",
-      "text_length": 2589
+      "sha256": "16bd50ad87d6de7c96abb07977e866a6b2db3a45e357a91bac72fe5f16f2f5e7",
+      "text_length": 2587
     },
     {
       "id": "doc-033",
@@ -2850,8 +2850,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "ceee0bfc79669d0d6444639d3fede6f63c91dd2eb50494b323c3e9faa7e0506c",
-      "text_length": 2527
+      "sha256": "0df981728dc42bdf99877f8091be381d363d0f04bf3a71f932519e3bbd7c7d9f",
+      "text_length": 2524
     },
     {
       "id": "doc-034",
@@ -2929,8 +2929,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "a2a9c97557db4e245ff059fef11c34244d4493dddb99f49c919fbe8bcf9fa5bd",
-      "text_length": 2423
+      "sha256": "b23f0f3078ddb1d80f20dc91093f01e1d274a7b63646c0485c01a588ac80e2f4",
+      "text_length": 2421
     },
     {
       "id": "doc-035",
@@ -3011,8 +3011,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "5413d54ecb84e3b2f7456362854a7bfc8c893143479b8bfe3a4364af4b9339c5",
-      "text_length": 2312
+      "sha256": "844ab1d91cb89df0c3a92b9f4a926d417a50dae5ef465b1bac0fcbe6191b3075",
+      "text_length": 2309
     },
     {
       "id": "doc-036",
@@ -3093,8 +3093,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "ad0b056f734393ddba755c8ac0c892911a47232395f731189a5e3d6037828c9c",
-      "text_length": 2485
+      "sha256": "735d542b4c9de7bc2bf8481068680893036e6f71cb1c033342fd5a046d0c8599",
+      "text_length": 2483
     },
     {
       "id": "doc-037",
@@ -3196,8 +3196,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "806d7128e3b7c5edd28059cf3b6af082c43ad8118bd85b6460008ece11f2003e",
-      "text_length": 3863
+      "sha256": "a61e14bcc320af144b4e07401f3b4bcdb28d56be6f47fa0430f07856608bc69c",
+      "text_length": 3860
     },
     {
       "id": "doc-038",
@@ -3276,8 +3276,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "a6085770a55c7bcc19eeeea1813cc3ea5009589465e0406124c9a7ba4079b9e8",
-      "text_length": 2572
+      "sha256": "9b9b67c5f1515c255356790dc3686893709a17e06ad7e4719b705eeb424dc699",
+      "text_length": 2570
     },
     {
       "id": "doc-039",
@@ -3356,8 +3356,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "5d61627243f5064daffcc781a4de6d4f0e2feaa0f0c30896ba6d49a30adf1605",
-      "text_length": 2483
+      "sha256": "bbdc747de23d8599eabd5abd3543ef5e83b54c23e1f99bccf4b4ff86350dc3fb",
+      "text_length": 2480
     },
     {
       "id": "doc-040",
@@ -3435,8 +3435,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "c0015d685998eb414d93d6cf28c5202a2011854668253773cefd8b2605596185",
-      "text_length": 2397
+      "sha256": "677c5d305879d95d45691fa7bcb23a10c363cd53ed25cfde19263e64b7c93526",
+      "text_length": 2395
     },
     {
       "id": "doc-041",
@@ -3517,8 +3517,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "f593a8ed8889c29ad86742f8ba4c39cc783b2737ae689bc6c9e94f8a7e086bc4",
-      "text_length": 2290
+      "sha256": "5626c4a48d7c062b2a44d8842d2681d59ff3b1f1aa691a5dc6bfb7929d7704e7",
+      "text_length": 2287
     },
     {
       "id": "doc-042",
@@ -3599,8 +3599,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "b67ed3ac6e87c02f99b82227ef5609c4ec263a184dc0cd58ce04e5bf63fe1f54",
-      "text_length": 2475
+      "sha256": "8848971ab1c884f8fa6d66470124bc15c556e388644e298a91edf04305190e35",
+      "text_length": 2473
     },
     {
       "id": "doc-043",
@@ -3703,8 +3703,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "bead48b48334a5c1394b5b05b46063e33ec88fb470936487ce5a0e8e840f4df3",
-      "text_length": 3870
+      "sha256": "31170a18f07260547bbdc281e4bf7b051e7036d312777bb73413017c71282aa9",
+      "text_length": 3867
     },
     {
       "id": "doc-044",
@@ -3783,8 +3783,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "b2d54d5f1e0604782ffc17573d44768fd4bc604dce3e7c8deb2f64635f5d1fd1",
-      "text_length": 2565
+      "sha256": "fc41905d5360130b26397c835f4129f95aa45380179140bc8f2b7e8abac6237b",
+      "text_length": 2563
     },
     {
       "id": "doc-045",
@@ -3863,8 +3863,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "cdd202611c8765b1d244e70b169a1cfe8fa99845b2bb1ebfe3458704b4144b3c",
-      "text_length": 2518
+      "sha256": "e987979b055422717007342b3f825e2bdbfea3ee5e85a02cb832c8fa1ab9bf44",
+      "text_length": 2515
     },
     {
       "id": "doc-046",
@@ -3942,8 +3942,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "3f83d36c7ee2a3d0c0598d130862e488a2498d9d9b918f3d570ab8700e618f4c",
-      "text_length": 2409
+      "sha256": "7dccebbeec30134e09a6a013aa2594bb1730c8864c1529a2d9f8437ec9886947",
+      "text_length": 2407
     },
     {
       "id": "doc-047",
@@ -4024,8 +4024,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "c76936b7d7adb71f07b162ac64b4bdc18e4647a681603dbb536cd0b1ef0ce1de",
-      "text_length": 2326
+      "sha256": "95c5eeb29b7e7c14c8ca9c00a6ec89a1edef4db1b55f533383c5a8a9417fbbb0",
+      "text_length": 2323
     },
     {
       "id": "doc-048",
@@ -4106,8 +4106,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "f47f4215fe752066924f025fdb9067eb540119c8a32e74c9571a0d27d1e93610",
-      "text_length": 2488
+      "sha256": "8b5b3db0a010de4215eed472a4b5f868df5a79da781b022305aad42efe52100e",
+      "text_length": 2486
     },
     {
       "id": "doc-049",
@@ -4209,8 +4209,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "f8174a9c27f709a997c61fdf75afc025cb1c555695dc545c3504b649fd8ed8f9",
-      "text_length": 3838
+      "sha256": "260e5b2613eaecdf5f6739343756020354164bded04cabf2bb5ab793d94c227a",
+      "text_length": 3835
     },
     {
       "id": "doc-050",
@@ -4289,8 +4289,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "9d187687373c0f8110d23af37673451ed686ce93289689d7961899c93152ca78",
-      "text_length": 2561
+      "sha256": "d60e36d455e9e034d3db1b116b6f3e37f54f2e892dde3c2d006820143a219085",
+      "text_length": 2559
     },
     {
       "id": "doc-051",
@@ -4369,8 +4369,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "27ca2e357abf374d363879361fd63b60bfae84b84a539eb010ccdaa01591d3d9",
-      "text_length": 2509
+      "sha256": "79fe6b0cb3f0747f760b86e9b1bfac816a7b94d066f059139e754f25efe3abdd",
+      "text_length": 2506
     },
     {
       "id": "doc-052",
@@ -4448,8 +4448,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "250eb917eca247228aa7de1325d8138c567fa8e4063c0626a935b41c6704ed3c",
-      "text_length": 2446
+      "sha256": "45a704e893c7f4ed107663a8e5d3da2a5292631eab141b0f8080f83bfd2bea53",
+      "text_length": 2444
     },
     {
       "id": "doc-053",
@@ -4530,8 +4530,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "9a5be7bb326fc7d8e52e17bfc76e11b39c6b8dec03fecddf6b3955258aa6fb65",
-      "text_length": 2323
+      "sha256": "a4c51c1843c7cbcfba70d81f8809859c18b70ee5388f596ee3b0fd1d2c5f8a78",
+      "text_length": 2320
     },
     {
       "id": "doc-054",
@@ -4612,8 +4612,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "87e97313a6fcd4433a1794532fcea6b8a7c0e6e32021ad37962e01cf88d58d08",
-      "text_length": 2460
+      "sha256": "9645ae11092a35880bb9516166ec6483e7d3f58533019dee65c61e5e5a41b867",
+      "text_length": 2458
     },
     {
       "id": "doc-055",
@@ -4715,8 +4715,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "a84fbc521952670740e98954b94f0b79bfb314e1aa839e52b08d0cc04b75ed1c",
-      "text_length": 3878
+      "sha256": "2c8d3a6df34621e6c2c29b3cd5695e1ace82284e9321872ceb09347c7a435581",
+      "text_length": 3875
     },
     {
       "id": "doc-056",
@@ -4795,8 +4795,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "2ac9610461b43ced7f8ecc8b1289eb40da7cf2c3f33ab42c7336274a0fcbe121",
-      "text_length": 2608
+      "sha256": "7d07db88bf63e300ff477ef9ee6b9a5aa2b1cb86e5fc52ef928281ecb2247f31",
+      "text_length": 2606
     },
     {
       "id": "doc-057",
@@ -4875,8 +4875,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "79402cd3f29ce1c1d603e01f9ea7b6a8299a97d8809c7a35d0c4568cc710b409",
-      "text_length": 2511
+      "sha256": "00c2195a47b182a06fe732a35bb46755b0b2685be93e0a05d3b2fdf11a672a0a",
+      "text_length": 2508
     },
     {
       "id": "doc-058",
@@ -4954,8 +4954,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "59586705c16753415d676e04669a14ec1666af2c8fb3cf695b7bbc32fda63676",
-      "text_length": 2433
+      "sha256": "3ab3d1b9509e799d16c99fade5d1f54e650a4ab39c6f16a85225a99cb61d91ca",
+      "text_length": 2431
     },
     {
       "id": "doc-059",
@@ -5036,8 +5036,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "59b450db6ffdac22d0a99cae9fc4c7f410e0f6dff5ed78206fed48e8813859e7",
-      "text_length": 2312
+      "sha256": "f6066db11e80d6e331759e0c4cc85aceade86ea72239d89fea4d5c7423e166b4",
+      "text_length": 2309
     },
     {
       "id": "doc-060",
@@ -5118,8 +5118,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "8d7044e861e78ec0a7b3c2efaf5056245e2ef020c5c6272d19d2dcf3df619671",
-      "text_length": 2494
+      "sha256": "c198ea12448871c4cca4156e35abbceea90b9a7cfd70d51578e6f99bbf04717b",
+      "text_length": 2492
     },
     {
       "id": "doc-061",
@@ -5221,8 +5221,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "fb52f15f024821459ffbb77f7dba488156f8b91a800ebb1e89f1b0a9d3912a5a",
-      "text_length": 3866
+      "sha256": "025a60139458d57963315c1903402f30fbab4b2dce3b677e0ab06b1cc5747f26",
+      "text_length": 3863
     },
     {
       "id": "doc-062",
@@ -5301,8 +5301,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "aeaa42ee453a01ae91c81eacadadbf5d0b68ab8412ddffb8e61b12c9c605a821",
-      "text_length": 2567
+      "sha256": "6136673d4ad9b5254dc3f0f3f10bc3deb4e30bee3dfff15caeeb91d06d96ddee",
+      "text_length": 2565
     },
     {
       "id": "doc-063",
@@ -5381,8 +5381,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "bfcd2762745ba079e872e1b00b3d35abebc32704c0fed04233408510ec04b61d",
-      "text_length": 2525
+      "sha256": "66ed7429f9f047afa39293b61ebf550461bcfeecad99bbd1868ef100a62f0021",
+      "text_length": 2522
     },
     {
       "id": "doc-064",
@@ -5460,8 +5460,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "0732202bbb4a29372f3bd2b21955a39f5be71af890152262e39286972bb4803d",
-      "text_length": 2422
+      "sha256": "7fa34b1ff181f5da75cea38270a3af9ecb9846c78f8dd63fb68e4a62d3c6548c",
+      "text_length": 2420
     },
     {
       "id": "doc-065",
@@ -5542,8 +5542,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "266e7cdab7bbafb8c22edd8badae922dd5c79704898f0bfb9bb027c3f15e965e",
-      "text_length": 2339
+      "sha256": "49634b2ae400fe55510f01a9fe983e9aafc4aafeb6586cf8491d12ed51ed1258",
+      "text_length": 2336
     },
     {
       "id": "doc-066",
@@ -5624,8 +5624,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "cd248b3ca3f917fabb1c190ad9ab732868c2ae680bd9564844b2501a5b14e9aa",
-      "text_length": 2493
+      "sha256": "1879be8b9caceb43991b00b60dc75fdf07a37a8a69c8e07e4e7d2373f296618c",
+      "text_length": 2491
     },
     {
       "id": "doc-067",
@@ -5727,8 +5727,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "5035b0218723a7364ad047013974e3940ed47338577b9f6fb502a82179eb0f27",
-      "text_length": 3826
+      "sha256": "aa25332430bd6077cc183e24684c3f24bcd25c74d6af9db852b95ef6248e9a30",
+      "text_length": 3823
     },
     {
       "id": "doc-068",
@@ -5807,8 +5807,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "ffcc32f699c98bdc6fe7fc836a9ca5ed603e04215b86a2e715837a858810dadb",
-      "text_length": 2546
+      "sha256": "dab7fa688574d83dac2bbae044ef2920769f1b5c8ac78760cc6f6599e74a9f1d",
+      "text_length": 2544
     },
     {
       "id": "doc-069",
@@ -5887,8 +5887,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "7a1381fb8b7ee18b46c7a2275691c0dbc66fa9c58cc67650c9652c0bcbd501e5",
-      "text_length": 2511
+      "sha256": "be52745c0969a354ebfa0a6ccc23636a0ae8cf4a5d003017f362bcbd9d51bff5",
+      "text_length": 2508
     },
     {
       "id": "doc-070",
@@ -5966,8 +5966,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "c0d4e2d4043698dd595591db9df6a3d0454605888614e84c651d40db38665a75",
-      "text_length": 2423
+      "sha256": "11c5286d453a109251d94fd1d6745ea8e29af75fc01ad7491fbfef71dd5ac011",
+      "text_length": 2421
     },
     {
       "id": "doc-071",
@@ -6048,8 +6048,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "05451b99451c60a54b8d1dfce7b63196714138f596b00f5c536defd9fb04618f",
-      "text_length": 2310
+      "sha256": "fc74ec993d5652b0db9a7777b68f77f24799b66bce3d980f85e0ac8c513cfd18",
+      "text_length": 2307
     },
     {
       "id": "doc-072",
@@ -6130,8 +6130,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "aa644e34b277d639ac08a118050026d282440ed2890b93c6f25564dd41f67f31",
-      "text_length": 2438
+      "sha256": "fd99cf51262be788e4830e0721a148698b1c6a7c2e97728d48a59a0c6867dbc3",
+      "text_length": 2436
     },
     {
       "id": "doc-073",
@@ -6234,8 +6234,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "cb4b512d0792bf10ff4dcb143cc08fc35165c64acb1fa3dbf014839115123de1",
-      "text_length": 3885
+      "sha256": "436b1b731845ab23a761b32666ba289b7d7042adb6c83e129c8f6fe80fdaa829",
+      "text_length": 3882
     },
     {
       "id": "doc-074",
@@ -6314,8 +6314,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "00f15b043392fed2c96bcae342c6ce027cc795345964a31a31f1d19286a3de58",
-      "text_length": 2570
+      "sha256": "98d1a95d6a06317a6d0761a14dfdcfe70193648b39d62abe51228fb6fe3d4974",
+      "text_length": 2568
     },
     {
       "id": "doc-075",
@@ -6394,8 +6394,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "ddfb748c9261bc41a7226167a179a57b00f2dc716b4f71f0af8cd4d4fbb7c937",
-      "text_length": 2542
+      "sha256": "1d671ab89c63959c0f2a9f206d3672bbcf5b1fe932e75abfe040755a0a945c24",
+      "text_length": 2539
     },
     {
       "id": "doc-076",
@@ -6473,8 +6473,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "275d2e8850687b4e168f6e38552253a58de9a80701593ad6a603a0db087d4bb1",
-      "text_length": 2418
+      "sha256": "ff64278286b5eab85c06f5817fa2ec9724e681de7c846c43969f6058aa450bfa",
+      "text_length": 2416
     },
     {
       "id": "doc-077",
@@ -6555,8 +6555,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "dba6358ade0de221273bb241163b0dc6912e8aa4d3833236be54fd0865ba26d2",
-      "text_length": 2345
+      "sha256": "c1485a25b7a4d502d7370af3e70a3a5be031655ab0b561a4ab0cee3327b569a6",
+      "text_length": 2342
     },
     {
       "id": "doc-078",
@@ -6637,8 +6637,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "b4bda0f5dffd2ce802c7515ab92931049646ffc6c6180b57d0822456389b1ae0",
-      "text_length": 2513
+      "sha256": "be7a7d27e395d5709b5dc4e72694dc725907770f91ae3765b87a237d2f55c983",
+      "text_length": 2511
     },
     {
       "id": "doc-079",
@@ -6740,8 +6740,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "053bec19174e31195e1e93fea64e2de8b8a8414c6f5e196b205921c75f31bf20",
-      "text_length": 3803
+      "sha256": "14dcce88d4d1c094c8176e79932a1b1f9a8d67061a784f0bcf7444bff175dc76",
+      "text_length": 3800
     },
     {
       "id": "doc-080",
@@ -6820,8 +6820,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "3075c6957894f51d81ab984cd75255dc59af13aeb05cc3b158fe1132583f8b94",
-      "text_length": 2533
+      "sha256": "c3e0c33d67da6f239366664237e86ef84fdadf83b14aa1a91e83ffdf881465b5",
+      "text_length": 2531
     },
     {
       "id": "doc-081",
@@ -6900,8 +6900,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "bfaf5c83d6b7fb7f009a39bbd7954ff43f5c31840c87fb705101973e1376418b",
-      "text_length": 2459
+      "sha256": "812798bb00579bcebf599933b061d58efaf42f60b3f849b5fbfaa4fa7baf1027",
+      "text_length": 2456
     },
     {
       "id": "doc-082",
@@ -6979,8 +6979,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "840c525690454a16efaaed0b756e157cf0a9bfecbbed7a411375e6ea37213d23",
-      "text_length": 2390
+      "sha256": "f3027410e63c16cf8dcf0fa898c7e12e3730cc54d290a1c7e9077c890c1a0c2c",
+      "text_length": 2388
     },
     {
       "id": "doc-083",
@@ -7061,8 +7061,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "ea62f425335ac4a447b4de22f481133265c7b4a1e1daa9f2796bcdab983cc5d0",
-      "text_length": 2276
+      "sha256": "f1e40b23e35f98b6d48eaa198a506d641ae7a8548d492a08da563e303b3686f2",
+      "text_length": 2273
     },
     {
       "id": "doc-084",
@@ -7143,8 +7143,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "945155b04f981e4c1906f567ecd92bf378f452e2410b30c49cc0ad048cf661c4",
-      "text_length": 2428
+      "sha256": "5c2f3374f8836a7aa852abb9e73f13c76761cd6162f8e0593c88a854e785d1dc",
+      "text_length": 2426
     },
     {
       "id": "doc-085",
@@ -7246,8 +7246,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "288d7af0517a3d9d0046874235b729246a5c80bd71422e872e9a18cf08dbba82",
-      "text_length": 3830
+      "sha256": "f843b23998d2b04b5095397bc49e27926f390b18f0945941145758e7818e1916",
+      "text_length": 3827
     },
     {
       "id": "doc-086",
@@ -7326,8 +7326,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "bdd9dac4722bfb23a37b62a044c27cb38a3a46cd7936b6fa4649f33f1158c613",
-      "text_length": 2548
+      "sha256": "d2fbb4c7aca4de12001e94e2568155e8ac7756f98138657c0a88e91aae3d579c",
+      "text_length": 2546
     },
     {
       "id": "doc-087",
@@ -7406,8 +7406,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "afb0d3128bea5153fbc1494f38aeef0c0c87391ef46be9dff778e546ab2c56bb",
-      "text_length": 2476
+      "sha256": "d75b8d8d48bd96bab50662d81e6dfc620ddc17547794a42b4c84cdf5c7794a29",
+      "text_length": 2473
     },
     {
       "id": "doc-088",
@@ -7485,8 +7485,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "9332573c0b60a673e6e5ad37ba14efd5ef7e2a6b85e1002bc7f6c4a7c44d7c60",
-      "text_length": 2398
+      "sha256": "af5d6d9bc32678dd1294e8f28d04415594ea826cbb9a07245ec1c06c6256e6c6",
+      "text_length": 2396
     },
     {
       "id": "doc-089",
@@ -7567,8 +7567,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "3c7f03fbb82344742a93a6a62ce06df5b3f26fec70599da84d7481080e317cda",
-      "text_length": 2274
+      "sha256": "a99dcaa1e993fd58b08f040c24c55eb559c894cd637e6f9c93b646aede0dbd1b",
+      "text_length": 2271
     },
     {
       "id": "doc-090",
@@ -7649,8 +7649,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "4244584705ac0ff76f2bf44def4d2b2c8b7cc5843d2d2ee2f777a428ab816d73",
-      "text_length": 2428
+      "sha256": "7b03014e878a0684205c9a6614aafd5593c8c63c23b737f1e289a4c29b7a84e5",
+      "text_length": 2426
     },
     {
       "id": "doc-091",
@@ -7752,8 +7752,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "599a6e6e9a5bf9f3c27d9e6a821dd6834b737bdf8870f261847febdcc318f0ac",
-      "text_length": 3800
+      "sha256": "2d031361506e228bfb5e77bcda6609c4e4f20142b4b2393ec5763c2ea2080338",
+      "text_length": 3797
     },
     {
       "id": "doc-092",
@@ -7832,8 +7832,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "11fe64e7ff66f42c0c923bd3e0a782e6543ba48e11c08b21d98a28cfbf31d17e",
-      "text_length": 2541
+      "sha256": "0cb9e37082007a6c4e9dc5ef166d452acdab423f291311f198eb1c8c9ad3babc",
+      "text_length": 2539
     },
     {
       "id": "doc-093",
@@ -7912,8 +7912,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "30cfaae1a2a9bdfc5283181cc4ee4111b7820fc28d0ba8a48248b03fa3cef6d4",
-      "text_length": 2459
+      "sha256": "8f7e2406dc5ebd8b0fd373738d4ee8c002e31c08b47163ddcf5efea565695fbd",
+      "text_length": 2456
     },
     {
       "id": "doc-094",
@@ -7991,8 +7991,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "f4062fe7020979c58f1eae4fa36eb6fa2f2da5f8c6246ba78a4e9d9ac1556b93",
-      "text_length": 2399
+      "sha256": "b264fe8d8d10f4b8896ad98467bff20bd69689fb832c71fee1c90591884919cb",
+      "text_length": 2397
     },
     {
       "id": "doc-095",
@@ -8073,8 +8073,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "acfe7bd6e60c973dc36654fd1ebb224228cba54a3114df335f8e696af5353c47",
-      "text_length": 2199
+      "sha256": "555bb149701c99273247623cdafb131c88571263d724b1d547609589347da94b",
+      "text_length": 2196
     },
     {
       "id": "doc-096",
@@ -8155,8 +8155,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "b353f789984a488ce5735c113e82794a30b097ac7e95ef60126b5e7442c88c08",
-      "text_length": 2424
+      "sha256": "178cf29664e1c8e6f84206047923499a5a36feb5e47a51e1c685e34372fb5c5e",
+      "text_length": 2422
     },
     {
       "id": "doc-097",
@@ -8258,8 +8258,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "4be7aada1a2d303a05d9821bcb5ab2bef279748133eda4c545a85f8f2c8b4363",
-      "text_length": 3860
+      "sha256": "bf5185a351b068de6124f0dfa4e8d37f67c85ff2e7e87b7ec3744f35770d6413",
+      "text_length": 3857
     },
     {
       "id": "doc-098",
@@ -8338,8 +8338,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "7a4f22a507eefc2a576658b00b5f398ce96ff0aa89de11a7f06c12b63f01695c",
-      "text_length": 2567
+      "sha256": "7bf1a3ce22cbd85a686654e2c84cb28a5125c293c15765ae7a34283c4caffe47",
+      "text_length": 2565
     },
     {
       "id": "doc-099",
@@ -8418,8 +8418,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "f70faef6f2af3c5ffbcfd98a6865f56ec250abebb4bd395b0ae1e6f3a2b3629e",
-      "text_length": 2524
+      "sha256": "52f0ed569124bfc0520d6691ef5f8c2c32c51de3d164ed3469a206d9876b5096",
+      "text_length": 2521
     },
     {
       "id": "doc-100",
@@ -8497,8 +8497,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "a49b64f624e0cf5827c7ec4b1638ca2b7ae328cca8f37ee12a1b72e31cd67040",
-      "text_length": 2399
+      "sha256": "99c17add8a2ac03bd9681a5525cd092ad41fa3ff3ced2b6f47fbeafbcb7ed784",
+      "text_length": 2397
     },
     {
       "id": "doc-101",
@@ -8579,8 +8579,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "6ea35ed6bd900d00330890df7e173e1e34b754916cf488bb1b045d179bd66a6e",
-      "text_length": 2305
+      "sha256": "536b8b25fb4b9273b57556dc1434906d25256ba9e10ece2578eeb26186324845",
+      "text_length": 2302
     },
     {
       "id": "doc-102",
@@ -8661,8 +8661,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "39301afc839227eceee892ac4016c64e27092b7726cebb9a347f3945fe0ddce1",
-      "text_length": 2448
+      "sha256": "806ff35b53f46564f9405eed8d1ff8fb1ae578ad23cd14eba61f1cd20247abf7",
+      "text_length": 2446
     },
     {
       "id": "doc-103",
@@ -8764,8 +8764,8 @@
       ],
       "validated": false,
       "page_count": 3,
-      "sha256": "c0d7a2393a37bbb8d8711c0e925b4264c658f0779a62c9ad37cf271bf33fe175",
-      "text_length": 3839
+      "sha256": "125548ec24a3c040dd565990309d0f789cd9323fb2e50552e941460f22cb91c9",
+      "text_length": 3836
     },
     {
       "id": "doc-104",
@@ -8844,8 +8844,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "e6286eaf6563234d39b47fb4855f165eae4e451406422ec73550a00c5d53169b",
-      "text_length": 2590
+      "sha256": "034ca296ffab920d53d4a7058e3444615eb25c00e53cb949ddda73b09592f824",
+      "text_length": 2588
     },
     {
       "id": "doc-105",
@@ -8924,8 +8924,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "fd03fecee99e9191dff4ae978cfb501db2b610567bc812d179be5117e5544517",
-      "text_length": 2505
+      "sha256": "a527403b408fa360cbbe28cc9b66c8a66d1e03e0651c38eb73cb32d8169f3263",
+      "text_length": 2502
     },
     {
       "id": "doc-106",
@@ -9003,8 +9003,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "38db495db0b4621703d3ae52a363eb64551fa1de8f5c350b7e7569bd28d4dedf",
-      "text_length": 2432
+      "sha256": "1f2146bd1951e54550a32845b8145f97e12ae04580b29118595b796a1a31c4e3",
+      "text_length": 2430
     },
     {
       "id": "doc-107",
@@ -9085,8 +9085,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "42e67ea4729e9e3e590f009eb19dc774b751b0fb67bfd1186b34836e5ca578b8",
-      "text_length": 2310
+      "sha256": "af9f5933bfc31c0f46e0ff2e27f98dbb34ffee7c7bc9c6438b1bad0fce881a54",
+      "text_length": 2307
     },
     {
       "id": "doc-108",
@@ -9167,8 +9167,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "243f20e11caf94353cec3092cdd49f90242426e31876ed8f2b970ad437cb9270",
-      "text_length": 2474
+      "sha256": "f60cf4bc4a8f0f287a2481aba1c29e40359e07444a38e16d4039e795b6580843",
+      "text_length": 2472
     },
     {
       "id": "doc-109",
@@ -9270,8 +9270,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "0ff8569b16a85376403556aab417fa371f14f09d68df58f7b36414bfacdbbbfe",
-      "text_length": 3851
+      "sha256": "246118fb0943c70f580901630a0a14cbc858f96a4c219cf0b5369629dfe34dfe",
+      "text_length": 3848
     },
     {
       "id": "doc-110",
@@ -9350,8 +9350,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "e6d743f5f4a2b21c8f4f4d285a05a4bc25436d7f692a65788a865d1fd20e60bd",
-      "text_length": 2574
+      "sha256": "90fefed0c9676d1400b1f6022a535f1bb223a3fc33f8aafd3403e2f3f20a96e1",
+      "text_length": 2572
     },
     {
       "id": "doc-111",
@@ -9430,8 +9430,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "1fae548863c96ec19eff3a70ad2fb8aa77fcebf2a3f28c46ceb0af1e9817e1cd",
-      "text_length": 2520
+      "sha256": "820c42daea6a13dbe20ef474801fec7ee43591d525d012819da8250ef0493578",
+      "text_length": 2517
     },
     {
       "id": "doc-112",
@@ -9509,8 +9509,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "c9ee6f4428fc75fc8c8124a67a59b9876a690b0617e489dc96e6859a05907153",
-      "text_length": 2443
+      "sha256": "c64130314484e2872d228a031eb8d4157d39cc01ea7fc7d3a17598c8e2cdbdc8",
+      "text_length": 2441
     },
     {
       "id": "doc-113",
@@ -9591,8 +9591,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "acf3dab1f2b5e25bcfb5e177e222af0c148716d289d07e237830053e0129088a",
-      "text_length": 2312
+      "sha256": "2bdbfb6a0f9a5c1e81bef23671ebb0bd8cce12e128c74d50c244ec9b2ee9109b",
+      "text_length": 2309
     },
     {
       "id": "doc-114",
@@ -9673,8 +9673,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "a3790f598a36fbc9148d66a417a1cda7a5888f07eb33f4242e8a0f42ae316a7c",
-      "text_length": 2458
+      "sha256": "8b745c38ae469ec0cd2c35cf6ec6d0cea8e59de6011fc8d0d96d594934b83a8f",
+      "text_length": 2456
     },
     {
       "id": "doc-115",
@@ -9776,8 +9776,8 @@
       ],
       "validated": true,
       "page_count": 3,
-      "sha256": "6f190ff5c7db4a14706e8a461275f5b104f8c1e6e2fea0dfc51ae3c9be74259e",
-      "text_length": 3851
+      "sha256": "5ec849f35772bbb98865e9128abdca6b80b9982ca6101f72eee91ba142e082ca",
+      "text_length": 3848
     },
     {
       "id": "doc-116",
@@ -9856,8 +9856,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "15b8348b87aefb463218e1bf17b0b1f20a363a9f1f8d7dfebfa9753a52d6b745",
-      "text_length": 2561
+      "sha256": "af4278c4b0ce6fba920f0c85fa8886314740cc8b81d2b39aa2504fc19ec2404c",
+      "text_length": 2559
     },
     {
       "id": "doc-117",
@@ -9936,8 +9936,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "efb5d0ff56d121c33bd4e43e9869cb88a75a935e056b5fa2bc9decafb2b524d2",
-      "text_length": 2525
+      "sha256": "467fcef409ead832208d9204a042a3d3e8956175172b22b20e69cc2047743ed6",
+      "text_length": 2522
     },
     {
       "id": "doc-118",
@@ -10015,8 +10015,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "0b49d1e923a21f8e95e01b43297b2124063fe96003e878b9e915df480971145a",
-      "text_length": 2423
+      "sha256": "46b6188b737a9bca13b23bbeb78b108841d175297697fef380c15e26aea2eda4",
+      "text_length": 2421
     },
     {
       "id": "doc-119",
@@ -10097,8 +10097,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "1b6e2731e88863201f5f4fc047a3542b4c92fda9fd7e0d02e8594a27c2148bc9",
-      "text_length": 2305
+      "sha256": "0143d444eaca454bc58574d9806cbdcfe179e14112d3ee1fcebae2fbfa7f8508",
+      "text_length": 2302
     },
     {
       "id": "doc-120",
@@ -10179,8 +10179,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "a39db5fca930873f1a599fb2b64be53bfc54d537aa3d85bba0d656cbdb0d5a0a",
-      "text_length": 2441
+      "sha256": "86c511b02c89db0bae18530e765acbbb677cec5517f0deae9f95198300377c2b",
+      "text_length": 2439
     },
     {
       "id": "doc-121",
@@ -10243,8 +10243,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "f1c42f34a8cfccdd6c160e9fb1e5f6d028a9108eb64e6b9e8acec82b605aa863",
-      "text_length": 2280
+      "sha256": "3a02775fa727cdb851242827b141ac278997689b83e0a88c961b0bb685cea8db",
+      "text_length": 2277
     },
     {
       "id": "doc-122",
@@ -10307,8 +10307,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "afb1ec11fed2a334f740c2c7b523d3c9f0613843ccdfb67398038be304dacb8e",
-      "text_length": 2266
+      "sha256": "f21d56ba94fb110c2dedea5258a459a1618751155f4f23adcd69346c9691a562",
+      "text_length": 2263
     },
     {
       "id": "doc-123",
@@ -10371,8 +10371,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "d8bddf370d6f3f393c2e853ce9bf57f1e44b6c1d5bda8813063f45cad6765419",
-      "text_length": 2263
+      "sha256": "fe79ce734aeb017b808df8683e7099166d9469dd9ab6fee7030cd4cab828db0a",
+      "text_length": 2260
     },
     {
       "id": "doc-124",
@@ -10435,8 +10435,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "213daebee4ccb2a63cca197a86fa5461df258b448a1716428841948da044200f",
-      "text_length": 2278
+      "sha256": "0a4634b12384dd84e7878f5789da0dbf301a65e3ba6037f9fc9ea4674ee6f140",
+      "text_length": 2275
     },
     {
       "id": "doc-125",
@@ -10501,8 +10501,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "857352662b2591a3d565eb982a177ce6f08746d07d8ccd23ffa00304ee93ed30",
-      "text_length": 2607
+      "sha256": "1f776ab39a9bebc6ffe80693366d60802712208980127fe95529bc5f19f83b6f",
+      "text_length": 2605
     },
     {
       "id": "doc-126",
@@ -10567,8 +10567,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "1a19c39b0c25eddbb9fe8176d22608e2ed09730ad67881207dc83730d9195e56",
-      "text_length": 2670
+      "sha256": "69df52341268a6c7bbc4d58e100b137e4a580410de9fcdb30f0bdd5a7d2ae854",
+      "text_length": 2668
     },
     {
       "id": "doc-127",
@@ -10629,8 +10629,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "d07c4744f06065af183f8fb46dba7c43adf586a2ad8adfa1355b268b312bcf38",
-      "text_length": 2476
+      "sha256": "cc00ce1aef31363d3d6e3888c3c190cf489003797da86b2fc7827d0e0461bf73",
+      "text_length": 2474
     },
     {
       "id": "doc-128",
@@ -10685,8 +10685,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "aefcd781385ff481f1c61f8e4e179d495905f63b70ea8b9fba686ff9c94f1e32",
-      "text_length": 2384
+      "sha256": "56d30d9b7bab80067efe97f1137eae6741d73ab23f6ca6370736a0b1201edb5e",
+      "text_length": 2382
     },
     {
       "id": "doc-129",
@@ -10741,8 +10741,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "120a4a10d8bdd09c47f05b4a1717e0dea51d9c4d90a52cfd67b2fe7e9f5c72ad",
-      "text_length": 2342
+      "sha256": "10fd014e1874a807a1215a54adb0b5976866be8f3e0b1fb10b9a7db50d71ebcf",
+      "text_length": 2340
     },
     {
       "id": "doc-130",
@@ -10803,8 +10803,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "e98dc77bdc889588098518163ca1987f7679283f2feb80ead37fa0cd9524b621",
-      "text_length": 2573
+      "sha256": "c03c3fcea4d4aca8a790b4a724acea8ecaff0dfa8bc1ed29f0c5eea634ef5e0b",
+      "text_length": 2571
     },
     {
       "id": "doc-131",
@@ -10865,8 +10865,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "57d124496264600796c1680c1f32320b28a808efef332d2ef8f9f4ee47c6f773",
-      "text_length": 2590
+      "sha256": "4cbb7c1f3bef23c5c652e6ec0a7e963117b443cd25505a35e43cd6c4286bf710",
+      "text_length": 2588
     },
     {
       "id": "doc-132",
@@ -10921,8 +10921,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "e5a017713725511ea4c3acb75abc4d2445194318b9ec479d58586f8b11483262",
-      "text_length": 2445
+      "sha256": "9dff83180daf3d975279f24fca4cac975d687ada27c58eb4d35426d1c3e27fc6",
+      "text_length": 2443
     },
     {
       "id": "doc-133",
@@ -10977,8 +10977,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "25beb76953125887baef28d8d555069c81539d5a89dafc2c509b66840f82e9b4",
-      "text_length": 2386
+      "sha256": "9cf057e4721c105fbf5f84433ee3748cecc1077c030826fe52da55d8fa3279fb",
+      "text_length": 2384
     },
     {
       "id": "doc-134",
@@ -11033,8 +11033,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "97df7a9798dda96febd94ffb9c508ebd13a7d3f6e336991595b6388d2aabb57b",
-      "text_length": 2334
+      "sha256": "58c00c24d69dd665630926524701cfc0447e5b08c2f601f5806dea27cdf52c5a",
+      "text_length": 2332
     },
     {
       "id": "doc-135",
@@ -11089,8 +11089,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "6edbf8e15776b2d0b42bb6613364e070289db3a4fc8eb7372c0ed487fd7227fa",
-      "text_length": 2284
+      "sha256": "a5fa71e18c60ed5105ebc83527b257a2bb9cd7666b8fc7467598cac3e0973cc2",
+      "text_length": 2282
     },
     {
       "id": "doc-136",
@@ -11145,8 +11145,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "f9cd3ac63182fed78a43abe9deb4f114d297a8a45f026a1c77b5eb1ec74c3b67",
-      "text_length": 2318
+      "sha256": "fa6ed86a70df5f487cb7f020ec348cf1167e7c8485f2b87260d05041f19a8365",
+      "text_length": 2316
     },
     {
       "id": "doc-137",
@@ -11205,8 +11205,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "5d99aa23adfa469bdb07f4b72d8c3cd38528e5c9419e03816011a0fe6fc3c7c0",
-      "text_length": 2283
+      "sha256": "46bad7fb93a581bcf21535c6bdfb0e90b3202122c7bad6db01f9d130bf423784",
+      "text_length": 2281
     },
     {
       "id": "doc-138",
@@ -11265,8 +11265,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "19dd2f3fcc40f9e15ad669c13cf4f551139011be7866f051231ed728c7d0c8e2",
-      "text_length": 2245
+      "sha256": "8c91f4d1b27eca22d8d5f0e8edbbc612e4c4cb0652d68ba1a7c883e1bb268dcc",
+      "text_length": 2243
     },
     {
       "id": "doc-139",
@@ -11325,8 +11325,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "529fc41e296c7d59fc0555cad44c27d70285d03e72868b9f49c16c3e9a76bb4e",
-      "text_length": 2281
+      "sha256": "083dda4ef17ebf957f35efa5034e192af7058a9dc6df5d7c44ed3ce923e03b59",
+      "text_length": 2279
     },
     {
       "id": "doc-140",
@@ -11385,8 +11385,8 @@
       ],
       "validated": false,
       "page_count": 2,
-      "sha256": "e2a172bc34e5018ea4758fdf1f287933298f1a7f7309a639fa5814c77c91f7d8",
-      "text_length": 2308
+      "sha256": "82f3381f646c70a1ce626ee8e9cd69251118a631f57b246b1c654416c9ba7307",
+      "text_length": 2306
     },
     {
       "id": "doc-141",
@@ -11451,8 +11451,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "c652092a6c76bb4cd58027668acd22f3388aae4d652e08f06c9fb8ebc537549b",
-      "text_length": 2516
+      "sha256": "424f8fd3a8504fefc8b3d7e75c19780950873bc3df0daaace1c102aad785bfd1",
+      "text_length": 2514
     },
     {
       "id": "doc-142",
@@ -11517,8 +11517,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "5ebc24a36d8c78d2930e2baa6b68fb593dab6f0ab013b6a259922f84afac76b9",
-      "text_length": 2490
+      "sha256": "845107ca63d972e07a9d17eeffa210ab2c32ab31c7966add3f71b65185bc9463",
+      "text_length": 2488
     },
     {
       "id": "doc-143",
@@ -11583,8 +11583,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "bd89a4ab8664169b2a69ffbfcd0b328d789fa569055cb81dc1b39d3853d8b5c6",
-      "text_length": 2457
+      "sha256": "6009056076f2efc4fa81a621b4f365392223e7f894e44274785805dbe9da6c67",
+      "text_length": 2455
     },
     {
       "id": "doc-144",
@@ -11643,8 +11643,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "4a09a784c85e369021c84f6f196b8592d1245511404485cb24158ae46e2a80e9",
-      "text_length": 2281
+      "sha256": "588b99d06d6c9338a513400ee6c3980920a17080a9c7ae8eee41743f0df34dbc",
+      "text_length": 2279
     },
     {
       "id": "doc-145",
@@ -11709,8 +11709,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "37204cb69a972a2536c76aedc9d34227562b1508604e38882004fb54aabd7cda",
-      "text_length": 2431
+      "sha256": "ca98724739d33ecdfaff4728c5de32d7fdb5be369bcc37145499fd89619acc35",
+      "text_length": 2429
     },
     {
       "id": "doc-146",
@@ -11775,8 +11775,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "bbc836c1761203b20718787b0b04d42a8bb16ed675ea28fe634de60de093ff76",
-      "text_length": 2493
+      "sha256": "353b441775f9364347c87ff82283276e431df7f979d701cfeceb5472fe523670",
+      "text_length": 2491
     },
     {
       "id": "doc-147",
@@ -11834,8 +11834,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "9c2b47b593e7e2fcf0b6203951bbedd121d9bc896c2b86e24a11b88d45cf961a",
-      "text_length": 2270
+      "sha256": "c1217e1f7890110d4814e2116794cc28b30a34f358b3b583098ae60432373a39",
+      "text_length": 2268
     },
     {
       "id": "doc-148",
@@ -11893,8 +11893,8 @@
       ],
       "validated": true,
       "page_count": 2,
-      "sha256": "bce88c116f9800ef381756bee591c8254ef9739e713d2b3f37c3ff60a82820ea",
-      "text_length": 2250
+      "sha256": "93c9c59e2473619562634c1ded1832095017550c77a1687cdd2a4a09650083d1",
+      "text_length": 2248
     }
   ]
 }

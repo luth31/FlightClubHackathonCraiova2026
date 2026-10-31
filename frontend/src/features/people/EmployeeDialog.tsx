@@ -99,7 +99,7 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
   const coordinators=directory.items.filter(p=>p.active&&p.id!==person?.id&&p.department_id===departmentId);
   const suggestedEmail=workEmail(firstName,lastName);
   const failed=result?.user.provisioning_status==='failed';
-  return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} subtitle="Datele angajatului și accesul său la AeroDesk." onClose={onClose}>
+  return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} subtitle="Datele angajatului și accesul său la FlyLeaf." onClose={onClose}>
     <div className="modal-body">
       {result?<div className="employee-result" aria-live="polite">
         <h3>{failed?'Contul așteaptă activarea':'Angajatul a fost înregistrat'}</h3>

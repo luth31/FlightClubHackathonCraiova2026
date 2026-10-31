@@ -8,7 +8,7 @@ import pytest
 
 
 def migrate(path, revision):
-    env = {**os.environ, 'AERODESK_DATABASE_URL': f'sqlite:///{path}'}
+    env = {**os.environ, 'FLYLEAF_DATABASE_URL': f'sqlite:///{path}'}
     result = subprocess.run([sys.executable, '-m', 'alembic', 'upgrade', revision],
         cwd=Path(__file__).resolve().parents[1], env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr

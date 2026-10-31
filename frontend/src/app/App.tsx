@@ -74,7 +74,7 @@ export function App() {
     if(logoutPending.current)return;
     setSwitching(true);
     try{
-      await api('/auth/login',{method:'POST',body:JSON.stringify({user_id:id,password:'AeroDesk2026!'})});
+      await api('/auth/login',{method:'POST',body:JSON.stringify({user_id:id,password:'FlyLeaf2026!'})});
       setIdentity(id);
       await refresh();
       setRevision(v=>v+1);
@@ -116,7 +116,7 @@ export function App() {
         event.preventDefault();navigate('home');
       }}>
         <span className="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 25 16 5l11 20h-7l-4-8-4 8z" fill="currentColor"/><path d="M8 21h18" stroke="#91b6a3" strokeWidth="2"/></svg></span>
-        AeroDesk<span className="brand-period">.</span>
+        FlyLeaf<span className="brand-period">.</span>
       </a>
       <div className="airport-switch"><span className="airport-symbol"><Plane size={18}/></span><div><strong>{airport}</strong><small>Spațiu de lucru</small></div><ShieldCheck size={15}/></div>
       <div className="nav-label">SPAȚIUL MEU</div>
@@ -153,7 +153,7 @@ export function App() {
         </div>
         <div className="topbar-actions">
           <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
-          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă AeroDesk</button><span className="avatar top-avatar">{initials(user.name)}</span>
+          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button><span className="avatar top-avatar">{initials(user.name)}</span>
           <button className="logout-button topbar-logout" disabled={loggingOut||switching} onClick={()=>void logout()} aria-label="Ieși din cont" title="Ieși din cont" aria-busy={loggingOut}>
             <LogOut size={17}/><span>{loggingOut?'Se deconectează…':'Ieși din cont'}</span>
           </button>
@@ -176,7 +176,7 @@ export function App() {
         </div>
         {doc&&<DocumentDetail key={doc} id={doc} origin={page} onOpen={openDoc} onClose={returnToOrigin} onChanged={changed} notify={notify} user={user}/>}
       </main>
-      <footer className="workspace-footer"><span>AeroDesk <span>·</span> Mai multă ordine. Mai mult timp pentru echipă.</span></footer>
+      <footer className="workspace-footer"><span>FlyLeaf <span>·</span> Mai multă ordine. Mai mult timp pentru echipă.</span></footer>
     </div>
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
     {assistant&&<AssistantDialog onClose={closeAssistant} onOpen={openDoc}/>}

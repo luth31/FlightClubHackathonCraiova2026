@@ -55,7 +55,7 @@ def test_deactivation_removes_sessions_and_revokes_delegation(admin, db):
         try:
             assert admin.patch('/api/people/finance', json={'active': False}).status_code == 200
             assert other.get('/api/documents').status_code == 401
-            assert other.post('/api/auth/login', json={'user_id':'finance','password':'AeroDesk2026!'}).status_code == 401
+            assert other.post('/api/auth/login', json={'user_id':'finance','password':'FlyLeaf2026!'}).status_code == 401
         finally:
             assert admin.patch('/api/people/finance', json={'active': True}).status_code == 200
 

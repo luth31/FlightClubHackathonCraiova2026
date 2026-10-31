@@ -25,4 +25,4 @@ def audit(db: Session=Depends(get_db),user=Depends(current_user)):
 def report(category: str='',db: Session=Depends(get_db),user=Depends(current_user)):
     if category and category not in CATEGORIES: raise DomainError('Tipul documentului nu este valid.',422)
     content=service.report(db,user,category)
-    return StreamingResponse(iter([content]),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="registru-aerodesk.csv"','Cache-Control':'no-store'})
+    return StreamingResponse(iter([content]),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="registru-flyleaf.csv"','Cache-Control':'no-store'})

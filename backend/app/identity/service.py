@@ -12,7 +12,6 @@ import math
 import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode, urlsplit
-from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 import jwt
@@ -24,7 +23,25 @@ from app.identity.models import LoginTransaction
 from app.people.models import User
 
 
-DEMO_USER_IDS = ('admin', 'manager', 'reviewer', 'finance', 'hr', 'technician')
+# Fixture subjects stay fixed across product renames and match the realm imports.
+DEMO_SUBJECTS = {
+    "dunarea": {
+        "af4c2bc9-6243-53f5-8051-574255e83321": "admin",
+        "cfb97976-e57b-585e-aeba-f8f62eea15d9": "manager",
+        "214b2438-a8ab-57d3-8557-354f2c26d698": "reviewer",
+        "c88526c8-e1d2-53bc-a857-a12237d1aae1": "finance",
+        "b7b6d88d-a20c-5dbd-83ff-0636b59c4ad8": "hr",
+        "c3906149-d2d1-5e03-8a52-b8b04a11867f": "technician"
+    },
+    "carpati": {
+        "ae41e412-8c0a-515c-89d3-b6a87c7c0d83": "admin",
+        "f116602c-c29c-5511-a885-b8f20a20dfaa": "manager",
+        "84ace447-6e3f-5b8b-bf26-d38741cc816f": "reviewer",
+        "2d4ed3c9-d08e-55ab-b0fb-e0525978a7e6": "finance",
+        "c8461524-70c7-57e2-b67e-db9fc8b56da3": "hr",
+        "78bf8f1f-a282-5448-9157-d3979caa5015": "technician"
+    }
+}
 FLOW_SECONDS = 300
 logger = logging.getLogger(__name__)
 
@@ -42,8 +59,7 @@ def now():
 def subject_map():
     if settings.oidc_subject_map is not None:
         return settings.oidc_subject_map
-    return {str(uuid5(NAMESPACE_URL, f'aerodesk:{settings.airport_id}:{user_id}')):user_id
-        for user_id in DEMO_USER_IDS}
+    return dict(DEMO_SUBJECTS.get(settings.airport_id, {}))
 
 
 def provider_logout_url():

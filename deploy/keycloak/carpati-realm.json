@@ -1,7 +1,7 @@
 {
   "realm": "carpati",
   "enabled": true,
-  "displayName": "AeroDesk · Aeroportul Carpați",
+  "displayName": "FlyLeaf · Aeroportul Carpați",
   "registrationAllowed": false,
   "resetPasswordAllowed": false,
   "loginWithEmailAllowed": false,
@@ -19,8 +19,8 @@
   "defaultLocale": "ro",
   "clients": [
     {
-      "clientId": "aerodesk-web",
-      "name": "AeroDesk",
+      "clientId": "flyleaf-web",
+      "name": "FlyLeaf",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": true,
@@ -48,12 +48,12 @@
       "optionalClientScopes": []
     },
     {
-      "clientId": "aerodesk-provisioner",
-      "name": "AeroDesk employee provisioning",
+      "clientId": "flyleaf-provisioner",
+      "name": "FlyLeaf employee provisioning",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "${AERODESK_KEYCLOAK_PROVISIONING_SECRET}",
+      "secret": "${FLYLEAF_KEYCLOAK_PROVISIONING_SECRET}",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "implicitFlowEnabled": false,
@@ -79,7 +79,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "AeroDesk2026!",
+          "value": "FlyLeaf2026!",
           "temporary": false
         }
       ]
@@ -96,7 +96,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "AeroDesk2026!",
+          "value": "FlyLeaf2026!",
           "temporary": false
         }
       ]
@@ -113,7 +113,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "AeroDesk2026!",
+          "value": "FlyLeaf2026!",
           "temporary": false
         }
       ]
@@ -130,7 +130,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "AeroDesk2026!",
+          "value": "FlyLeaf2026!",
           "temporary": false
         }
       ]
@@ -147,7 +147,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "AeroDesk2026!",
+          "value": "FlyLeaf2026!",
           "temporary": false
         }
       ]
@@ -164,15 +164,15 @@
       "credentials": [
         {
           "type": "password",
-          "value": "AeroDesk2026!",
+          "value": "FlyLeaf2026!",
           "temporary": false
         }
       ]
     },
     {
-      "username": "service-account-aerodesk-provisioner",
+      "username": "service-account-flyleaf-provisioner",
       "enabled": true,
-      "serviceAccountClientId": "aerodesk-provisioner",
+      "serviceAccountClientId": "flyleaf-provisioner",
       "clientRoles": {
         "realm-management": [
           "manage-users"
@@ -180,11 +180,11 @@
       }
     }
   ],
-  "loginTheme": "aerodesk",
+  "loginTheme": "flyleaf",
   "clientScopeMappings": {
     "realm-management": [
       {
-        "client": "aerodesk-provisioner",
+        "client": "flyleaf-provisioner",
         "roles": [
           "manage-users"
         ]
@@ -198,7 +198,7 @@
         "providerId": "declarative-user-profile",
         "config": {
           "kc.user.profile.config": [
-            "{\"attributes\": [{\"name\": \"username\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"multivalued\": false}, {\"name\": \"email\", \"validations\": {\"email\": {}, \"length\": {\"max\": 254}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"aerodesk_user_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}, {\"name\": \"aerodesk_airport_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}]}"
+            "{\"attributes\": [{\"name\": \"username\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"multivalued\": false}, {\"name\": \"email\", \"validations\": {\"email\": {}, \"length\": {\"max\": 254}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"flyleaf_user_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}, {\"name\": \"flyleaf_airport_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}]}"
           ]
         }
       }

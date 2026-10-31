@@ -6,7 +6,7 @@ import {build} from 'esbuild';
 import {JSDOM} from 'jsdom';
 import {act, createElement} from 'react';
 
-const initial = new JSDOM('<div></div>', {url:'http://aerodesk.test/'});
+const initial = new JSDOM('<div></div>', {url:'http://flyleaf.test/'});
 function install(window) {
   for (const key of ['window','document','navigator','location','localStorage','HTMLElement','HTMLInputElement','HTMLSelectElement','Event','MouseEvent','FormData'])
     Object.defineProperty(globalThis,key,{value:key==='window'?window:window[key],configurable:true,writable:true});
@@ -29,7 +29,7 @@ const base={items:[person],total:1,departments:['Tehnic'],department_records:[{i
   delegations:[],leaves:[],current_user_id:'hr',reference_date:'2026-10-30',auth_mode:'oidc'};
 
 async function setup(t, capabilities={}, createResponse) {
-  const dom=new JSDOM('<div id="root"></div>',{url:'http://aerodesk.test/',pretendToBeVisual:true});
+  const dom=new JSDOM('<div id="root"></div>',{url:'http://flyleaf.test/',pretendToBeVisual:true});
   install(dom.window);
   const calls=[];
   globalThis.fetch=async (input,options={})=>{

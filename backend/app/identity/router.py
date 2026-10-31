@@ -33,7 +33,7 @@ def login(login_hint: str | None = Query(default=None, min_length=1, max_length=
             raise DomainError('Identitatea aeroportului nu este configurată corect.',503) from exc
         return RedirectResponse(destination(exc.code),status_code=303)
     response = RedirectResponse(url,status_code=303)
-    response.set_cookie(f'aerodesk_oidc_{settings.airport_id}',browser,httponly=True,
+    response.set_cookie(f'flyleaf_oidc_{settings.airport_id}',browser,httponly=True,
         secure=settings.cookie_secure,samesite='lax',max_age=service.FLOW_SECONDS,path='/api/auth/oidc')
     return response
 
@@ -45,7 +45,7 @@ def callback(request: Request, state: str | None = Query(default=None,max_length
         iss: str | None = Query(default=None,max_length=2000), db: Session = Depends(get_db)):
     require_oidc()
     try:
-        transaction = service.consume_transaction(db,state,request.cookies.get(f'aerodesk_oidc_{settings.airport_id}'))
+        transaction = service.consume_transaction(db,state,request.cookies.get(f'flyleaf_oidc_{settings.airport_id}'))
         if error or not code:
             raise service.IdentityError('login_cancelled')
         if iss is not None and iss != settings.oidc_issuer:
@@ -58,5 +58,5 @@ def callback(request: Request, state: str | None = Query(default=None,max_length
     except service.IdentityError as exc:
         db.rollback()
         response = RedirectResponse(destination(exc.code),status_code=303)
-    response.delete_cookie(f'aerodesk_oidc_{settings.airport_id}',path='/api/auth/oidc')
+    response.delete_cookie(f'flyleaf_oidc_{settings.airport_id}',path='/api/auth/oidc')
     return response

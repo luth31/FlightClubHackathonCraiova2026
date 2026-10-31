@@ -1,4 +1,4 @@
-# AeroDesk verification record
+# FlyLeaf verification record
 
 Recorded **31 October 2026** against the local demonstration. This is evidence for the implemented prototype, not a production certification. The application uses 30 October 2026 as its displayed demonstration reference date; audit events use actual timestamps.
 
@@ -166,7 +166,7 @@ A fresh whole-branch code review identified five Important groups: history/prede
 Reproduce the current backend gate from the repository root in PowerShell (the deployment mount supplies the existing OIDC test fixtures):
 
 ```powershell
-docker compose run --rm --no-deps -e AERODESK_AUTH_MODE=demo -e AERODESK_EXCHANGE_URL= -v "${PWD}/backend:/app/backend:ro" -v "${PWD}/deploy:/app/deploy:ro" dunarea-api python -m pytest tests -q -p no:cacheprovider
+docker compose run --rm --no-deps -e FLYLEAF_AUTH_MODE=demo -e FLYLEAF_EXCHANGE_URL= -v "${PWD}/backend:/app/backend:ro" -v "${PWD}/deploy:/app/deploy:ro" dunarea-api python -m pytest tests -q -p no:cacheprovider
 npm --prefix frontend run build
 npm --prefix frontend run lint
 npm --prefix frontend run test:suppliers

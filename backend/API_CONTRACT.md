@@ -1,6 +1,6 @@
-# AeroDesk local demo API
+# FlyLeaf local demo API
 
-Base `/api`. Authenticate with POST `/api/auth/login` JSON `{user_id:'admin',password:'AeroDesk2026!'}`. Demonstration accounts: admin, manager, reviewer, finance, hr, technician. Login creates an HttpOnly SameSite=Strict cookie scoped to the configured airport. All fetches use credentials. POST `/api/auth/logout` invalidates the session. Demo accounts and password are intentionally published for this local prototype; production identity integration is a deployment requirement. X-Demo-User and as_user do not authorize requests. All errors use `{detail:string}`.
+Base `/api`. Authenticate with POST `/api/auth/login` JSON `{user_id:'admin',password:'FlyLeaf2026!'}`. Demonstration accounts: admin, manager, reviewer, finance, hr, technician. Login creates an HttpOnly SameSite=Strict cookie scoped to the configured airport. All fetches use credentials. POST `/api/auth/logout` invalidates the session. Demo accounts and password are intentionally published for this local prototype; production identity integration is a deployment requirement. X-Demo-User and as_user do not authorize requests. All errors use `{detail:string}`.
 
 * GET `/session` -> `{current_user, users, airport, reference_date, demo:true}`.
 * GET `/dashboard` -> `{stats:{documents,pending,expiring,approved},recent_documents,attention,activity,departments}`.

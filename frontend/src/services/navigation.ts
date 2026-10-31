@@ -29,11 +29,11 @@ export const documentHref = (id: string, origin: Page) =>
 export function useNavigation(userId: string | undefined, canViewSuppliers: boolean) {
   const [route, setRoute] = useState(() => parseRoute(window.location.hash));
   const page = route.page === 'suppliers' && !canViewSuppliers ? 'documents' : route.page;
-  const readState = (): NavigationState | undefined => window.history.state?.aerodeskNavigation;
+  const readState = (): NavigationState | undefined => window.history.state?.flyleafNavigation;
 
   // Restore only after React has revealed the list; scrolling a hidden view clamps to zero.
   useLayoutEffect(() => {
-    const state: NavigationState | undefined = window.history.state?.aerodeskNavigation;
+    const state: NavigationState | undefined = window.history.state?.flyleafNavigation;
     const scroll = !route.doc && state?.userId === userId && state?.origin === page ? state.scroll : undefined;
     window.scrollTo(...(scroll || [0, 0]));
   }, [route, page, userId]);
@@ -53,7 +53,7 @@ export function useNavigation(userId: string | undefined, canViewSuppliers: bool
 
   function write(hash: string, state: NavigationState, replace = false) {
     const method = replace ? 'replaceState' : 'pushState';
-    window.history[method]({...window.history.state, aerodeskNavigation: state}, '', hash);
+    window.history[method]({...window.history.state, flyleafNavigation: state}, '', hash);
     setRoute(parseRoute(hash));
   }
 
@@ -67,7 +67,7 @@ export function useNavigation(userId: string | undefined, canViewSuppliers: bool
     let depth = 0;
     if (!route.doc) {
       // Canonicalize restricted/unknown list hashes before creating a return entry.
-      window.history.replaceState({...window.history.state, aerodeskNavigation: {
+      window.history.replaceState({...window.history.state, flyleafNavigation: {
         userId, origin: page, documentDepth: 0, scroll: [window.scrollX, window.scrollY],
       }}, '', `#${page}`);
       depth = 1;

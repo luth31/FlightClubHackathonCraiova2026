@@ -29,24 +29,7 @@
     "demo_label_each_page": true,
     "required_text_present": true,
     "all_relations_resolve": true,
-    "no_replacement_glyphs": true,
-    "all_page_glyphs_within_bounds": true,
-    "fictional_iban_checksums_valid": true,
-    "technician_pdf_bank_contact_absent": true
+    "no_replacement_glyphs": true
   },
-  "visual_review": {
-    "documents": [
-      "doc-001",
-      "doc-004",
-      "doc-005",
-      "doc-031",
-      "doc-095",
-      "doc-121",
-      "doc-125",
-      "doc-137",
-      "doc-145"
-    ],
-    "pages": 20,
-    "result": "Inspected rendered pages; no clipping, overlapping text or missing diacritics observed."
-  }
+  "visual_review": "Representative rendered pages are reviewed separately; see docs/CORPUS_RESEARCH.md for actual review evidence."
 }

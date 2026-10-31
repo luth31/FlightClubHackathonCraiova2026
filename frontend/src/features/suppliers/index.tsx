@@ -320,7 +320,7 @@ export function SuppliersPage({
           {tab==='reviews'&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
           <p className="supplier-disclaimer">
             Un rezultat fără diferențe nu
-            confirmă legitimitatea mesajului sau proprietarul contului. AeroDesk
+            confirmă legitimitatea mesajului sau proprietarul contului. FlyLeaf
             nu execută și nu blochează plăți externe.
           </p>
         </>
@@ -907,7 +907,7 @@ export function ReviewDetail({
           </form>
         )}
         <p className="supplier-disclaimer">
-          AeroDesk păstrează dovezile și deciziile. Acest flux nu execută și nu
+          FlyLeaf păstrează dovezile și deciziile. Acest flux nu execută și nu
           blochează plăți într-un sistem financiar extern.
         </p>
       </div>

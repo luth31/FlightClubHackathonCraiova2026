@@ -77,8 +77,8 @@ def owned_user(base, headers, person):
         if not isinstance(users, list): raise ValueError()
         if not users: return None
         if (len(users) != 1 or users[0].get('username') != username(person)
-            or (users[0].get('attributes', {}).get('aerodesk_user_id') != [person.id]
-                or users[0].get('attributes', {}).get('aerodesk_airport_id') != [person.airport_id])
+            or (users[0].get('attributes', {}).get('flyleaf_user_id') != [person.id]
+                or users[0].get('attributes', {}).get('flyleaf_airport_id') != [person.airport_id])
             or not isinstance(users[0].get('id'), str) or not users[0]['id']):
             raise DomainError('Identitatea existentă nu aparține acestui cont. Solicită administratorului verificarea.', 409)
         return users[0]
@@ -115,7 +115,7 @@ def provision(person):
         response = request('POST', base, headers=headers, json={'username': username(person),
             'firstName': first, 'lastName': last, 'email': person.email, 'enabled': True,
             'emailVerified': False, 'requiredActions': ['UPDATE_PASSWORD'],
-            'attributes': {'aerodesk_user_id': [person.id], 'aerodesk_airport_id': [person.airport_id]}})
+            'attributes': {'flyleaf_user_id': [person.id], 'flyleaf_airport_id': [person.airport_id]}})
         if response.status_code not in (201, 409):
             raise DomainError('Contul Keycloak nu a putut fi creat. Poți reîncerca.', 502)
         existing = owned_user(base, headers, person)

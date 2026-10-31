@@ -43,7 +43,7 @@ async def lifespan(app):
             worker[0].set()
             worker[1].join(timeout=2)
 
-app=FastAPI(title='AeroDesk API',version='0.1.0',description='Local demonstration workspace. Synthetic airport documents; session-based access control.',lifespan=lifespan)
+app=FastAPI(title='FlyLeaf API',version='0.1.0',description='Local demonstration workspace. Synthetic airport documents; session-based access control.',lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origins,allow_credentials=True,allow_methods=['GET','POST','PATCH','DELETE','OPTIONS'],allow_headers=['Content-Type'])
 register_exception_handlers(app)
 
@@ -66,4 +66,4 @@ for router in (auth_router,identity_router,documents_router,contracts_router,sha
 
 @app.get('/api/health')
 def health():
-    return {'status':'ok','service':'AeroDesk','airport_id':settings.airport_id,'demo':True}
+    return {'status':'ok','service':'FlyLeaf','airport_id':settings.airport_id,'demo':True}

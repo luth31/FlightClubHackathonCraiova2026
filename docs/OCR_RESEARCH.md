@@ -66,6 +66,6 @@ backend/.venv/bin/python scripts/benchmark_extraction.py
 
 The benchmark writes disposable PDFs, page images, extracted results and timing JSON under `.runtime/ocr-benchmark/`. Optional engine comparison needs an isolated environment with `kreuzberg==4.10.4`, then `--compare`. No optional benchmark library is required to run the application. Language model provenance and SHA-256 values are in `data/tessdata/README.md`; model binaries and their license are checked in.
 
-`AERODESK_EXTRACTION_ENABLED=false` disables the background runner for deterministic tests/maintenance. `AERODESK_TESSDATA_DIR` changes the local model directory. If substituting different models or extraction behavior, change `PIPELINE` too, so previous results do not masquerade as newly processed text.
+`FLYLEAF_EXTRACTION_ENABLED=false` disables the background runner for deterministic tests/maintenance. `FLYLEAF_TESSDATA_DIR` changes the local model directory. If substituting different models or extraction behavior, change `PIPELINE` too, so previous results do not masquerade as newly processed text.
 
 Validation: 111 backend tests passed, including 12 new extraction tests; production TypeScript/Vite build passed. Chrome DevTools confirmed upload → queued → ready → automatic metadata → page text → full-text lookup. Linux Docker OCR passed with `--network none`. Additional deployment verification is recorded in `VERIFICATION.md`.

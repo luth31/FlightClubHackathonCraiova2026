@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the deterministic, fictional AeroDesk Romanian airport corpus.
+"""Build the deterministic, fictional FlyLeaf Romanian airport corpus.
 
 Requires reportlab and pypdf. No network, credentials or real personal data.
 Run from any directory: python scripts/generate_corpus.py
@@ -114,7 +114,7 @@ def footer(canvas,doc):
     canvas.saveState()
     w,h=A4
     canvas.setFillColor(GREEN);canvas.rect(0,h-9,w,9,fill=1,stroke=0)
-    canvas.setFont('AeroBold',10);canvas.setFillColor(INK);canvas.drawString(60,h-43,"AeroDesk / " + AIRPORT)
+    canvas.setFont('AeroBold',10);canvas.setFillColor(INK);canvas.drawString(60,h-43,"FlyLeaf / " + AIRPORT)
     canvas.setFont('Aero',8);canvas.setFillColor(MUTED);canvas.drawRightString(w-60,h-43,"ARHIVĂ DEMONSTRATIVĂ")
     canvas.setStrokeColor(LINE);canvas.line(60,48,w-60,48)
     canvas.setFont('Aero',7.5);canvas.drawString(60,34,DEMO)
@@ -123,7 +123,7 @@ def footer(canvas,doc):
 
 def render(record, pages):
     target=PDFS/record['filename']
-    doc=SimpleDocTemplate(str(target),pagesize=A4,rightMargin=60,leftMargin=60,topMargin=77,bottomMargin=64,title=record['title'],author='AeroDesk - synthetic corpus',subject=DEMO,invariant=1)
+    doc=SimpleDocTemplate(str(target),pagesize=A4,rightMargin=60,leftMargin=60,topMargin=77,bottomMargin=64,title=record['title'],author='FlyLeaf - synthetic corpus',subject=DEMO,invariant=1)
     doc.record=record
     story=[]
     for index,blocks in enumerate(pages):
@@ -138,7 +138,7 @@ def heading(record, subtitle=None):
 
 def evidence(record,case=None):
     refs = ', '.join(s['id'] for s in record['source_refs'])
-    blocks=section('Proveniență și limite',f"Conținut original, sintetic, creat pentru AeroDesk. Familiile documentare au fost informate de sursele {refs}, descrise în catalogul corpusului. Numele, prețurile, datele și constatările sunt fictive. Referințele publice nu validează acest document și nu constituie aprobare de autoritate.")
+    blocks=section('Proveniență și limite',f"Conținut original, sintetic, creat pentru FlyLeaf. Familiile documentare au fost informate de sursele {refs}, descrise în catalogul corpusului. Numele, prețurile, datele și constatările sunt fictive. Referințele publice nu validează acest document și nu constituie aprobare de autoritate.")
     blocks += [p('Referințe publice','h')]
     for s in record['source_refs']:
         blocks += [p(s['id']+' · '+s['title'],'small'),p(s['url'],'small')]

@@ -68,7 +68,7 @@ function AnswerResult({
     <div className="ask-result">
       <div className="ask-answer-heading">
         <span>
-          <Sparkles size={16} aria-hidden="true" /> AeroDesk
+          <Sparkles size={16} aria-hidden="true" /> FlyLeaf
         </span>
         <small>Referință: {date(answer.reference_date)}</small>
       </div>
@@ -203,7 +203,7 @@ export function AssistantDialog({
 
   return (
     <Modal
-      title="Întreabă AeroDesk"
+      title="Întreabă FlyLeaf"
       subtitle="Contracte, documente și termene, la îndemână."
       className="ask-dialog"
       initialFocusRef={inputRef}
@@ -217,11 +217,11 @@ export function AssistantDialog({
             ask();
           }}
         >
-          <label htmlFor="aerodesk-question">Ce vrei să afli?</label>
+          <label htmlFor="flyleaf-question">Ce vrei să afli?</label>
           <div className="ask-input-wrap">
             <Search size={20} aria-hidden="true" />
             <input
-              id="aerodesk-question"
+              id="flyleaf-question"
               ref={inputRef}
               placeholder="Scrie o întrebare sau un subiect…"
               value={question}
