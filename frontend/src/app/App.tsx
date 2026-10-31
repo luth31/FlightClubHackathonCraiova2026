@@ -79,7 +79,7 @@ export function App() {
       await refresh();
       setRevision(v=>v+1);
       navigate('home');
-      notify('Contul de demonstrație a fost schimbat.');
+      notify('Contul a fost schimbat.');
     }catch(e){notify((e as Error).message)}finally{setSwitching(false)}
   }
   async function logout(){
@@ -132,11 +132,10 @@ export function App() {
         </button>)}
       </nav>
       <div className="sidebar-bottom">
-        <div className="demo-label"><span/>Mediu demonstrativ</div><p>Date fictive pentru demonstrație</p>
         <div className="user-switcher">
           <button className="user-button" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span className="avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button>
           {userMenu&&<div className="user-menu">
-            <div className="user-menu-heading">{session.auth?.mode==='oidc'?'Contul tău':'Schimbă contul demo'}</div>
+            <div className="user-menu-heading">{session.auth?.mode==='oidc'?'Contul tău':'Schimbă contul'}</div>
             {session.auth?.mode!=='oidc'&&session.users.map(u=><button disabled={switching||loggingOut} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
           </div>}
         </div>
@@ -160,13 +159,12 @@ export function App() {
           </button>
         </div>
       </header>
-      <div className="mobile-demo-banner"><span/>Date fictive pentru demonstrație</div>
       {logoutError&&<div className="logout-error"><ErrorMessage message={logoutError}/></div>}
       <main className="main-content" key={user.id} ref={mainRef} tabIndex={-1}>
         {/* Keep the originating list mounted so filters, tabs and pagination survive a document visit. */}
         <div className="workspace-view" hidden={!!doc} inert={!!doc}>
           <ViewActiveContext value={!doc}>
-          {page==='home'&&<DashboardPage name={user.name} referenceDate={session.reference_date} onOpen={openDoc} onNavigate={navigate} onUpload={()=>setUpload(true)} revision={revision}/>}
+          {page==='home'&&<DashboardPage name={user.name} onOpen={openDoc} onNavigate={navigate} onUpload={()=>setUpload(true)} revision={revision}/>}
           {page==='documents'&&<DocumentLibrary onOpen={openDoc} onUpload={()=>setUpload(true)} notify={notify} initialFilter={filter} revision={revision}/>}
           {page==='contracts'&&<ContractsPage initialFilter={filter} onOpen={openDoc} revision={revision} notify={notify}/>}
           {page==='approvals'&&<ApprovalsPage onOpen={openDoc} revision={revision} notify={notify}/>}
@@ -178,7 +176,7 @@ export function App() {
         </div>
         {doc&&<DocumentDetail key={doc} id={doc} origin={page} onOpen={openDoc} onClose={returnToOrigin} onChanged={changed} notify={notify} user={user}/>}
       </main>
-      <footer className="workspace-footer"><span>AeroDesk <span>·</span> Mai multă ordine. Mai mult timp pentru echipă.</span><span><span className="connection-dot"/>Spațiu local de demonstrație</span></footer>
+      <footer className="workspace-footer"><span>AeroDesk <span>·</span> Mai multă ordine. Mai mult timp pentru echipă.</span></footer>
     </div>
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
     {assistant&&<AssistantDialog onClose={closeAssistant} onOpen={openDoc}/>}

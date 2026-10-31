@@ -252,7 +252,7 @@ export function SuppliersPage({
               ) : (
                 <Empty
                   title="Încă nu sunt solicitări de verificat"
-                  message="Pornește cu un exemplu demonstrativ sau introdu detaliile unei solicitări."
+                  message="Introdu detaliile unei solicitări pentru a începe verificarea."
                 >
                   <button
                     className="button secondary"
@@ -275,7 +275,7 @@ export function SuppliersPage({
                         <h3>{s.name}</h3>
                         <small>
                           {s.trust_status === "demo_verified"
-                            ? "Date fictive, verificate în scenariu"
+                            ? "Date din registrul furnizorilor"
                             : "Modificare aprobată de două persoane"}
                         </small>
                       </div>
@@ -319,7 +319,7 @@ export function SuppliersPage({
           </div>
           {tab==='reviews'&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
           <p className="supplier-disclaimer">
-            Verificări pe date demonstrative. Un rezultat fără diferențe nu
+            Un rezultat fără diferențe nu
             confirmă legitimitatea mesajului sau proprietarul contului. AeroDesk
             nu execută și nu blochează plăți externe.
           </p>
@@ -489,7 +489,7 @@ function NewReview({
                 <ShieldCheck size={18} />
                 <p>
                   {supplier.trust_status === "demo_verified"
-                    ? "Registru fictiv verificat pentru demonstrație."
+                    ? "Date de referință din registrul furnizorilor."
                     : "Date aprobate prin verificare independentă și decizia unui alt coleg."}{" "}
                   Un IBAN valid nu dovedește cine deține contul.
                 </p>
@@ -507,7 +507,7 @@ function NewReview({
             Completează un exemplu
             <select defaultValue="" onChange={(e) => example(e.target.value)}>
               <option value="" disabled>
-                Alege un scenariu demonstrativ
+                Alege un exemplu
               </option>
               <option value="matched">Aceleași date ca în registru</option>
               <option value="changed">Contact cunoscut, IBAN diferit</option>
@@ -532,7 +532,7 @@ function NewReview({
               required
               value={iban}
               onChange={(e) => setIban(e.target.value)}
-              placeholder="RO00 DEMO 0000 0000 0000 0000"
+              placeholder="Introdu IBAN-ul comunicat"
               autoComplete="off"
             />
           </label>
