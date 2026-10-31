@@ -1,23 +1,6 @@
 from datetime import date
 from pydantic import BaseModel, Field, model_validator
 from typing import Literal
-import re
-import unicodedata
-
-
-def work_email(name: str) -> str:
-    parts = name.split()
-    if len(parts) < 2:
-        raise ValueError('Introdu prenumele și numele de familie pentru generarea emailului.')
-    first = unicodedata.normalize('NFKD', parts[0]).encode('ascii', 'ignore').decode().lower()
-    last = unicodedata.normalize('NFKD', parts[-1]).encode('ascii', 'ignore').decode().lower()
-    last = re.sub(r"['’]", '', last)
-    if not first or not re.fullmatch(r'[a-z]+(?:-[a-z]+)*', last) or not re.match(r'[a-z]', first):
-        raise ValueError('Numele trebuie să permită generarea unei adrese de email valide.')
-    local = f'{first[0]}.{last}'
-    if len(local) > 64:
-        raise ValueError('Numele de familie este prea lung pentru adresa de email.')
-    return f'{local}@arm.ro'
 
 
 class DateInterval(BaseModel):
@@ -54,19 +37,11 @@ class AccountUpdate(BaseModel):
 class EmployeeCreate(BaseModel):
     model_config = {'extra': 'forbid', 'str_strip_whitespace': True}
     name: str = Field(min_length=2, max_length=150)
-    email: str | None = Field(default=None, min_length=5, max_length=254)
+    email: str = Field(min_length=5, max_length=254, pattern=r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
     department_id: str = Field(max_length=100)
     job_title: str = Field(min_length=2, max_length=150)
     manager_id: str | None = None
     access_profile: Literal['employee', 'technician'] = 'employee'
-
-    @model_validator(mode='after')
-    def generated_email(self):
-        generated = work_email(self.name)
-        if self.email is not None and self.email.lower() != generated:
-            raise ValueError('Emailul de serviciu este generat automat din numele angajatului.')
-        self.email = generated
-        return self
 
 
 class EmployeeUpdate(BaseModel):

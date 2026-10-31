@@ -69,6 +69,7 @@ test('HR onboarding sends an ordinary profile and shows credentials once',async 
   const {calls}=await setup(t,{can_create_users:true,can_manage_accounts:true,can_propose_heads:true});
   await click('Adaugă angajat');
   await fill('name','Mara Nouă');await fill('department_id','dept-tehnic');await fill('job_title','Inginer');
+  await click('Generează emailul');
   await submit();
   assert.equal(calls[0].path,'/api/people');
   assert.equal(calls[0].body.access_profile,'employee');
@@ -81,12 +82,19 @@ test('HR onboarding sends an ordinary profile and shows credentials once',async 
 });
 
 test('onboarding failure retains entered fields and can be retried',async t=>{
-  await setup(t,{can_create_users:true},()=>Response.json({detail:'Email deja folosit'},{status:409}));
+  let attempts=0;
+  const {calls}=await setup(t,{can_create_users:true},()=>++attempts===1?
+    Response.json({detail:'Email deja folosit'},{status:409}):Response.json({user:person,temporary_password:'once-only'}));
   await click('Adaugă angajat');
   await fill('name','Mara Nouă');await fill('department_id','dept-tehnic');await fill('job_title','Inginer');
+  await click('Generează emailul');
   await submit();
   assert.equal(document.querySelector('[name="name"]').value,'Mara Nouă');
   assert.match(document.body.textContent,/Email deja folosit/);
+  await fill('email','mara.noua2@arm.ro');
+  await submit();
+  assert.equal(calls[1].body.email,'mara.noua2@arm.ro');
+  assert.ok([...document.querySelectorAll('input')].some(input=>input.value==='once-only'));
 });
 
 test('HR can propose an appointment without granting signing authority',async t=>{
@@ -100,14 +108,22 @@ test('HR can propose an appointment without granting signing authority',async t=
   assert.ok(!('signer' in calls[0].body));
 });
 
-test('email preview follows the name and cannot be edited',async t=>{
-  await setup(t,{can_create_users:true});await click('Adaugă angajat');
+test('email is generated on demand and HR edits survive name changes',async t=>{
+  const {calls}=await setup(t,{can_create_users:true});await click('Adaugă angajat');
   await fill('name','  Ștefan Mihai Ionescu  ');
   const email=document.querySelector('[name="email"]');
-  assert.equal(email.value,'s.ionescu@arm.ro');assert.ok(email.readOnly);
+  assert.equal(email.value,'');
+  await click('Generează emailul');
+  assert.equal(email.value,'s.ionescu@arm.ro');assert.ok(!email.readOnly);
+  assert.equal(calls.length,0,'Generating an email must not submit the form');
+  await fill('email','stefan.ionescu@arm.ro');
   await fill('name','Ana-Maria Popescu-Dumitrescu');
+  assert.equal(email.value,'stefan.ionescu@arm.ro');
+  await click('Generează emailul');
   assert.equal(email.value,'a.popescu-dumitrescu@arm.ro');
-  await fill('name','Ana');assert.equal(email.value,'');
+  await fill('name','Ana');
+  assert.ok([...document.querySelectorAll('button')].find(b=>b.textContent.includes('Generează emailul')).disabled);
+  assert.equal(email.value,'a.popescu-dumitrescu@arm.ro');
 });
 
 test('position follows department and coordinators are limited to active colleagues there',async t=>{

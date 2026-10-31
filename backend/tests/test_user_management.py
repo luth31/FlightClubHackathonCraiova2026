@@ -10,6 +10,7 @@ from app.people.models import User
 
 def employee(**changes):
     return {'name': 'Mara Test' + ''.join(chr(97 + int(c, 16)) for c in uuid4().hex),
+            'email': f'm.test-{uuid4().hex}@arm.ro',
             'department_id': 'dept-tehnic', 'job_title': 'Inginer',
             'manager_id': None, 'access_profile': 'employee', **changes}
 
@@ -72,20 +73,34 @@ def test_hr_cannot_grant_privileged_roles_or_duplicate_email(client):
     login(client, 'hr')
     assert client.post('/api/people', json=employee(roles=['signer'])).status_code == 422
     assert client.post('/api/people', json=employee(access_profile='director')).status_code == 422
-    assert client.post('/api/people', json=employee(email=' HR@DUNAREA.EXAMPLE ')).status_code == 422
+    assert client.post('/api/people', json=employee(email=' HR@DUNAREA.EXAMPLE ')).status_code == 409
     assert client.post('/api/people', json=employee(department_id='foreign-department')).status_code == 422
     assert client.post('/api/people', json=employee(manager_id='missing')).status_code == 404
 
 
-def test_work_email_is_generated_and_duplicate_names_are_reported(client):
+def test_hr_can_adjust_work_email_and_duplicate_addresses_are_reported(client):
     login(client, 'hr')
-    payload = employee(name='  Ștefan   Mihai Ionescu  ')
+    payload = employee(name='Ștefan Mihai Ionescu', email='  STEFAN.IONESCU@ARM.RO  ')
     response = client.post('/api/people', json=payload)
     assert response.status_code == 201, response.text
-    assert response.json()['user']['email'] == 's.ionescu@arm.ro'
-    assert client.post('/api/people', json=payload).status_code == 409
-    assert client.post('/api/people', json=employee(name='Ștefan')).status_code == 422
-    assert client.post('/api/people', json=employee(name='Ana Popescu', email='custom@arm.ro')).status_code == 422
+    assert response.json()['user']['email'] == 'stefan.ionescu@arm.ro'
+    assert client.post('/api/people', json=employee(email='stefan.ionescu@arm.ro')).status_code == 409
+    replacement = client.post('/api/people', json=employee(name=payload['name'], email='s.ionescu2@arm.ro'))
+    assert replacement.status_code == 201, replacement.text
+    assert replacement.json()['user']['email'] == 's.ionescu2@arm.ro'
+
+
+@pytest.mark.parametrize('email', ['', 'invalid', 'ana @arm.ro', 'ana@arm', 'ana@@arm.ro'])
+def test_hr_email_override_must_be_valid(client, email):
+    login(client, 'hr')
+    assert client.post('/api/people', json=employee(email=email)).status_code == 422
+
+
+def test_employee_creation_requires_hr_to_supply_email(client):
+    login(client, 'hr')
+    payload = employee()
+    del payload['email']
+    assert client.post('/api/people', json=payload).status_code == 422
 
 
 def test_coordinator_must_be_active_in_the_selected_department(client, people_state):

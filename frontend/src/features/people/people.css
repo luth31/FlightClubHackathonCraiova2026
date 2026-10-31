@@ -17,5 +17,8 @@
 .employee-access { border-top:1px solid var(--border, #e2e6df); margin-top:20px; padding-top:18px; }
 .employee-access p, .employee-result p { margin:12px 0; }
 .employee-access button { margin-right:8px; margin-top:8px; }
+.employee-email-row { display:flex; flex-wrap:wrap; gap:10px; }
+.employee-email-row input { flex:1 1 220px; min-width:0; width:auto; }
+.employee-email-row .button { flex:none; white-space:nowrap; }
 .appointment-panel { margin-bottom:24px; }
 .appointment-panel h2 { font-size:18px; margin-bottom:8px; }

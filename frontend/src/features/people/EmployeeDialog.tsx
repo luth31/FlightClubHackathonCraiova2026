@@ -18,6 +18,7 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
 }) {
   const departments=directory.department_records||[];
   const [name,setName]=useState(person?.name||'');
+  const [email,setEmail]=useState(person?.email||'');
   const [departmentId,setDepartmentId]=useState(person?.department_id||departments[0]?.id||'');
   const [jobTitle,setJobTitle]=useState(person?.job_title||'');
   const [managerId,setManagerId]=useState(person?.manager_id||'');
@@ -79,7 +80,7 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
     ...(departmentId===person?.department_id&&person.job_title?[person.job_title]:[]),
   ])];
   const coordinators=directory.items.filter(p=>p.active&&p.id!==person?.id&&p.department_id===departmentId);
-  const email=workEmail(name);
+  const suggestedEmail=workEmail(name);
   const failed=result?.user.provisioning_status==='failed';
   return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} subtitle="Datele angajatului și accesul său la AeroDesk." onClose={onClose}>
     <div className="modal-body">
@@ -96,13 +97,16 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
       </div>:<>
         <form onSubmit={save}>
           <label className="field">Nume complet<input name="name" value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={150} required/></label>
-          {!person&&<label className="field">Email de serviciu<input name="email" type="email" value={email} readOnly required placeholder="Inițială prenume.nume@arm.ro"/><span className="quiet-note">Generat automat din prenume și numele de familie, fără diacritice.</span></label>}
+          {!person&&<div className="field"><label htmlFor="employee-email">Email de serviciu</label>
+            <div className="employee-email-row"><input id="employee-email" name="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={254} required placeholder="Inițială prenume.nume@arm.ro" aria-describedby="employee-email-help"/>
+              <button type="button" className="button secondary" disabled={busy||!suggestedEmail} onClick={()=>setEmail(suggestedEmail)}>Generează emailul</button></div>
+            <span id="employee-email-help" className="quiet-note">Generează o sugestie din prenume și numele de familie. Poți modifica adresa dacă este deja folosită sau nepotrivită.</span></div>}
           <label className="field">Departament<select name="department_id" value={departmentId} onChange={e=>{setDepartmentId(e.target.value);setManagerId('');setJobTitle('');}} required>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
           <div className="form-grid"><label className="field">Funcție<select name="job_title" value={jobTitle} onChange={e=>setJobTitle(e.target.value)} required><option value="">Alege funcția</option>{jobTitles.map(title=><option key={title} value={title}>{title}</option>)}</select></label>
           <label className="field">Coordonator<select name="manager_id" value={coordinators.some(p=>p.id===managerId)?managerId:''} onChange={e=>setManagerId(e.target.value)}><option value="">Fără coordonator desemnat</option>{coordinators.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
           {!person&&<label className="field">Acces inițial<select name="access_profile" defaultValue="employee"><option value="employee">Angajat</option><option value="technician">Tehnician</option></select></label>}
           <p className="quiet-note">Fiecare angajat poate solicita concediu. Numirea ca șef și autoritatea de semnare se acordă separat.</p>
-          {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy||(!person&&!email)}>{busy?'Se salvează…':person?'Salvează fișa':'Creează contul'}</button></div>
+          {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy||(!person&&!email.trim())}>{busy?'Se salvează…':person?'Salvează fișa':'Creează contul'}</button></div>
         </form>
         {current&&<div className="employee-access"><h3>Accesul la aplicație</h3>
           <p>{current.active?'Dezactivarea închide sesiunile, revocă delegările și păstrează documentele și istoricul.':'Contul este inactiv. Documentele și istoricul rămân păstrate.'}</p>
