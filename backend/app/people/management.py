@@ -83,7 +83,8 @@ def employee_dict(db, person):
     data.update({'department_id': person.department_id, 'job_title': person.job_title,
         'manager_id': person.manager_id, 'is_department_head': is_head(db, person),
         'provisioning_status': person.provisioning_status, 'identity_sync_pending': person.identity_sync_pending,
-        'login_username': provisioning.username(person) if person.identity_subject else person.id})
+        'login_username': provisioning.username(person) if person.identity_subject else person.id,
+        'sign_in_url': provisioning.sign_in_url(person)})
     return data
 
 
@@ -111,6 +112,10 @@ def create_employee(db, actor, body):
     email = body.email.lower().strip()
     if db.scalar(select(User).where(User.airport_id == actor.airport_id, func.lower(func.trim(User.email)) == email)):
         raise DomainError('Există deja un angajat cu această adresă de email.', 409)
+    local_part = email.split('@', 1)[0]
+    existing_local_part = func.lower(func.substr(func.trim(User.email), 1, func.instr(func.trim(User.email), '@') - 1))
+    if db.scalar(select(User.id).where(User.airport_id == actor.airport_id, existing_local_part == local_part)):
+        raise DomainError('Emailul produce un nume de utilizator deja folosit. Alege o altă adresă.', 409)
     uid = 'emp-' + uuid4().hex
     person = User(id=uid, name=body.name, email=email, department=dept.name, department_id=dept.id,
         first_name=body.first_name, middle_name=body.middle_name, last_name=body.last_name,

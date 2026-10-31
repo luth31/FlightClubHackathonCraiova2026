@@ -23,6 +23,7 @@ initial.window.close();
 
 const person={id:'employee',name:'Mara Demo',email:'mara@airport.example',department:'Tehnic',department_id:'dept-tehnic',
   first_name:'Mara',middle_name:'',last_name:'Demo',
+  login_username:'mara',sign_in_url:'http://127.0.0.1:8080/api/auth/oidc/login?login_hint=mara',
   role:'Inginer',roles:['employee'],active:true,availability:'available',job_title:'Inginer',provisioning_status:'ready'};
 const base={items:[person],total:1,departments:['Tehnic'],department_records:[{id:'dept-tehnic',name:'Tehnic',head_user_id:null,job_titles:['Inginer','Tehnician mentenanță']}],
   delegations:[],leaves:[],current_user_id:'hr',reference_date:'2026-10-30',auth_mode:'oidc'};
@@ -79,6 +80,7 @@ test('HR onboarding sends an ordinary profile and shows credentials once',async 
   assert.equal(calls[0].body.first_name,'Mara');assert.equal(calls[0].body.middle_name,'');assert.equal(calls[0].body.last_name,'Nouă');
   assert.ok(!('name' in calls[0].body));
   assert.ok([...document.querySelectorAll('input')].some(input=>input.value==='once-only'));
+  assert.ok([...document.querySelectorAll('input')].some(input=>input.value===person.sign_in_url));
   assert.match(document.body.textContent,/o singură dată/);
   await click('Am preluat datele');
   assert.ok(![...document.querySelectorAll('input')].some(input=>input.value==='once-only'));
@@ -149,6 +151,16 @@ test('editing a profile restores the stored name boundaries',async t=>{
   assert.equal(document.querySelector('[name="first_name"]').value,'Ana');
   assert.equal(document.querySelector('[name="middle_name"]').value,'Maria');
   assert.equal(document.querySelector('[name="last_name"]').value,'De la Cruz');
+});
+
+test('HR can copy the sign-in link without resetting credentials or granting access',async t=>{
+  const {calls}=await setup(t,{can_manage_accounts:true});
+  const copied=[];
+  Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>copied.push(text)}});
+  await click('Gestionează angajatul');await click('Copiază linkul de conectare');
+  assert.deepEqual(copied,[person.sign_in_url]);
+  assert.equal(calls.length,0);
+  assert.ok([...document.querySelectorAll('input')].some(input=>input.value==='mara'));
 });
 
 test('position follows department and coordinators are limited to active colleagues there',async t=>{

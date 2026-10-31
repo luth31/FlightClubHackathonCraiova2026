@@ -134,6 +134,19 @@ def test_oidc_success_pkce_pinned_subject_and_local_roles(oidc):
     assert client.get('/api/session').json()['current_user'] is None
 
 
+def test_sign_in_link_hint_prefills_username_without_selecting_identity(oidc):
+    client, provider = oidc
+    response = client.get('/api/auth/oidc/login', params={'login_hint':'d.voicu'}, follow_redirects=False)
+    assert response.status_code == 303
+    query = parse_qs(urlsplit(response.headers['location']).query)
+    assert query['login_hint'] == ['d.voicu']
+    assert query['code_challenge_method'] == ['S256']
+    assert query['prompt'] == ['login']
+    provider['query'] = query
+    assert callback(client, query['state'][0]).status_code == 303
+    assert client.get('/api/session').json()['current_user']['id'] == 'technician'
+
+
 @pytest.mark.parametrize('overrides,absent',[
     ({'iss':'http://127.0.0.1:8181/realms/carpati'},[]),
     ({'aud':'other-client'},[]),

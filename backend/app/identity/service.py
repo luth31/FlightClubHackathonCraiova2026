@@ -120,7 +120,7 @@ def discovery():
     return metadata
 
 
-def start_login(db):
+def start_login(db, login_hint=None):
     metadata = discovery()
     state, browser, nonce, verifier = (secrets.token_urlsafe(48) for _ in range(4))
     created = now()
@@ -131,10 +131,12 @@ def start_login(db):
         expires_at=(created + timedelta(seconds=FLOW_SECONDS)).isoformat()))
     db.commit()
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest()).rstrip(b'=').decode()
-    query = urlencode({'client_id':settings.oidc_client_id, 'response_type':'code',
+    parameters = {'client_id':settings.oidc_client_id, 'response_type':'code',
         'redirect_uri':settings.oidc_redirect_uri, 'scope':'openid profile', 'state':state,
         'nonce':nonce, 'code_challenge':challenge, 'code_challenge_method':'S256',
-        'prompt':'login', 'max_age':'0', 'ui_locales':'ro'})
+        'prompt':'login', 'max_age':'0', 'ui_locales':'ro'}
+    if login_hint: parameters['login_hint'] = login_hint
+    query = urlencode(parameters)
     return metadata['authorization_endpoint'] + '?' + query, browser
 
 

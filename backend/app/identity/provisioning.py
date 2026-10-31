@@ -1,6 +1,6 @@
 """Backend-only, bounded Keycloak user provisioning; no provider roles are imported."""
 import secrets
-from urllib.parse import urlsplit, quote
+from urllib.parse import urlsplit, quote, urlencode, urljoin
 import httpx
 from app.config import settings
 from app.core.exceptions import DomainError
@@ -14,9 +14,15 @@ class ProvisioningFailure(DomainError):
 
 
 def username(person):
-    from app.identity.service import DEMO_USER_IDS
-    if person.id in DEMO_USER_IDS: return person.id
-    return f'employee-{person.id}'
+    return person.email.strip().lower().split('@', 1)[0]
+
+
+def sign_in_url(person):
+    if (settings.auth_mode != 'oidc' or not person.active or not person.identity_subject
+        or person.identity_issuer != settings.oidc_issuer
+        or getattr(person, 'provisioning_status', 'ready') != 'ready'):
+        return None
+    return urljoin(settings.oidc_frontend_url, '/api/auth/oidc/login') + '?' + urlencode({'login_hint': username(person)})
 
 
 def request(method, url, **kwargs):
@@ -52,20 +58,50 @@ def connection():
 
 
 def owned_user(base, headers, person):
-    response = request('GET', base, headers=headers, params={'username': username(person), 'exact': 'true'})
+    subject = getattr(person, 'identity_subject', None)
+    if subject:
+        if getattr(person, 'identity_issuer', None) != settings.oidc_issuer:
+            raise DomainError('Identitatea contului aparține altei configurații Keycloak.', 409)
+        response = request('GET', base + '/' + quote(subject, safe=''), headers=headers)
+        if response.status_code == 404:
+            raise DomainError('Identitatea asociată nu mai există. Solicită administratorului verificarea.', 409)
+    else:
+        response = request('GET', base, headers=headers, params={'username': username(person), 'exact': 'true'})
     try:
         users = response.json() if response.status_code == 200 else None
+        if subject:
+            if (not isinstance(users, dict) or users.get('id') != subject
+                or not isinstance(users.get('username'), str) or not users['username']):
+                raise ValueError()
+            return users
         if not isinstance(users, list): raise ValueError()
         if not users: return None
-        bound = len(users) == 1 and getattr(person, 'identity_issuer', None) == settings.oidc_issuer and getattr(person, 'identity_subject', None) == users[0].get('id')
         if (len(users) != 1 or users[0].get('username') != username(person)
-            or (not bound and (users[0].get('attributes', {}).get('aerodesk_user_id') != [person.id]
-                or users[0].get('attributes', {}).get('aerodesk_airport_id') != [person.airport_id]))
+            or (users[0].get('attributes', {}).get('aerodesk_user_id') != [person.id]
+                or users[0].get('attributes', {}).get('aerodesk_airport_id') != [person.airport_id])
             or not isinstance(users[0].get('id'), str) or not users[0]['id']):
             raise DomainError('Identitatea existentă nu aparține acestui cont. Solicită administratorului verificarea.', 409)
         return users[0]
     except (ValueError, KeyError, TypeError) as exc:
         raise DomainError('Răspunsul serviciului de identitate nu poate fi verificat.', 502) from exc
+
+
+def rename_username(person):
+    if not getattr(person, 'identity_subject', None):
+        raise DomainError('Contul nu are o identitate Keycloak asociată.', 409)
+    base, headers = connection()
+    existing = owned_user(base, headers, person)
+    desired = username(person)
+    if existing['username'] == desired: return False
+    response = request('PUT', base + '/' + quote(person.identity_subject, safe=''), headers=headers,
+        json={'username': desired})
+    if response.status_code == 409:
+        raise DomainError('Numele de utilizator este deja folosit. Alege o altă adresă de email.', 409)
+    if response.status_code != 204:
+        raise DomainError('Numele de utilizator Keycloak nu a putut fi actualizat.', 502)
+    if owned_user(base, headers, person).get('username') != desired:
+        raise DomainError('Numele de utilizator actualizat nu a putut fi confirmat.', 502)
+    return True
 
 
 def provision(person):
@@ -87,6 +123,8 @@ def provision(person):
     subject = existing['id']
     if getattr(person, 'identity_subject', None) and person.identity_subject != subject:
         raise DomainError('Identitatea existentă diferă de asocierea contului.', 409)
+    if existing.get('username') != username(person):
+        rename_username(person)
     user_url = base + '/' + quote(subject, safe='')
     if existing.get('enabled') is False:
         try:

@@ -16,16 +16,21 @@ def provider(monkeypatch):
     monkeypatch.setattr(settings, 'keycloak_provisioning_client_secret', SecretStr('private-service-secret'))
     monkeypatch.setattr(settings, 'keycloak_activation_email', False)
     person=SimpleNamespace(id='emp-test',name='Mara Test',email='mara@example.test',airport_id='dunarea',
-        identity_subject='subject-test',identity_issuer=settings.oidc_issuer,active=False)
+        identity_subject=None,identity_issuer=None,active=False)
     calls=[]
     users=[]
     def transport(method,url,**kwargs):
         calls.append((method,url,kwargs))
         if url.endswith('/token'): return httpx.Response(200,json={'access_token':'private-service-token'})
-        if method=='GET': return httpx.Response(200,json=users)
+        if method=='GET':
+            if url.endswith('/users'): return httpx.Response(200,json=users)
+            matches = [user for user in users if url.endswith('/' + user['id'])]
+            return httpx.Response(200,json=matches[0]) if matches else httpx.Response(404)
         if method=='POST':
             users.append({'id':'subject-test',**kwargs['json']})
             return httpx.Response(201)
+        if method=='PUT' and url.endswith('/subject-test'):
+            users[0].update(kwargs['json'])
         return httpx.Response(204)
     monkeypatch.setattr(provisioning,'request',transport)
     return person,calls,users
@@ -88,11 +93,69 @@ def test_credential_failure_retains_confirmed_identity(provider,monkeypatch):
 
 def test_reactivation_provisioning_reenables_owned_disabled_identity(provider):
     person,calls,users=provider
+    person.identity_subject, person.identity_issuer = 'subject-test', settings.oidc_issuer
     users.append({'id':'subject-test','username':provisioning.username(person),'enabled':False})
     result=provisioning.provision(person)
     assert result['subject']=='subject-test'
     assert any(method=='PUT' and url.endswith('/subject-test') and kwargs.get('json')=={'enabled':True}
         for method,url,kwargs in calls)
+
+
+def test_login_username_is_normalized_email_local_part(provider):
+    person, _, _ = provider
+    person.email = ' D.Voicu@arm.ro '
+    assert provisioning.username(person) == 'd.voicu'
+
+
+def test_sign_in_url_has_only_a_username_hint_and_requires_an_active_oidc_account(provider, monkeypatch):
+    from urllib.parse import urlsplit, parse_qs
+    person, _, _ = provider
+    monkeypatch.setattr(settings, 'auth_mode', 'oidc')
+    monkeypatch.setattr(settings, 'oidc_frontend_url', 'https://portal.example/')
+    person.active = True
+    person.identity_subject, person.identity_issuer = 'subject-test', settings.oidc_issuer
+    url = urlsplit(provisioning.sign_in_url(person))
+    assert url.scheme == 'https' and url.netloc == 'portal.example'
+    assert url.path == '/api/auth/oidc/login'
+    assert parse_qs(url.query) == {'login_hint':['mara']}
+    person.active = False
+    assert provisioning.sign_in_url(person) is None
+
+
+def test_bound_user_is_found_by_subject_and_can_be_renamed_without_password_reset(provider):
+    person, calls, users = provider
+    person.identity_subject, person.identity_issuer = 'subject-test', settings.oidc_issuer
+    users.append({'id':'subject-test', 'username':'employee-emp-test', 'enabled':True})
+    assert provisioning.owned_user('http://provider/users', {}, person)['id'] == 'subject-test'
+    provisioning.rename_username(person)
+    assert users[0]['username'] == 'mara'
+    assert not any(url.endswith('/reset-password') for _, url, _ in calls)
+
+
+def test_provisioning_legacy_bound_account_updates_username_before_credentials(provider):
+    person, calls, users = provider
+    person.identity_subject, person.identity_issuer = 'subject-test', settings.oidc_issuer
+    users.append({'id':'subject-test', 'username':'employee-emp-test', 'enabled':True})
+    result = provisioning.provision(person)
+    assert result['subject'] == 'subject-test'
+    assert users[0]['username'] == 'mara'
+    rename = next(i for i, (method, url, kwargs) in enumerate(calls) if method == 'PUT' and kwargs.get('json') == {'username':'mara'})
+    reset = next(i for i, (_, url, _) in enumerate(calls) if url.endswith('/reset-password'))
+    assert rename < reset
+
+
+def test_username_rename_collision_preserves_existing_identity(provider, monkeypatch):
+    person, _, users = provider
+    person.identity_subject, person.identity_issuer = 'subject-test', settings.oidc_issuer
+    users.append({'id':'subject-test', 'username':'old-username', 'enabled':True})
+    original = provisioning.request
+    def transport(method, url, **kwargs):
+        if method == 'PUT' and url.endswith('/subject-test'): return httpx.Response(409)
+        return original(method, url, **kwargs)
+    monkeypatch.setattr(provisioning, 'request', transport)
+    with pytest.raises(DomainError) as exc: provisioning.rename_username(person)
+    assert exc.value.status == 409
+    assert users[0]['username'] == 'old-username'
 
 
 def test_offboarding_does_not_touch_another_identity(provider):
@@ -110,6 +173,9 @@ def test_realm_service_client_has_only_user_management_scope(airport):
     assert not client['standardFlowEnabled'] and not client['fullScopeAllowed']
     assert realm['clientScopeMappings']['realm-management']==[{'client':'aerodesk-provisioner','roles':['manage-users']}]
     profile=json.loads(realm['components']['org.keycloak.userprofile.UserProfileProvider'][0]['config']['kc.user.profile.config'][0])
+    assert realm['editUsernameAllowed'] is True
+    username_attribute=next(a for a in profile['attributes'] if a['name']=='username')
+    assert username_attribute['permissions']=={'view':['admin','user'],'edit':['admin']}
     for name in ('aerodesk_user_id','aerodesk_airport_id'):
         attribute=next(a for a in profile['attributes'] if a['name']==name)
         assert attribute['permissions']=={'view':['admin'],'edit':['admin']}

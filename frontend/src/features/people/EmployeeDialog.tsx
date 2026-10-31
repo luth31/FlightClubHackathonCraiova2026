@@ -11,6 +11,15 @@ function workEmail(firstName:string,lastName:string) {
   return `${first[0]}.${last}@arm.ro`;
 }
 
+function SignInLink({person,busy,onCopy}:{person:Person;busy:boolean;onCopy:(url:string)=>void}) {
+  if(!person.sign_in_url)return null;
+  return <div className="employee-login-link">
+    <label className="field">Link de conectare<input readOnly value={person.sign_in_url} onFocus={e=>e.target.select()}/></label>
+    <button type="button" className="button secondary" disabled={busy} onClick={()=>onCopy(person.sign_in_url!)}>Copiază linkul de conectare</button>
+    <p className="quiet-note">Linkul completează numele de utilizator. Angajatul introduce parola pentru a se conecta.</p>
+  </div>;
+}
+
 export function EmployeeDialog({directory, person, onClose, onChanged}: {
   directory:Directory;person?:Person;onClose:()=>void;onChanged:(message:string)=>void;
 }) {
@@ -27,6 +36,13 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [result,setResult]=useState<ProvisionResult>();
+  async function copySignInLink(url:string) {
+    setError('');
+    try {
+      await navigator.clipboard.writeText(url);
+      onChanged('Linkul de conectare a fost copiat.');
+    } catch {setError('Copiază manual linkul din câmpul de conectare.');}
+  }
   async function save(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fields=Object.fromEntries(new FormData(event.currentTarget));
@@ -93,6 +109,7 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
             <label className="field">Parola inițială<input readOnly value={result.temporary_password} autoComplete="off"/></label>
             <p className="quiet-note">{directory.auth_mode==='oidc'?'Angajatul își schimbă parola la prima conectare.':'Folosește această parolă pentru conectarea locală.'}</p></>:
           <p>{result.invitation_status==='failed'?'Contul a fost creat, dar emailul de activare nu a putut fi trimis. Solicită retrimiterea instrucțiunilor.':'Instrucțiunile de activare au fost trimise angajatului.'}</p>}
+        <SignInLink person={result.user} busy={busy} onCopy={url=>void copySignInLink(url)}/>
         {result.invitation_status==='failed'&&<button className="button secondary" disabled={busy} onClick={()=>void instructions()}>Retrimite instrucțiunile</button>}
         {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button className="button primary" onClick={onClose}>{result.temporary_password?'Am preluat datele':'Închide'}</button></div>
       </div>:<>
@@ -114,6 +131,8 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
           {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy||(!person&&!email.trim())}>{busy?'Se salvează…':person?'Salvează fișa':'Creează contul'}</button></div>
         </form>
         {current&&<div className="employee-access"><h3>Accesul la aplicație</h3>
+          <label className="field">Cont<input readOnly value={current.login_username||current.id}/></label>
+          <SignInLink person={current} busy={busy} onCopy={url=>void copySignInLink(url)}/>
           <p>{current.active?'Dezactivarea închide sesiunile, revocă delegările și păstrează documentele și istoricul.':'Contul este inactiv. Documentele și istoricul rămân păstrate.'}</p>
           {current.identity_sync_pending&&<><p className="quiet-note">Sincronizarea cu serviciul de identitate este în așteptare.</p><button className="button secondary" disabled={busy} onClick={()=>void synchronize()}>Reîncearcă sincronizarea</button></>}
           {current.active&&(!current.provisioning_status||current.provisioning_status==='ready')&&(!current.roles.some(role=>['admin','director','hr','finance','reviewer','signer','department_head'].includes(role))||directory.can_admin_delegations)&&<button className="button secondary" disabled={busy} onClick={()=>void instructions()}>Retrimite instrucțiunile</button>}

@@ -24,10 +24,10 @@ def destination(error=None):
 
 
 @router.get('/login')
-def login(db: Session = Depends(get_db)):
+def login(login_hint: str | None = Query(default=None, min_length=1, max_length=254), db: Session = Depends(get_db)):
     require_oidc()
     try:
-        url, browser = service.start_login(db)
+        url, browser = service.start_login(db, login_hint)
     except service.IdentityError as exc:
         if exc.code == 'configuration_error':
             raise DomainError('Identitatea aeroportului nu este configurată corect.',503) from exc

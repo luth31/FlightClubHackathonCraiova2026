@@ -144,6 +144,14 @@ def test_employee_creation_requires_hr_to_supply_email(client):
     assert client.post('/api/people', json=payload).status_code == 422
 
 
+def test_employee_login_names_cannot_collide_across_email_domains(client):
+    login(client, 'hr')
+    assert client.post('/api/people', json=employee(email='admin@arm.ro')).status_code == 409
+    prefix = 'test-' + uuid4().hex
+    assert client.post('/api/people', json=employee(email=f'{prefix}@arm.ro')).status_code == 201
+    assert client.post('/api/people', json=employee(email=f'{prefix}@another.example')).status_code == 409
+
+
 def test_coordinator_must_be_active_in_the_selected_department(client, people_state):
     login(client, 'hr')
     assert client.post('/api/people', json=employee(name='Mara Invalid', email='m.invalid@arm.ro', manager_id='admin')).status_code == 422
