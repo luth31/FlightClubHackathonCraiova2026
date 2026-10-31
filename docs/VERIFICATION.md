@@ -2,7 +2,7 @@
 
 Recorded **31 October 2026** against the local demonstration. This is evidence for the implemented prototype, not a production certification. The application uses 30 October 2026 as its displayed demonstration reference date; audit events use actual timestamps.
 
-**Luna branch update:** `codex/luna-redaction-studio` adds interactive occurrence selection, source/copy comparison and a real OpenAI Responses integration. The expanded suite passes **99 tests**; lint/build pass. Live `gpt-6-luna` analysis was verified on the fictional corpus. The baseline record below describes the original release; [Luna verification and limits](LUNA_REDACTION.md) describes the additional capability, including the distinction between precise PDF targets and accessible text mode.
+**Current updates:** the application includes real Luna suggestions, persisted local OCR, and a simplified redaction editor. The OCR release passed **111 backend tests**; the UI-only follow-up passed all **27 redaction/OCR/cache tests**, frontend lint and build. Live `gpt-6-luna` analysis was verified on fictional documents. The baseline record below describes the original release; dated sections at the end record subsequent checks. See [Luna behavior and limits](LUNA_REDACTION.md).
 
 ## Quality gate
 
@@ -99,7 +99,7 @@ Run commands from the repository root. `scripts/dev.sh` prepares the Python/Node
 
 The first working quality gate is complete. This is a demonstration foundation, with these explicit limits:
 
-- The assistant uses deterministic retrieval and structured queries, not an external language model. Extraction/redaction suggestions use PDF text and rules; OCR is not configured.
+- The general register assistant uses deterministic retrieval and structured queries. Optional Luna redaction advice uses OpenAI. Metadata rules and background native/OCR extraction run locally; OCR accuracy still requires human review.
 - Employees are currently seeded application users. Separate non-login employee records, an HR editor and a reporting-line editor remain future work.
 - Contracts are document-backed registers. Separate obligation/renewal entities and scheduled reminder delivery/escalation remain future work; current reminders are calculated in-app views.
 - Production identity/TLS, qualified-signature integration, malware scanning and isolated file processing, independent security review, tested recovery objectives, monitoring and organizational retention rules remain deployment work.
@@ -116,3 +116,18 @@ See the [README](../README.md) for launch instructions, fixture accounts and the
 - Tests verify: no synchronous OCR on intake; real OCR + FTS; hash-cache reuse across documents/metadata versions; human and approved fields preserved; stale source version exclusion; expired lease recovery; visible failure/retry; original integrity; HR/technician access; 101-page extraction; mixed-page routing; real removal of image pixels and OCR-recognizable names from a derivative, with original bytes unchanged.
 - See [OCR_RESEARCH.md](OCR_RESEARCH.md) for measured engine comparison, accuracy limitations, and reproducible benchmark.
 - Both Compose airport APIs rebuilt, migrated existing volumes and became healthy. Chrome DevTools on port 8080 confirmed cached native text and 310 studio words for doc-145, with validated metadata unchanged and Luna available. The partner instance on port 8081 returned 404 for that document’s extraction endpoint. The OCR panel was checked at a 500 px viewport with no horizontal overflow.
+
+## Simplified redaction UI — 31 October 2026
+
+The editor now has one apply/restore control with adjacent occurrence-scope radios. Manual clicks, drag selection, search and Luna suggestions feed this panel. Luna, context settings, its summary and the marked-fragment list use collapsed disclosures. Page navigation and PDF/text view share the search toolbar; review/share is a distinct second step.
+
+Chrome DevTools checks on a synthetic two-page PDF with four occurrences of “Elena Popa”:
+
+- Dragging across the two words selected the phrase and automatically found all four occurrences. Single-occurrence apply hid two words; all-occurrence apply hid eight words across both pages. Undo restored the preceding two-word selection; restoring one occurrence and undoing restoration both worked.
+- Desktop and true 390×844 mobile emulation: no horizontal overflow; both scope choices and the apply button were visible together. Original PDF positions and the accessible text view remain available.
+- A delayed first search response could not replace a newer selection. Browsing a different page clears the old selection; occurrence navigation keeps the selected match and its page together.
+- A real `gpt-6-luna` response returned two suggestions, labelled by page. Manual selection remained available while analysis ran. Suggestions made no automatic changes; selecting one exposed exactly one shared apply control and no separate apply button in the advice list.
+- The actual preview request contained only `p1-w10` and `p1-w11`; the rendered derivative hid the first name while retaining its other occurrence. The original comparison showed the unchanged source. Sharing remained disabled until review was confirmed; returning to edit retained the two selected words.
+- Tab and Shift+Tab wrapped within the dialog, skipping disabled/closed disclosure controls. PDF overlays do not create hundreds of Tab stops; search and Text selectabil provide keyboard access.
+- Production build and ESLint passed. All 27 existing redaction/OCR/cache integration tests passed. No API contract, original-PDF mutation or publication behavior changed.
+- Both Compose web images were rebuilt and recreated. After a fresh Keycloak login on port 8080, the deployed bundle displayed the new editor, loaded the PDF and found three occurrences for a clicked word in the single shared panel. No browser warnings/errors or horizontal overflow were observed. A new preview after returning to edit reset human-review confirmation and kept sharing disabled.

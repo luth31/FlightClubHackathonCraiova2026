@@ -101,9 +101,9 @@ export function Modal({
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab") {
-        const nodes = ref.current?.querySelectorAll<HTMLElement>(
-          'button,input,select,textarea,a[href],[tabindex="0"]',
-        );
+        const nodes = Array.from(ref.current?.querySelectorAll<HTMLElement>(
+          'button,input,select,textarea,summary,a[href],[tabindex="0"]',
+        ) || []).filter(node => !node.matches(':disabled') && node.tabIndex >= 0 && node.getClientRects().length > 0);
         if (!nodes?.length) return;
         const first = nodes[0],
           last = nodes[nodes.length - 1];

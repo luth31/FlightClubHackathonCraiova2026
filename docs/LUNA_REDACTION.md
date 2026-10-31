@@ -1,25 +1,26 @@
 # Luna redaction studio
 
-Branch: `codex/luna-redaction-studio`. The original document and its signature remain unchanged; the editor creates a separate, reviewed sharing copy.
+The original document and its signature remain unchanged; the editor creates a separate, reviewed sharing copy.
 
 ## Run with OpenAI
 
 1. Copy `.env.example` to `.env` in the repository root and set `OPENAI_API_KEY` locally. The real file is ignored by Git and excluded from Docker build contexts.
 2. `AERODESK_OPENAI_MODEL=gpt-6-luna` is the shared default. `AERODESK_OPENAI_REDACTION_MODEL` optionally overrides this one task.
 3. Run `./scripts/start-demo.sh` for the two-airport OIDC demonstration, or `./scripts/dev.sh` for local development. Restart the backend after changing credentials/configuration.
-4. Open an approved document → **Partajează**. This opens **Atelier de redactare**.
+4. Open an approved document → **Partajează**. This opens **Pregătește copia**.
 
 The key stays on the backend. Each API container has a separate outbound network for OpenAI; airport databases and the authenticated exchange gateway network remain separate. This enables outbound access, not a domain-filtering firewall. Existing local certificate and signing-key generation is unchanged.
 
 ## Editor behavior
 
-- Click a PDF word; use **Redactează doar aici** for that occurrence. Shift-click selects a contiguous range on the page.
-- Search a word or phrase, inspect each matching occurrence/page, then select one or **Redactează toate**. Search compares normalized whole words; it is not substring matching. Punctuation is ignored when finding a phrase.
-- **Mod text** provides larger, keyboard/touch-friendly targets using the same underlying PDF word IDs. PDF mode preserves page positioning; small printed words necessarily have small exact-position targets. The text mode is the accessible alternative.
-- Undo or clear selections before generating a derivative. Page markers show where selections exist.
-- Optionally select the copy's purpose and describe its recipient/context, then **Analizează cu Luna**. No analysis request runs automatically on opening the editor.
-- Inspect each suggestion's exact fragment, explanation, legal references and qualification. Apply or ignore it explicitly. Applying a suggestion does not publish a document.
-- **Verifică copia** creates the actual redacted PDF. Navigate every page and compare the rendered copy against the original; download/open the PDF if desired. Confirm human review, recipient department and expiry before sharing.
+- Select a PDF word, drag across a phrase, or search. Shift-click still extends a range on the current page.
+- The **Fragment selectat** panel is the only place that applies redactions. Occurrences are found automatically. Choose **Doar această apariție** or **Toate cele N apariții**, then use the single **Ascunde** button. The same button becomes **Restabilește** when all targeted words are already hidden. A partly hidden phrase hides its remaining words rather than unexpectedly restoring the first word.
+- Use occurrence arrows to inspect matching text across pages. Page navigation clears an old selection so the action cannot silently target an off-screen page.
+- Search, page navigation, and the PDF / **Text selectabil** view picker share one toolbar. Text mode offers larger keyboard/touch targets, with the same word IDs as the PDF.
+- **Anulează ultima** reverses an edit. Expand **Fragmente ascunse** to inspect marked fragments or restore everything.
+- **Ajutor de la Luna** is collapsed by default. Purpose/context settings are optional and collapsed too. **Cere sugestii** starts analysis; opening the editor never makes an AI request. Manual selection remains available during analysis.
+- Choosing a Luna suggestion opens it in the same selection/scope panel; it does not redact automatically. Explanation, legal references, caution and dismissal are available beneath the selected suggestion. There are no separate apply buttons in the suggestion list.
+- **Verifică copia** creates the actual redacted PDF. Compare it with the original, inspect every page, and confirm human review, recipient department and expiry before **Partajează copia**. Returning to edit invalidates the previous confirmation.
 
 Selections are kept in the open editor, not saved as resumable drafts. Closing the editor loses the selection plan; already generated preview PDFs and shares remain stored. Editing after a preview invalidates its review confirmation and requires generating a new copy.
 
@@ -58,7 +59,7 @@ Regression coverage includes exact single versus repeated redaction across pages
 
 The text-mode editor passed desktop and mobile Lighthouse accessibility/best-practice checks at 100. The precise PDF word overlays have small touch targets; use text mode for larger targets. This distinction is intentional and is not presented as a perfect score for every PDF-mode state.
 
-The final branch suite has **99 passing tests**, plus passing frontend lint/build. Live verification covered both local development and the Docker OIDC deployment. In Docker, Luna suggested `Mihai Dumitrescu` in `doc-145` with RGPD references and a qualification about fictional data. Applying the suggestion removed word IDs `p2-w10` and `p2-w11` from the actual derivative; extracted PDF text and SHA-256 checks confirmed the removal and preservation of the original. The source/copy comparison and both review pages were inspected in Chrome.
+The initial Luna release passed **99 tests**, plus frontend lint/build. Live verification covered both local development and the Docker OIDC deployment. In Docker, Luna suggested `Mihai Dumitrescu` in `doc-145` with RGPD references and a qualification about fictional data. Applying the suggestion removed word IDs `p2-w10` and `p2-w11` from the actual derivative; extracted PDF text and SHA-256 checks confirmed the removal and preservation of the original. The source/copy comparison and both review pages were inspected in Chrome.
 
 The retained reviewed copy is preview `d6d63cb2035e4ae582710e5658807345`, shared through grant `share-bd30526b3158` to Carpați / Conformitate. After Keycloak login as the recipient reviewer, the received list and the 67,935-byte PDF returned 200. These are local demonstration records, not seeded IDs for a fresh checkout. A separate 390 px mobile run verified text selection, preview rendering, no horizontal overflow, no console errors and a review-screen accessibility/best-practices score of 100.
 
@@ -66,3 +67,5 @@ A second live Docker analysis used contract `doc-115` with the optional context 
 
 
 Update (31 October 2026): the studio and Luna now reuse persisted native/OCR text and word geometry. Scans can be selected and redacted after local processing. See [OCR_RESEARCH.md](OCR_RESEARCH.md) for the pipeline, offline checks, and remaining accuracy limits.
+
+The simplified editor follow-up passed frontend lint/build and all 27 redaction/OCR/cache integration tests. Chrome DevTools checks covered one/all occurrences, drag and keyboard-friendly text selection, cross-page navigation, undo, delayed-response handling, real Luna advice, the actual PDF preview, human-review gating and a 390 px mobile viewport. See [the dated verification record](VERIFICATION.md#simplified-redaction-ui--31-october-2026).

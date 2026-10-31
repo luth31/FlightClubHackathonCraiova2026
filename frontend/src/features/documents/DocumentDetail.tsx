@@ -85,8 +85,9 @@ export function DocumentDetail({
   useEffect(() => {
     load();
   }, [load]);
+  const extractionStatus = doc?.extraction_status;
   useEffect(() => {
-    if (!doc || !['queued', 'processing'].includes(doc.extraction_status || '')) return;
+    if (!['queued', 'processing'].includes(extractionStatus || '')) return;
     let active = true;
     const timer = window.setInterval(() => {
       api<DocumentRecord>(`/documents/${id}`).then(d => {
@@ -97,7 +98,7 @@ export function DocumentDetail({
       }).catch(() => {});
     }, 1500);
     return () => { active = false; window.clearInterval(timer); };
-  }, [id, doc?.extraction_status, editing]);
+  }, [id, extractionStatus, editing]);
   async function act(action: string) {
     setBusy(true);
     setError("");
