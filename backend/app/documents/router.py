@@ -11,6 +11,7 @@ from app.core.signing import verify_file
 from app.documents import service
 from app.documents.models import DocumentVersion
 from app.documents.schemas import DocumentPatch,Action
+from app.documents.flow import document_flow
 from app.workflows.service import apply_action
 
 router=APIRouter(prefix='/api/documents',tags=['Documents'])
@@ -30,6 +31,10 @@ def list_documents(q: str=Query('',max_length=200),category: str='',status: str=
     if status: docs=[d for d in docs if d.status==status or (status=='approved' and d.status=='signed')]
     if department: docs=[d for d in docs if d.department==department]
     return {'items':[service.serialize(d,user=user) for d in docs[offset:offset+limit]],'total':len(docs),'categories':service.CATEGORIES,'departments':service.DEPARTMENTS}
+
+@router.get('/flow')
+def flow(q: str=Query('',max_length=200),category: str='',status: str='',department: str='',case_id: str=Query('',max_length=200),db: Session=Depends(get_db),user=Depends(current_user)):
+    return document_flow(db,user,q,category,status,department,case_id)
 
 @router.post('',status_code=201)
 def upload(file: UploadFile=File(...),title: str=Form(''),category: str=Form('Contract'),department: str=Form('Achiziții'),supplier: str=Form(''),expires_at: str=Form(''),db: Session=Depends(get_db),user=Depends(current_user)):

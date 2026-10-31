@@ -5,6 +5,7 @@ Base `/api`. Authenticate with POST `/api/auth/login` JSON `{user_id:'admin',pas
 * GET `/session` -> `{current_user, users, airport, reference_date, demo:true}`.
 * GET `/dashboard` -> `{stats:{documents,pending,expiring,approved},recent_documents,attention,activity,departments}`.
 * GET `/documents?q=&category=&status=&department=&limit=100&offset=0` -> `{items:Document[],total}`.
+* GET `/documents/flow?q=&category=&status=&department=&case_id=` -> `{stages:[{id,label,description,count,items:Document[]}],total,classified_total,unclassified_total,cases:[{id,label,count}],categories,departments}`. Returns all readable matching documents without list pagination. The four ordered stages are `purchasing`, `shipping`, `inventory_management`, `invoice_verification`. Cases respect the search and register filters and remain available while a case is selected. Every count and related document ID respects the active user's access.
 * GET `/documents/{id}` -> Document with `versions`, `audit`, `workflow`.
 * GET `/documents/{id}/file?download=false` -> authorized PDF bytes.
 * POST `/documents` multipart: `file`, `title` optional, `category` default Contract, `department` default Achiziții, `supplier` optional, `expires_at` optional -> Document (201).
@@ -24,6 +25,10 @@ Base `/api`. Authenticate with POST `/api/auth/login` JSON `{user_id:'admin',pas
 * GET `/reports/register.csv` authorized register export.
 
 Document fields: `id,title,number,category,department,status,created_at,updated_at,expires_at,supplier,value,currency,owner,confidentiality,tags:string[],summary,filename,related_ids:string[],metadata:object,source_refs:array,version:number,validated:boolean,file_url,days_remaining,contract_status`. Canonical statuses `draft,in_review,approved,signed,archived`. All dates ISO. `workflow` is `{steps:[{label,status,actor?,at?}],current_step}`.
+
+Documents also include computed `flow:{stage,document_type,reason,source}|null` and `flow_case_id:string|null`. Classification uses document categories and explicit title or `metadata.document_type` labels, with Romanian diacritics normalized. It does not infer a document type from mentions in PDF body text. Contracts, needs, specifications, orders and addenda belong to purchasing; maintenance and service reports are supplier delivery evidence; reception and material records belong to inventory; invoices and credit notes belong to invoice verification. HR, procedure, audit and training records remain outside this procurement flow. Classification is independent of approval status and is recomputed after metadata changes without a migration.
+
+The corpus manifest is read explicitly as UTF8 on every platform. Flow classification and flow category/department filters also recognize known Romanian letter sequences from older Windows imports that decoded UTF8 as CP1252, without rewriting stored documents or changing access rules.
 
 ## Supplier review extension
 

@@ -6,3 +6,28 @@ export interface Task {id:string;document_id:string;title:string;department:stri
 export interface Share {id:string;document_id:string;document_title?:string;title?:string;recipient_airport:string;recipient_department?:string|null;expires_at:string;created_at:string;status?:string;revoked?:boolean;revoked_at?:string;source_version:number;file_url?:string;redactions?:number}
 export interface Dashboard {stats:{documents:number;pending:number;expiring:number;approved:number};recent_documents:DocumentRecord[];attention:Array<Partial<Task>&Partial<DocumentRecord>>;activity:AuditEvent[];departments:Array<{name:string;count:number}>|Record<string,number>}
 export interface Session {auth?:{mode:'demo'|'oidc';login_url:string|null};current_user:User|null;users:User[];airport:string|{name:string};reference_date:string;demo:boolean}
+export type DocumentFlowStageId = 'purchasing' | 'shipping' | 'inventory_management' | 'invoice_verification';
+export interface DocumentFlowClassification {
+  stage: DocumentFlowStageId;
+  document_type: string;
+  reason: string;
+  source: 'category' | 'title' | 'metadata';
+}
+export interface FlowDocument extends DocumentRecord {
+  flow: DocumentFlowClassification;
+  flow_case_id: string | null;
+}
+export interface DocumentFlowData {
+  stages: Array<{
+    id: DocumentFlowStageId;
+    label: string;
+    description: string;
+    count: number;
+    items: FlowDocument[];
+  }>;
+  total: number;
+  classified_total: number;
+  unclassified_total: number;
+  categories: string[];
+  cases: Array<{ id: string; label: string; count: number }>;
+}

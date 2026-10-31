@@ -1,5 +1,7 @@
 # AeroDesk
 
+For architecture diagrams, feature explanations, implementation details, the data model and setup instructions, see the [complete project documentation](docs/PROJECT_DOCUMENTATION.md).
+
 A Romanian airport workspace for documents, contracts, people, assigned approvals, supplier verification and controlled collaboration. React/Vite/TypeScript frontend; feature-based FastAPI backend; SQLAlchemy, Alembic and SQLite FTS5; Keycloak login; real embedded PDF signatures with demonstration certificates.
 
 **148 researched, explicitly fictional PDFs** are included: 20 connected procurement cases, maintenance and reception evidence, invoices, amendments, HR, training, procedures and audit records. The archive has 316 pages. See [research and inventory](docs/CORPUS_RESEARCH.md).
@@ -52,6 +54,8 @@ All fixture passwords are `AeroDesk2026!`. Never deploy these accounts with real
 
 ## Demonstrate the complete flow
 
+In **Documente → Flux achiziții**, follow the document cards and arrows across purchasing, delivery/service, inventory reception and invoice verification. Each case has its own diagram, with amendments shown as dashed branches from their contracts. Select a procurement case or reuse the search, category and approval filters; open any card to inspect the original document. Classification follows document type rather than approval progress, and all counts respect the active user's access. Other document families remain available in **Registru**.
+
 1. Search `scari` to find **Scări pasageri mobile SP-02**, including matches inside PDF text. Open its invoice, reception and service report from the linked case file.
 2. Upload `data/pdfs/doc-001.pdf`. Compare suggested supplier, value and expiry with the source; correct them, validate and submit.
 3. Sign in as Elena, the manager's authorized delegate. Approve the exact assigned version. Sign in as Ana to explicitly sign it and verify the embedded signature. A changed version requires fresh validation and approval. Coordinators can explicitly reassign eligible tasks with a due date and reason; deactivation leaves outstanding work flagged for reassignment.
@@ -74,6 +78,7 @@ docker compose start dunarea-gateway carpati-gateway
 backend/.venv/bin/python -m pytest backend/tests -q
 npm --prefix frontend run build
 npm --prefix frontend run lint
+node --experimental-strip-types --test frontend/tests/flow-graph.test.mjs frontend/tests/flow-label.test.mjs
 backend/.venv/bin/python scripts/generate_corpus.py
 ```
 
