@@ -173,3 +173,20 @@ npm --prefix frontend run test:suppliers
 ```
 
 The features are local application controls: no mailbox integration, external payment execution, account-holder verification or cumulative invoice register was added. Review assignments do not extend decision authority. Deadlines use the configured demonstration reference date.
+
+## Rebase integration — 31 October 2026
+
+The supplier branch was rebased onto `77e5812`. Both the upstream OCR/Luna verification records and the supplier verification record were retained. The two independent migration histories shared parent `714af828c311`; merge revision `20261031_supplier_ocr_merge` joins `9b23d0c51a10` and `20261031_supplier_assign` without changing the existing revisions or performing additional schema/data operations.
+
+After integrating branches with migrations, check `python -m alembic heads`: application startup uses `upgrade head` and requires a single head. Preserve applied migration histories and add a merge revision when independent branches meet. Test upgrade and repeated upgrade from each parent; the migration regression checks also preserve an existing completed OCR cache entry.
+
+Fresh checks after integration:
+
+| Check | Result |
+|---|---|
+| Full backend regression suite | **150 passed**, 2 dependency deprecation warnings; includes 4 migration checks |
+| Supplier UI render checks | **4 passed** |
+| Frontend production build and ESLint | Passed |
+| Alembic heads | One: `20261031_supplier_ocr_merge` |
+
+The API image was rebuilt from the committed dependency lock before testing to include the upstream `pdf-inspector` dependency. Backend checks used temporary databases and files; previous verification counts above remain historical records.

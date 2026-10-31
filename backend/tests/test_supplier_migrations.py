@@ -4,13 +4,14 @@ from pathlib import Path
 import sqlite3
 import subprocess
 import sys
+import pytest
 
 
 def migrate(path, revision):
     env = {**os.environ, 'AERODESK_DATABASE_URL': f'sqlite:///{path}'}
     result = subprocess.run([sys.executable, '-m', 'alembic', 'upgrade', revision],
         cwd=Path(__file__).resolve().parents[1], env=env, capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_upgrade_preserves_legacy_supplier_review(tmp_path):
@@ -59,3 +60,23 @@ def test_catalog_migration_preserves_explicit_sources_and_only_matches_seed(tmp_
     with sqlite3.connect(path) as db:
         links = dict(db.execute('SELECT document_id,supplier_id FROM supplier_contracts'))
         assert links == {'primary': 'legacy', 'other-primary': 'other', 'seed-contract': 'legacy'}
+
+
+@pytest.mark.parametrize('start_revision', ['9b23d0c51a10', '20261031_supplier_assign'])
+def test_upgrade_reconciles_ocr_and_supplier_heads(tmp_path, start_revision):
+    path = tmp_path / 'merged.db'
+    migrate(path, start_revision)
+    cached = json.dumps({'pages': [{'text': 'Previously extracted document'}]})
+    with sqlite3.connect(path) as db:
+        if start_revision == '9b23d0c51a10':
+            db.execute('''INSERT INTO document_extractions
+                (id,sha256,pipeline,source_path,status,created_at,attempts,result)
+                VALUES ('cached','hash','native','/tmp/demo.pdf','ready',1,1,?)''', (cached,))
+    migrate(path, 'head')
+    migrate(path, 'head')
+    with sqlite3.connect(path) as db:
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {'document_extractions', 'supplier_registrations', 'supplier_contracts'} <= tables
+        assert len(db.execute('SELECT version_num FROM alembic_version').fetchall()) == 1
+        if start_revision == '9b23d0c51a10':
+            assert db.execute("SELECT status,result FROM document_extractions WHERE id='cached'").fetchone() == ('ready', cached)
