@@ -20,15 +20,16 @@ def can_review_department(db, user, department):
     """Delegation conveys only approval scope, never the source's signing identity."""
     if not user.active or user.airport_id != settings.airport_id:
         return False
-    if has_role(user, 'director') or (has_role(user, 'reviewer', 'hr') and user.department == department):
+    from app.people.management import is_head
+    if is_head(db, user, department) or has_role(user, 'director') or (has_role(user, 'reviewer', 'hr') and user.department == department):
         return True
-    if not has_role(user, 'reviewer'):
+    if not has_role(user, 'reviewer', 'department_head'):
         return False
     today = settings.reference_date.isoformat()
     for delegation in db.scalars(select(Delegation).where(Delegation.to_user == user.id, Delegation.active == True,
             Delegation.starts_at <= today, Delegation.ends_at >= today)):
         source = db.get(User, delegation.from_user)
-        if source and source.active and source.airport_id == user.airport_id and source.department == department and has_role(source, 'reviewer', 'director'):
+        if source and source.active and source.airport_id == user.airport_id and source.department == department and (has_role(source, 'reviewer', 'director') or is_head(db, source, department)):
             return True
     return False
 
@@ -47,18 +48,19 @@ def can_review_leave(db, user, leave):
     if leave.user_id == user.id:
         return False
     subject = local_user(db, leave.user_id)
-    return has_role(user, 'hr') or (has_role(user, 'reviewer', 'director') and
+    return has_role(user, 'hr') or (has_role(user, 'reviewer', 'director', 'department_head') and
         (getattr(subject, 'manager_id', None) == user.id or subject.department == user.department or has_role(user, 'director')))
 
 
 def directory(db, user):
+    from app.people.management import employee_dict, department_records
     users = list(db.scalars(select(User).where(User.airport_id == user.airport_id).order_by(User.name)))
     user_ids = {person.id for person in users}
     all_leaves = list(db.scalars(select(LeaveRequest).where(LeaveRequest.user_id.in_(user_ids))))
     today = settings.reference_date.isoformat()
     items = []
     for person in users:
-        item = user_dict(person)
+        item = employee_dict(db, person)
         item['manager_id'] = getattr(person, 'manager_id', None)
         manager = db.get(User, item['manager_id']) if item['manager_id'] else None
         item['manager_name'] = manager.name if manager else None
@@ -78,8 +80,15 @@ def directory(db, user):
             'approver_id': leave.approver_id, 'can_decide': leave.status == 'pending' and can_review_leave(db, user, leave)})
     return {'items': items, 'total': len(items), 'departments': sorted({p.department for p in users}),
         'delegations': delegations, 'leaves': leaves, 'current_user_id': user.id,
-        'can_manage_accounts': has_role(user, 'admin'),
-        'can_manage_delegations': has_role(user, 'admin', 'director', 'reviewer'),
+        'can_manage_accounts': has_role(user, 'admin', 'hr'),
+        'can_admin_delegations': has_role(user, 'admin'),
+        'can_create_users': has_role(user, 'admin', 'hr'),
+        'can_propose_heads': has_role(user, 'admin', 'hr'),
+        'can_manage_signing': has_role(user, 'director'),
+        'can_view_appointments': has_role(user, 'admin', 'hr', 'director'),
+        'department_records': department_records(db),
+        'auth_mode': settings.auth_mode,
+        'can_manage_delegations': has_role(user, 'admin', 'director', 'reviewer', 'department_head'),
         'reference_date': today}
 
 
@@ -87,14 +96,14 @@ def create_delegation(db, user, payload):
     # Serialize overlap checks with insertion: two requests must not create
     # competing delegations from the same authority for the same interval.
     db.execute(text('BEGIN IMMEDIATE'))
-    require_role(user, 'admin', 'director', 'reviewer')
+    require_role(user, 'admin', 'director', 'reviewer', 'department_head')
     source = local_user(db, payload.from_user, active=True)
     target = local_user(db, payload.to_user, active=True)
     if source.id != user.id and not has_role(user, 'admin'):
         raise DomainError('Poți delega numai propria autoritate.', 403)
     if source.id == target.id:
         raise DomainError('Alege o altă persoană pentru delegare.', 422)
-    if not has_role(source, 'reviewer', 'director') or not has_role(target, 'reviewer', 'director'):
+    if not has_role(source, 'reviewer', 'director', 'department_head') or not has_role(target, 'reviewer', 'director', 'department_head'):
         raise DomainError('Delegarea necesită două persoane cu autoritate de aprobare.', 422)
     start, end = payload.starts_at.isoformat(), payload.ends_at.isoformat()
     if end < settings.reference_date.isoformat():

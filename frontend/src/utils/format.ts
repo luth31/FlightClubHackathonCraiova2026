@@ -35,6 +35,7 @@ export const statusLabel: Record<string, string> = {
   superseded: "Versiune înlocuită",
   pending: "În așteptare",
   completed: "Finalizat",
+  cancelled: "Anulat",
   rejected: "Returnat",
 };
 export const roleLabel: Record<string, string> = {
@@ -44,6 +45,10 @@ export const roleLabel: Record<string, string> = {
   finance: "Financiar",
   hr: "Resurse umane",
   technician: "Tehnician",
+  employee: "Angajat",
+  department_head: "Șef de departament",
+  director: "Director",
+  signer: "Semnatar",
 };
 export const actionLabel: Record<string, string> = {
   created: "Document înregistrat",

@@ -46,6 +46,24 @@
         "basic"
       ],
       "optionalClientScopes": []
+    },
+    {
+      "clientId": "aerodesk-provisioner",
+      "name": "AeroDesk employee provisioning",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${AERODESK_KEYCLOAK_PROVISIONING_SECRET}",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "roles",
+        "basic"
+      ],
+      "optionalClientScopes": []
     }
   ],
   "users": [
@@ -150,7 +168,40 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "service-account-aerodesk-provisioner",
+      "enabled": true,
+      "serviceAccountClientId": "aerodesk-provisioner",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users"
+        ]
+      }
     }
   ],
-  "loginTheme": "aerodesk"
+  "loginTheme": "aerodesk",
+  "clientScopeMappings": {
+    "realm-management": [
+      {
+        "client": "aerodesk-provisioner",
+        "roles": [
+          "manage-users"
+        ]
+      }
+    ]
+  },
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "name": "declarative-user-profile",
+        "providerId": "declarative-user-profile",
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"email\", \"validations\": {\"email\": {}, \"length\": {\"max\": 254}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"aerodesk_user_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}, {\"name\": \"aerodesk_airport_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}]}"
+          ]
+        }
+      }
+    ]
+  }
 }

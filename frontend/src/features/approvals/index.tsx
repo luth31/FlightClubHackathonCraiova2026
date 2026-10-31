@@ -14,6 +14,8 @@ import { Loading, ErrorMessage, Empty, FileIcon, Modal } from "@/components/ui";
 import { date, time } from "@/utils/format";
 import type { Task } from "@/types";
 import "./approvals.css";
+import {AppointmentPanel} from '@/features/people/AppointmentPanel';
+import type {User} from '@/types';
 interface AssignedTask extends Task {
   document_version?: number;
   assigned_to?: string;
@@ -41,10 +43,12 @@ export function ApprovalsPage({
   onOpen,
   revision,
   notify,
+  user,
 }: {
   onOpen: (id: string) => void;
   revision: number;
   notify: (message: string) => void;
+  user?: User;
 }) {
   const [data, setData] = useState<AssignedTask[]>(),
     [error, setError] = useState(""),
@@ -114,6 +118,7 @@ export function ApprovalsPage({
           {data?.length ?? "—"} în așteptare
         </span>
       </div>
+      {user?.roles.some(role=>['hr','director','admin'].includes(role))&&<AppointmentPanel revision={revision} notify={notify}/>}
       <div className="approval-intro">
         <CheckCheck size={20} />
         <p>

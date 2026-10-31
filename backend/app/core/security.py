@@ -50,9 +50,11 @@ def optional_user(request: Request, db: DbSession = Depends(get_db)):
     user = db.get(User, session.user_id)
     return user if user and user.active and user.airport_id == settings.airport_id else None
 
-def current_user(user: User | None = Depends(optional_user)):
+def current_user(user: User | None = Depends(optional_user), db: DbSession = Depends(get_db)):
     if not user:
         raise DomainError('Conectează-te pentru a continua.', 401)
+    from app.people.management import refresh_appointments
+    refresh_appointments(db)
     return user
 
 def user_dict(user: User):
@@ -69,8 +71,10 @@ def can_read(user, document):
     if document.airport_id != user.airport_id:
         return False
     if document.department == 'Resurse umane':
-        return has_role(user, 'hr') or document.owner == user.name or document.created_by == user.id
+        return has_role(user, 'hr') or (has_role(user, 'department_head') and user.department == document.department) or document.owner_id == user.id or document.created_by == user.id
     if has_role(user, 'director'):
+        return True
+    if has_role(user, 'department_head') and user.department == document.department:
         return True
     if has_role(user, 'technician'):
         return document.department == 'Tehnic' and document.category in ('Raport de mentenanță','Proces-verbal','Procedură','Instruire') and document.confidentiality not in ('restricted','confidential','confidențial')

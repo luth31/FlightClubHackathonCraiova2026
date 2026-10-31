@@ -11,3 +11,11 @@
 .department-filter-option[data-highlighted=true]{background:var(--green-soft)}
 .department-filter-option:first-child{margin-bottom:5px;border-bottom:1px solid var(--border);border-radius:5px 5px 0 0;padding-bottom:12px}
 @media(max-width:700px){.department-filter{flex:1;min-width:0}.department-filter-trigger{height:38px}.department-filter-option{min-height:40px}}
+.person-authority { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.person-authority span { padding:4px 8px; background:var(--surface-alt, #edf3ee); color:var(--green, #174c3f); border-radius:6px; font-size:11px; }
+.person-management-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+.employee-access { border-top:1px solid var(--border, #e2e6df); margin-top:20px; padding-top:18px; }
+.employee-access p, .employee-result p { margin:12px 0; }
+.employee-access button { margin-right:8px; margin-top:8px; }
+.appointment-panel { margin-bottom:24px; }
+.appointment-panel h2 { font-size:18px; margin-bottom:8px; }

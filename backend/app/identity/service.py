@@ -16,7 +16,7 @@ from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 import jwt
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from app.config import settings
 from app.core.security import token_hash
@@ -210,8 +210,13 @@ def complete_login(db, transaction, code):
         'redirect_uri':transaction.redirect_uri, 'code_verifier':transaction.verifier})
     jwks = provider_json('GET', transport_url(metadata['jwks_uri']))
     claims = validate_id_token(tokens.get('id_token'), jwks, transaction)
-    user_id = subject_map().get(claims['sub'])
-    user = db.get(User, user_id) if user_id else None
+    user = db.scalar(select(User).where(User.identity_issuer == settings.oidc_issuer,
+        User.identity_subject == claims['sub']))
+    if user is None:
+        user_id = subject_map().get(claims['sub'])
+        user = db.get(User, user_id) if user_id else None
+        if user and user.identity_subject and (user.identity_issuer != settings.oidc_issuer or user.identity_subject != claims['sub']):
+            user = None
     if not user or not user.active or user.airport_id != settings.airport_id:
         raise IdentityError('account_unavailable')
     return user

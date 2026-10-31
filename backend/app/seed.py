@@ -21,12 +21,20 @@ USERS=[
  ('technician','Andrei Neagu','Tehnic','Tehnician mentenanță',['technician'],'AN','admin'),
 ]
 
+
+def seed_owner_id(db, name):
+    matches = list(db.scalars(select(User.id).where(User.airport_id == settings.airport_id, User.name == name).limit(2)))
+    return matches[0] if len(matches) == 1 else None
+
 def seed():
     settings.storage_dir.mkdir(parents=True,exist_ok=True)
     with SessionLocal() as db:
         for uid,name,department,role,roles,avatar,manager in USERS:
             if not db.get(User,uid):
                 db.add(User(id=uid,name=name,email=f'{uid}@{settings.airport_id}.example',department=department,role=role,roles=roles,airport_id=settings.airport_id,active=True,password_hash=hash_password('AeroDesk2026!'),avatar=avatar,manager_id=manager,job_title=role))
+        db.flush()
+        from app.people.management import seed_departments
+        seed_departments(db)
         if not db.get(Delegation,'demo-delegation'):
             db.add(Delegation(id='demo-delegation',from_user='manager',to_user='reviewer',starts_at='2026-10-29',ends_at='2026-11-06',reason='Înlocuire pe perioada concediului aprobat',active=True))
             db.add(LeaveRequest(id='demo-leave',user_id='manager',starts_at='2026-10-29',ends_at='2026-11-06',reason='Concediu de odihnă',status='approved',approver_id='admin'))
@@ -45,7 +53,7 @@ def seed():
                 extra['extraction_evidence']=source_fields
                 extra['extraction_status']='seed-reviewed'
                 extra['extraction_notice']='Metadate din corpusul fictiv, pregătite pentru demonstrație.'
-                document=Document(id=item['id'],title=item['title'],number=item.get('number',item['id'].upper()),category=item.get('category','Contract'),department=item.get('department','Achiziții'),status=status,created_at=item.get('created_at','2026-10-01'),updated_at=item.get('updated_at',item.get('created_at','2026-10-01')),expires_at=item.get('expires_at') or None,supplier=item.get('supplier') or None,value=item.get('value'),currency=item.get('currency','RON'),owner=item.get('owner','Elena Popa'),created_by='seed',confidentiality=item.get('confidentiality','internal'),summary=item.get('summary',''),searchable_text='',version=1,validated=item.get('validated',status!='draft'),airport_id=settings.airport_id,extra=extra)
+                document=Document(id=item['id'],title=item['title'],number=item.get('number',item['id'].upper()),category=item.get('category','Contract'),department=item.get('department','Achiziții'),status=status,created_at=item.get('created_at','2026-10-01'),updated_at=item.get('updated_at',item.get('created_at','2026-10-01')),expires_at=item.get('expires_at') or None,supplier=item.get('supplier') or None,value=item.get('value'),currency=item.get('currency','RON'),owner=item.get('owner','Elena Popa'),owner_id=seed_owner_id(db,item.get('owner','Elena Popa')),created_by='seed',confidentiality=item.get('confidentiality','internal'),summary=item.get('summary',''),searchable_text='',version=1,validated=item.get('validated',status!='draft'),airport_id=settings.airport_id,extra=extra)
                 db.add(document); db.flush()
                 version_folder=settings.storage_dir/'documents'/document.id
                 version_folder.mkdir(parents=True,exist_ok=True)

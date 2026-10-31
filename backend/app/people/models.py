@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, String, Text, JSON
+from sqlalchemy import Boolean, String, Text, JSON, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -16,6 +16,41 @@ class User(Base):
     avatar: Mapped[str] = mapped_column(String, default='')
     manager_id: Mapped[str | None] = mapped_column(String, nullable=True)
     job_title: Mapped[str] = mapped_column(String, default='')
+    department_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    identity_issuer: Mapped[str | None] = mapped_column(String, nullable=True)
+    identity_subject: Mapped[str | None] = mapped_column(String, nullable=True)
+    provisioning_status: Mapped[str] = mapped_column(String, default='ready')
+    provisioning_started_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    identity_sync_pending: Mapped[bool] = mapped_column(Boolean, default=False)
+    identity_sync_revision: Mapped[int] = mapped_column(Integer, default=0)
+    __table_args__ = (UniqueConstraint('identity_issuer', 'identity_subject', name='uq_user_identity'),)
+
+
+class Department(Base):
+    __tablename__ = 'departments'
+    __table_args__ = (UniqueConstraint('airport_id', 'name'),)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    airport_id: Mapped[str] = mapped_column(String)
+    name: Mapped[str] = mapped_column(String)
+    head_user_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class HeadAppointment(Base):
+    __tablename__ = 'head_appointments'
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    airport_id: Mapped[str] = mapped_column(String)
+    department_id: Mapped[str] = mapped_column(String)
+    user_id: Mapped[str] = mapped_column(String)
+    proposed_by: Mapped[str] = mapped_column(String)
+    effective_date: Mapped[str] = mapped_column(String)
+    reason: Mapped[str] = mapped_column(Text)
+    department_revision: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String, default='pending')
+    created_at: Mapped[str] = mapped_column(String)
+    decided_by: Mapped[str | None] = mapped_column(String, nullable=True)
+    decided_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    decision_comment: Mapped[str] = mapped_column(Text, default='')
 
 class Session(Base):
     __tablename__ = 'sessions'

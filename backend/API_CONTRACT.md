@@ -60,3 +60,18 @@ Supplier onboarding: GET/POST /supplier-registrations, GET /{id}, POST /{id}/ver
 Supplier responsibility: POST /supplier-reviews/{id}/assign accepts `{assigned_to,due_date,comment,assignment_revision}`. Only a director can assign an open case to an active finance/director colleague at the same airport with access to its source. The expected assignment revision prevents concurrent overwrite; a verifier is ineligible for the next approval assignment. Detail includes eligible_assignees only for directors, plus assignment history, due date, revision, assignment_state and overdue. `mine=true` on the review list/export filters by assigned user. Assignment grants no decision authority. Deadlines use the demo reference_date; only open cases can be overdue. Deactivation requires explicit reassignment and does not resolve the case.
 
 Every supplier response filters bank-history source_case_id/source_registration_id by current source permissions, including all registration evidence. Inaccessible predecessor IDs serialize as null. Name-only review creation resolves only suppliers with an accessible linked contract; otherwise it records an unknown supplier with no trusted bank/contact disclosure. Catalog migration preserves existing explicit source links before inferring any unambiguous seed-only associations; other uploaded contracts require director association.
+
+
+## Employee management
+
+HR/admin: POST `/people` JSON `{name,email,department_id,job_title,manager_id?,access_profile:employee|technician}` -> `{user,temporary_password?,invitation_status?,provisioning_error?}` (201). A provider failure returns the saved inactive employee with `provisioning_status:failed`; retry POST `/people/{id}/provision`. Temporary credentials are returned once and never stored as plaintext.
+
+HR/admin: PATCH `/people/{id}/profile` accepts `{name?,department_id?,job_title?,manager_id?}` only. PATCH `/people/{id}` accepts `{active}`; POST `/people/{id}/sync-identity` retries provider enabled-state synchronization. POST `/people/{id}/activation-instructions` resends activation email or generates replacement initial credentials. Account/profile endpoints reject permission-role fields. Email is a normalized unique airport identifier and is not editable through this profile endpoint.
+
+Credential resets for accounts with administrative, director, HR, finance, reviewer, head, or signer authority require the `admin` role. Restricted document ownership is checked through stable employee IDs, not display names.
+
+GET `/people` additionally returns `department_records:[{id,name,head_user_id,head_name,revision}]`, `can_create_users`, `can_propose_heads`, `can_manage_signing`, `can_view_appointments`, `auth_mode`. People include `department_id,is_department_head,provisioning_status,identity_sync_pending,login_username`.
+
+HR/admin: POST `/people/appointments` `{department_id,user_id,effective_date,reason}`. HR/admin/director: GET `/people/appointments` -> `{items}`. Independent director: POST `/people/appointments/{id}/decision` `{action:approve|reject,comment?}`; rejection requires a reason. States: pending, approved (scheduled), active, superseded, rejected, cancelled. Dates follow the application's reference date.
+
+Director: POST `/people/{id}/signing-authority` `{enabled,reason}`. Self-modification is forbidden. Head appointments and signing grants remain independent. Replacement/revocation flags existing tasks for explicit reassignment.
