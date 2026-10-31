@@ -707,3 +707,5 @@
 .supplier-pagination {display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0;}
 .registration-evidence {max-height:240px;overflow:auto;border:1px solid #d6ddcf;border-radius:8px;padding:12px;margin:18px 0;}
 .registration-evidence label {margin:10px 0;}
+.assignment-history {display:block;margin-top:10px;color:#586d49;}
+.review-row-date small {display:block;margin-top:4px;}

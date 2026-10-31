@@ -87,11 +87,18 @@ def serialize_case(db,user,item,actor_names=None):
     names=actor_names if actor_names is not None else actors(db,user)
     result['actors']={field:names.get(getattr(item,field),{'id':getattr(item,field),'name':getattr(item,field)}) if getattr(item,field) else None for field in ('created_by','verified_by','approved_by')}
     result['previous_review_id']=item.previous_review_id
+    from app.suppliers.assignment import summary
+    result.update(summary(db,user,item))
     return result
 
 def detail(db,user,case_id):
     item,_=get_case(db,user,case_id)
     result=serialize_case(db,user,item)
+    from app.suppliers.assignment import candidates
+    from app.core.security import has_role
+    result['eligible_assignees']=candidates(db,user,item) if has_role(user,'director') and item.status in ('needs_review','verified') else []
+    result['can_assign']=has_role(user,'director') and item.status in ('needs_review','verified')
+    result['reference_date']=settings.reference_date.isoformat()
     children=db.scalars(select(SupplierReview).where(SupplierReview.previous_review_id==item.id,SupplierReview.airport_id==user.airport_id)).all()
     result['rechecks']=[{'id':c.id,'status':c.status,'created_at':c.created_at} for c in children if not c.document_id or ((d:=db.get(Document,c.document_id)) and can_read(user,d))]
     return result

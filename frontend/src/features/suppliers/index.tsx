@@ -27,6 +27,7 @@ import { ReviewChecks } from './ReviewChecks';
 import { SupplierDetail } from './SupplierDetail';
 import { RegistrationDialog } from './RegistrationDialog';
 import { RegistrationDetail } from './RegistrationDetail';
+import { AssignmentForm } from './AssignmentForm';
 const labels: Record<string, string> = {
   needs_review: "Necesită verificare",
   verified: "Verificat independent",
@@ -69,10 +70,11 @@ export function SuppliersPage({
     [registryId,setRegistryId]=useState<string>(),
     [recheck,setRecheck]=useState<Review>(),
     [status,setStatus]=useState(''),[risk,setRisk]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),
-    [offset,setOffset]=useState(0),[search,setSearch]=useState('');
+    [offset,setOffset]=useState(0),[search,setSearch]=useState(''),[mine,setMine]=useState(false);
   useEffect(()=>{const timer=window.setTimeout(()=>setSearch(query),250);return()=>window.clearTimeout(timer)},[query]);
   const params=new URLSearchParams({q:search,limit:'25',offset:String(offset)});
   if(status)params.set('status',status);if(risk)params.set('risk_level',risk);if(from)params.set('created_from',from);if(to)params.set('created_to',to);
+  if(mine)params.set('mine','true');
   const request=params.toString();
   useEffect(() => {
     let active = true;
@@ -188,6 +190,7 @@ export function SuppliersPage({
               </span>
             </div>
             {tab==='reviews'&&<div className="supplier-query-controls">
+<label className="checkbox-field"><input type="checkbox" checked={mine} onChange={e=>{setMine(e.target.checked);setOffset(0)}}/><span>Ale mele</span></label>
               <label>Stare<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="">Toate</option>{Object.entries(labels).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
               <label>Risc orientativ<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">Toate</option><option value="high">Ridicat</option><option value="medium">Mediu</option><option value="low">Scăzut</option></select></label>
               <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
@@ -675,6 +678,7 @@ function ReviewDetail({
           </div>
         )}
         <ReviewChecks review={r}/>
+        <AssignmentForm review={r} onChanged={onChanged}/>
         <div className="comparison-grid">
           <div>
             <h3>

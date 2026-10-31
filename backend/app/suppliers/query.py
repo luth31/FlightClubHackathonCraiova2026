@@ -16,6 +16,7 @@ class ReviewFilters(BaseModel):
     created_to: date | None=None
     limit: int=Field(default=25,ge=1,le=100)
     offset: int=Field(default=0,ge=0)
+    mine: bool=False
     @model_validator(mode='after')
     def interval(self):
         if self.created_from and self.created_to and self.created_from>self.created_to:
@@ -34,6 +35,7 @@ def matching_reviews(db,user,filters):
             if not doc or not can_read(user,doc): continue
         risk='high' if any(r['code'] in ('iban_mismatch','invalid_iban') for r in item.reasons) else 'medium' if item.reasons else 'low'
         if filters.status and item.status!=filters.status: continue
+        if filters.mine and item.assigned_to!=user.id: continue
         if filters.risk_level and risk!=filters.risk_level: continue
         if filters.created_from and item.created_at[:10]<filters.created_from.isoformat(): continue
         if filters.created_to and item.created_at[:10]>filters.created_to.isoformat(): continue

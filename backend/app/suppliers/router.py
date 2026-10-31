@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.core.security import current_user
 from app.suppliers import service
-from app.suppliers.schemas import ReviewCreate,Verification,Decision
+from app.suppliers.schemas import ReviewCreate,Verification,Decision,ReviewAssignment
 router=APIRouter(prefix='/api/supplier-reviews',tags=['Supplier review'])
 
 @router.get('')
@@ -40,3 +40,8 @@ def export(filters: Annotated[ReviewFilters,Query()],db: Session=Depends(get_db)
 @router.get('/{case_id}')
 def detail(case_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
     return service.detail(db,user,case_id)
+
+@router.post('/{case_id}/assign')
+def assign(case_id:str,body:ReviewAssignment,db:Session=Depends(get_db),user=Depends(current_user)):
+    from app.suppliers.assignment import assign as assign_case
+    return assign_case(db,user,case_id,body)

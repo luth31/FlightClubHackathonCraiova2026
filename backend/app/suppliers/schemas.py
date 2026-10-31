@@ -88,3 +88,18 @@ class RegistrationVerification(Verification):
     @field_validator('contacted_person',mode='before')
     @classmethod
     def strip_person(cls,value): return value.strip() if isinstance(value,str) else value
+
+class ReviewAssignment(BaseModel):
+    assigned_to: str=Field(min_length=1,max_length=100)
+    due_date: date
+    comment: str=Field(min_length=3,max_length=2000)
+    assignment_revision: int=Field(ge=1)
+    @field_validator('comment',mode='before')
+    @classmethod
+    def strip_comment(cls,value): return value.strip() if isinstance(value,str) else value
+    @field_validator('due_date')
+    @classmethod
+    def future_date(cls,value):
+        from app.config import settings
+        if value<settings.reference_date: raise ValueError('Termenul nu poate fi anterior datei de referință.')
+        return value

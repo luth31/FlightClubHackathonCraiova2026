@@ -55,6 +55,9 @@ export interface Review {
   checks?: Array<{code:string; result:string; message:string}>;
   freshness: {state:string; reasons:string[]};
   previous_review_id?: string;
+  assigned_to?:string;assignee?:string;due_date?:string;assignment_revision:number;assignment_state:string;overdue:boolean;
+  can_assign?:boolean;reference_date?:string;eligible_assignees?:Array<{id:string;name:string}>;
+  assignment_history:Array<{from?:string;to:string;actor:string;created_at:string;comment:string}>;
   rechecks?: Array<{id:string;status:string;created_at:string}>;
   actors?: Record<string,{id:string;name:string}|null>;
   duplicate?: boolean;
