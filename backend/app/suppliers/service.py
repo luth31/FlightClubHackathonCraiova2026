@@ -82,11 +82,17 @@ def case_dict(item,user=None,*,freshness=None):
 def actors(db,user):
     return {u.id:{'id':u.id,'name':u.name} for u in db.scalars(select(User).where(User.airport_id==user.airport_id))}
 
+def can_access_case(db,user,item):
+    if not item or item.airport_id!=user.airport_id: return False
+    doc=db.get(Document,item.document_id) if item.document_id else None
+    return not item.document_id or bool(doc and can_read(user,doc))
+
 def serialize_case(db,user,item,actor_names=None):
     result=case_dict(item,user,freshness=review_freshness(db,user,item))
     names=actor_names if actor_names is not None else actors(db,user)
     result['actors']={field:names.get(getattr(item,field),{'id':getattr(item,field),'name':getattr(item,field)}) if getattr(item,field) else None for field in ('created_by','verified_by','approved_by')}
-    result['previous_review_id']=item.previous_review_id
+    previous=db.get(SupplierReview,item.previous_review_id) if item.previous_review_id else None
+    result['previous_review_id']=item.previous_review_id if can_access_case(db,user,previous) else None
     from app.suppliers.assignment import summary
     result.update(summary(db,user,item))
     return result

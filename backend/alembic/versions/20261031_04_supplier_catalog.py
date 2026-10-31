@@ -18,8 +18,11 @@ def upgrade():
     op.create_index('ix_supplier_contracts_supplier_id','supplier_contracts',['supplier_id'])
     db=op.get_bind()
     suppliers=db.execute(sa.text('SELECT id,name,airport_id,document_id FROM suppliers')).all()
-    for doc_id,name,airport,created in db.execute(sa.text("SELECT id,supplier,airport_id,created_at FROM documents WHERE category='Contract'")):
-        matches=[s for s in suppliers if s.airport_id==airport and (s.document_id==doc_id or ' '.join(s.name.casefold().split())==' '.join((name or '').casefold().split()))]
+    for doc_id,name,airport,created,creator in db.execute(sa.text("SELECT id,supplier,airport_id,created_at,created_by FROM documents WHERE category='Contract' OR id IN (SELECT document_id FROM suppliers)")):
+        # Existing explicit references take precedence over any name match.
+        matches=[s for s in suppliers if s.airport_id==airport and s.document_id==doc_id]
+        if not matches and creator=='seed':
+            matches=[s for s in suppliers if s.airport_id==airport and ' '.join(s.name.casefold().split())==' '.join((name or '').casefold().split())]
         if len(matches)==1:
             db.execute(sa.text('INSERT INTO supplier_contracts VALUES (:doc,:supplier,:actor,:at)'),{'doc':doc_id,'supplier':matches[0].id,'actor':'migration','at':created})
 def downgrade():

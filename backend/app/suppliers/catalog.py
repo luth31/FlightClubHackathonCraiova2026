@@ -35,22 +35,28 @@ def choice_dict(db,user,item):
     usable=[d for d in visible if eligible(d,item)]
     return {**supplier_dict(item),'document_id':(usable or visible)[0].id,'tax_id':item.tax_id,
         'address':item.address,'category':item.category,'state':item.state,
-        'can_manage':has_role(user,'director'),'contracts':contract_list(db,user,item.id)['items']}
+        'can_manage':has_role(user,'director'),'contracts':contract_list(db,user,item.id)['items'],
+        'bank_history':visible_bank_history(db,user,item)}
 
-def detail(db,user,identifier):
-    from app.suppliers.service import actors
-    item=get_supplier(db,user,identifier);result=choice_dict(db,user,item);names=actors(db,user)
+def visible_bank_history(db,user,item):
+    from app.suppliers.service import actors,can_access_case
+    from app.suppliers.registration import get_registration
+    names=actors(db,user)
     history=[]
     from app.suppliers.models import SupplierReview
     for entry in item.bank_history:
         entry={**entry,'verified_actor':names.get(entry.get('verified_by')),'approved_actor':names.get(entry.get('approved_by'))}
         if entry.get('source_case_id'):
             source=db.get(SupplierReview,entry['source_case_id'])
-            doc=db.get(Document,source.document_id) if source and source.document_id else None
-            if not source or source.airport_id!=user.airport_id or (source.document_id and (not doc or not can_read(user,doc))): entry.pop('source_case_id')
+            if not can_access_case(db,user,source): entry.pop('source_case_id')
+        if entry.get('source_registration_id'):
+            try: get_registration(db,user,entry['source_registration_id'])
+            except DomainError: entry.pop('source_registration_id')
         history.append(entry)
-    result['bank_history']=history
-    return result
+    return history
+
+def detail(db,user,identifier):
+    return choice_dict(db,user,get_supplier(db,user,identifier))
 
 def listing(db,user):
     require_role(user,'director','finance')
@@ -98,6 +104,7 @@ def resolve_supplier(db,user,body,document):
         link=db.get(SupplierContract,document.id)
         item=db.get(Supplier,link.supplier_id) if link else None
         return item if item and item.airport_id==user.airport_id and same_name(document.supplier,item.name) else None
-    matches=[s for s in db.scalars(select(Supplier).where(Supplier.airport_id==user.airport_id)) if same_name(s.name,body.supplier_name)]
+    matches=[s for s in db.scalars(select(Supplier).where(Supplier.airport_id==user.airport_id))
+        if same_name(s.name,body.supplier_name) and contracts(db,user,s)]
     if len(matches)>1: raise DomainError('Selectează furnizorul prin identitatea sa fiscală.',422)
     return matches[0] if matches else None
