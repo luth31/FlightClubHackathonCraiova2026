@@ -136,7 +136,7 @@ export function App() {
           <button className="user-button" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span className="avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button>
           {userMenu&&<div className="user-menu">
             <div className="user-menu-heading">{session.auth?.mode==='oidc'?'Contul tău':'Schimbă contul'}</div>
-            {session.auth?.mode!=='oidc'&&session.users.map(u=><button disabled={switching||loggingOut} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
+            {session.auth?.mode!=='oidc'&&session.users.filter(u=>!u.roles.includes('employee')).map(u=><button disabled={switching||loggingOut} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
           </div>}
         </div>
         <button className="logout-button sidebar-logout" disabled={loggingOut||switching} onClick={()=>void logout()} aria-busy={loggingOut}>
@@ -167,7 +167,7 @@ export function App() {
           {page==='home'&&<DashboardPage name={user.name} onOpen={openDoc} onNavigate={navigate} onUpload={()=>setUpload(true)} revision={revision}/>}
           {page==='documents'&&<DocumentLibrary onOpen={openDoc} onUpload={()=>setUpload(true)} notify={notify} initialFilter={filter} revision={revision}/>}
           {page==='contracts'&&<ContractsPage initialFilter={filter} onOpen={openDoc} revision={revision} notify={notify}/>}
-          {page==='approvals'&&<ApprovalsPage onOpen={openDoc} revision={revision} notify={notify}/>}
+          {page==='approvals'&&<ApprovalsPage onOpen={openDoc} revision={revision} notify={notify} user={user}/>}
           {page==='sharing'&&<SharingPage revision={revision} onOpen={openDoc} notify={notify}/>}
           {page==='suppliers'&&<SuppliersPage revision={revision} notify={notify} onOpen={openDoc} user={user}/>}
           {page==='people'&&<PeoplePage revision={revision} notify={notify}/>}

@@ -10,7 +10,7 @@ from app.tasks import service as task_service
 def apply_action(db,user,document_id,action,comment='',expected_version=None):
     # SQLite write lock serializes version approval and sign requests; a second sign is idempotent.
     db.execute(text('BEGIN IMMEDIATE'))
-    document=get_document(db,document_id,user,edit=True)
+    document=get_document(db,document_id,user,edit=action not in ('sign','approve','reject'))
     version=current_version(db,document)
     if expected_version is not None and expected_version!=document.version:
         raise DomainError('Documentul s-a schimbat. Reîncarcă versiunea curentă.',409)
@@ -32,7 +32,7 @@ def apply_action(db,user,document_id,action,comment='',expected_version=None):
         document.status='in_review'; label='Trimis spre avizare'
         task_service.ensure_task(db,document,'approval',user,reopen=True)
     elif action in ('approve','reject'):
-        require_role(user,'reviewer','director','hr')
+        require_role(user,'reviewer','director','hr','department_head')
         try:
             from app.people.service import can_review_department
             if not can_review_department(db,user,document.department): raise DomainError('Avizarea este în responsabilitatea altui departament.',403)

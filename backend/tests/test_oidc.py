@@ -32,6 +32,29 @@ def test_keycloak_import_supplies_required_identity_claims(airport):
     assert 'basic' in client['defaultClientScopes']
 
 
+def test_persisted_employee_identity_can_login_without_configured_subject_map(oidc,db):
+    from uuid import uuid4
+    from sqlalchemy import delete
+    from app.people.models import Session
+    client,provider=oidc
+    uid='emp-'+uuid4().hex
+    subject='employee-provider-'+uuid4().hex
+    db.add(User(id=uid,name='Mara Persistent',email=f'{uid}@airport.example',department='Tehnic',
+        department_id='dept-tehnic',role='Inginer',job_title='Inginer',roles=['employee'],airport_id='dunarea',
+        active=True,password_hash='not-a-local-password',avatar='',identity_issuer=settings.oidc_issuer,
+        identity_subject=subject,provisioning_status='ready'))
+    db.commit()
+    try:
+        provider['claims']={'sub':subject,'realm_access':{'roles':['admin','signer']}}
+        state=begin(oidc)
+        assert callback(client,state).status_code==303
+        user=client.get('/api/session').json()['current_user']
+        assert user['id']==uid and user['roles']==['employee']
+    finally:
+        db.execute(delete(Session).where(Session.user_id==uid))
+        db.delete(db.get(User,uid));db.commit()
+
+
 @pytest.fixture
 def oidc(client, monkeypatch):
     for name, value in {'auth_mode':'oidc',
@@ -109,6 +132,19 @@ def test_oidc_success_pkce_pinned_subject_and_local_roles(oidc):
     assert provider['token_requests']==1
     assert client.post('/api/auth/logout').status_code==200
     assert client.get('/api/session').json()['current_user'] is None
+
+
+def test_sign_in_link_hint_prefills_username_without_selecting_identity(oidc):
+    client, provider = oidc
+    response = client.get('/api/auth/oidc/login', params={'login_hint':'d.voicu'}, follow_redirects=False)
+    assert response.status_code == 303
+    query = parse_qs(urlsplit(response.headers['location']).query)
+    assert query['login_hint'] == ['d.voicu']
+    assert query['code_challenge_method'] == ['S256']
+    assert query['prompt'] == ['login']
+    provider['query'] = query
+    assert callback(client, query['state'][0]).status_code == 303
+    assert client.get('/api/session').json()['current_user']['id'] == 'technician'
 
 
 @pytest.mark.parametrize('overrides,absent',[

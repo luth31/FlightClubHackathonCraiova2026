@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     oidc_frontend_url: str = ''
     oidc_subject_map: dict[str, str] | None = None
     oidc_session_minutes: int = 60
+    keycloak_provisioning_client_id: str = 'aerodesk-provisioner'
+    keycloak_provisioning_client_secret: SecretStr = SecretStr('')
+    keycloak_activation_email: bool = False
     openai_api_key: SecretStr = Field(default=SecretStr(''), validation_alias=AliasChoices('AERODESK_OPENAI_API_KEY','OPENAI_API_KEY'))
     openai_model: str = 'gpt-6-luna'
     openai_redaction_model: str = ''

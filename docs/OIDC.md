@@ -53,3 +53,10 @@ Asocierea folosește numai subiectul stabil al issuer-ului fixat. Numele, emailu
 `backend/tests/test_oidc.py` folosește tokenuri RSA semnate real și un transport provider controlat. Acoperă autentificarea completă, transmiterea verificatorului PKCE, rolurile exclusiv locale, subiecte necunoscute, conturi inactive, issuer/audience/nonce/semnătură/date incorecte, endpointuri străine, state expirat sau legat de alt browser și callback-uri concurente. Acest test nu înlocuiește verificarea finală în browser cu cele două servicii Keycloak.
 
 Surse tehnice: [endpointurile și fluxurile OIDC Keycloak](https://www.keycloak.org/securing-apps/oidc-layers), [validarea ID Token în OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation), [PKCE — RFC 7636](https://www.rfc-editor.org/rfc/rfc7636), [validarea JWT cu PyJWT](https://pyjwt.readthedocs.io/en/stable/usage.html). Documentația este inspirație tehnică pentru implementare, nu o certificare a aplicației.
+
+
+## Provisionarea angajaților
+
+Administrarea conturilor prin HR este descrisă în [USER_MANAGEMENT.md](USER_MANAGEMENT.md). Conturile noi folosesc asocieri persistente `(identity_issuer, identity_subject)` în baza AeroDesk; callback-ul verifică aceste asocieri înaintea hărții explicite pentru conturile existente. Nu se creează conturi și nu se acordă permisiuni din numele, emailul sau rolurile tokenului.
+
+Clientul confidențial `aerodesk-provisioner` este folosit numai de backend, cu service-account și `realm-management/manage-users`. Configurația sa este separată de clientul public `aerodesk-web`. Importul la pornire nu actualizează realm-uri existente; consultați pașii din ghid fără a șterge volumele.

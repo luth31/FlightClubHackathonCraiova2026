@@ -1,4 +1,4 @@
-from sqlalchemy import String,Text,Integer,UniqueConstraint,ForeignKey
+from sqlalchemy import String,Text,Integer,UniqueConstraint,ForeignKey,Boolean
 from sqlalchemy.orm import Mapped,mapped_column
 from app.database import Base
 
@@ -15,6 +15,7 @@ class WorkflowTask(Base):
     created_at: Mapped[str]=mapped_column(String)
     updated_at: Mapped[str]=mapped_column(String)
     completed_by: Mapped[str | None]=mapped_column(String,nullable=True)
+    reassignment_required: Mapped[bool]=mapped_column(Boolean,default=False)
 
 class TaskEvent(Base):
     __tablename__='task_events'
