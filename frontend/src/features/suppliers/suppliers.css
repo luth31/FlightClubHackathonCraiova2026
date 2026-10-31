@@ -705,3 +705,5 @@
 .supplier-query-controls label {display:grid;gap:5px;font-size:12px;min-width:120px;}
 .supplier-query-controls select,.supplier-query-controls input {padding:9px;border:1px solid #d6ddcf;border-radius:6px;max-width:100%;background:white;}
 .supplier-pagination {display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0;}
+.registration-evidence {max-height:240px;overflow:auto;border:1px solid #d6ddcf;border-radius:8px;padding:12px;margin:18px 0;}
+.registration-evidence label {margin:10px 0;}

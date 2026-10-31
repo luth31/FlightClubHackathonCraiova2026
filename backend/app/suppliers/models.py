@@ -58,3 +58,20 @@ class SupplierReview(Base):
     approved_by: Mapped[str | None]=mapped_column(String,nullable=True)
     approved_at: Mapped[str | None]=mapped_column(String,nullable=True)
     decision_note: Mapped[str]=mapped_column(Text,default='')
+
+class SupplierRegistration(Base):
+    __tablename__='supplier_registrations'
+    id: Mapped[str]=mapped_column(String,primary_key=True)
+    airport_id: Mapped[str]=mapped_column(String,index=True)
+    payload: Mapped[dict]=mapped_column(JSON)
+    status: Mapped[str]=mapped_column(String)
+    created_by: Mapped[str]=mapped_column(String)
+    created_at: Mapped[str]=mapped_column(String)
+    verified_by: Mapped[str | None]=mapped_column(String,nullable=True)
+    verified_at: Mapped[str | None]=mapped_column(String,nullable=True)
+    verification_note: Mapped[str]=mapped_column(Text,default='')
+    verification_evidence: Mapped[dict | None]=mapped_column(JSON,nullable=True)
+    approved_by: Mapped[str | None]=mapped_column(String,nullable=True)
+    approved_at: Mapped[str | None]=mapped_column(String,nullable=True)
+    decision_note: Mapped[str]=mapped_column(Text,default='')
+    supplier_id: Mapped[str | None]=mapped_column(String,nullable=True)

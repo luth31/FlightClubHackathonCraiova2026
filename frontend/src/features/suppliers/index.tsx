@@ -22,9 +22,11 @@ import { Empty, ErrorMessage, Loading, Modal } from "@/components/ui";
 import { date, time } from "@/utils/format";
 import type { User } from "@/types";
 import "./suppliers.css";
-import type { Supplier, Review, Registry } from './types';
+import type { Supplier, Review, Registry, Registration } from './types';
 import { ReviewChecks } from './ReviewChecks';
 import { SupplierDetail } from './SupplierDetail';
+import { RegistrationDialog } from './RegistrationDialog';
+import { RegistrationDetail } from './RegistrationDetail';
 const labels: Record<string, string> = {
   needs_review: "Necesită verificare",
   verified: "Verificat independent",
@@ -57,7 +59,7 @@ export function SuppliersPage({
   user: User;
 }) {
   const [data, setData] = useState<Registry>(),
-    [catalog,setCatalog]=useState<Supplier[]>([]),
+    [catalog,setCatalog]=useState<Supplier[]>([]),[registrations,setRegistrations]=useState<Registration[]>([]),[registrationOpen,setRegistrationOpen]=useState(false),[registrationId,setRegistrationId]=useState<string>(),
     [error, setError] = useState(""),
     [tab, setTab] = useState("reviews"),
     [query, setQuery] = useState(""),
@@ -89,6 +91,7 @@ export function SuppliersPage({
     };
   }, [revision, refresh, request]);
   useEffect(()=>{let active=true;api<{items:Supplier[]}>('/suppliers').then(v=>{if(active)setCatalog(v.items)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[revision,refresh]);
+  useEffect(()=>{let active=true;api<{items:Registration[]}>('/supplier-registrations').then(v=>{if(active)setRegistrations(v.items)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[revision,refresh]);
   const changed = (item: Review, message: string) => {
     setSelected(item);
     setCreate(false);
@@ -118,6 +121,7 @@ export function SuppliersPage({
           Verifică o solicitare
         </button>
       </div>
+      <button className="button secondary" onClick={()=>setRegistrationOpen(true)}>Înregistrează furnizor</button>
       <div className="supplier-intro">
         <ShieldCheck size={24} />
         <div>
@@ -167,6 +171,7 @@ export function SuppliersPage({
                 Registru furnizori<span>{data.suppliers.length}</span>
               </button>
             </div>
+            <button className="button secondary" onClick={()=>setTab("registrations")}>Înregistrări inițiale · {registrations.length}</button>
             <div className="filters">
               <label className="search-input">
                 <Search size={17} />
@@ -188,7 +193,7 @@ export function SuppliersPage({
               <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
               <button className="button secondary" onClick={()=>download(`/supplier-reviews/export.csv?${request}`,'verificari-furnizori.csv').catch(e=>notify(e.message))}>Export CSV</button>
             </div>}
-            {tab === "reviews" ? (
+            {tab==='registrations' ? <div className="supplier-reviews-list">{registrations.length?registrations.map(r=><button className="supplier-review-row" key={r.id} onClick={()=>setRegistrationId(r.id)}><span className="review-row-copy"><strong>{r.payload.name} · CUI {r.payload.tax_id}</strong><small>{date(r.created_at)}</small></span><ReviewStatus status={r.status}/></button>):<Empty title="Niciun dosar de înregistrare"/>}</div> : tab === "reviews" ? (
               cases?.length ? (
                 <div className="supplier-reviews-list">
                   {cases.map((c) => (
@@ -298,6 +303,8 @@ export function SuppliersPage({
           </p>
         </>
       )}
+      {registrationOpen&&<RegistrationDialog onClose={()=>setRegistrationOpen(false)} onCreated={r=>{setRegistrationOpen(false);setRegistrationId(r.id);setRefresh(v=>v+1);notify("Dosarul de furnizor a fost înregistrat.")}}/>}
+      {registrationId&&<RegistrationDetail id={registrationId} onClose={()=>setRegistrationId(undefined)} onChanged={()=>{setRefresh(v=>v+1);notify("Decizia a fost înregistrată.")}} onOpen={id=>{setRegistrationId(undefined);onOpen(id)}}/>}
       {create && data && (
         <NewReview
           suppliers={data.suppliers}

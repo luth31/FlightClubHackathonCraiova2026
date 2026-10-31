@@ -71,3 +71,11 @@ export interface Registry {
   };
   notice: string;
 }
+export interface Registration {
+  id:string; status:string; supplier_id?:string;
+  payload:{name:string;tax_id:string;address:string;category:string;source_contract_id:string;source_version:number;proposed_iban:string;proposed_contact:string;evidence_refs:Array<{document_id:string;version:number}>};
+  created_at:string;verified_at?:string;approved_at?:string;verification_note:string;decision_note:string;
+  verification_evidence?:{contact_used:string;method:string;contacted_person:string};
+  can_verify:boolean;can_approve:boolean;freshness:{state:string;reasons:string[]};
+  actors:Record<string,{id:string;name:string}|null>;
+}
