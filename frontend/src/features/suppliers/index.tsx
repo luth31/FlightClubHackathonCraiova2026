@@ -121,22 +121,27 @@ export function SuppliersPage({
   );
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading supplier-page-heading">
         <div>
           <div className="eyebrow">DETALII CONFIRMATE. DECIZII SEPARATE.</div>
           <h1>Furnizori</h1>
           <p>Verifică solicitările primite înainte să modifici registrul.</p>
         </div>
-        <button
-          className="button primary"
-          disabled={!data}
-          onClick={() => {setRecheck(undefined);setCreate(true)}}
-        >
-          <Plus size={17} />
-          Verifică o solicitare
-        </button>
+        <div className="heading-actions supplier-heading-actions">
+          <button className="button secondary" onClick={()=>setRegistrationOpen(true)}>
+            <Building2 size={17} />
+            Înregistrează furnizor
+          </button>
+          <button
+            className="button primary"
+            disabled={!data}
+            onClick={() => {setRecheck(undefined);setCreate(true)}}
+          >
+            <Plus size={17} />
+            Verifică o solicitare
+          </button>
+        </div>
       </div>
-      <button className="button secondary" onClick={()=>setRegistrationOpen(true)}>Înregistrează furnizor</button>
       <div className="supplier-intro">
         <ShieldCheck size={24} />
         <div>
@@ -200,7 +205,11 @@ export function SuppliersPage({
               </span>
             </div>
             {tab==='reviews'&&<div className="supplier-query-controls">
-<label className="checkbox-field"><input type="checkbox" checked={mine} onChange={e=>{setMine(e.target.checked);setOffset(0)}}/><span>Ale mele</span></label>
+              <button type="button" className="supplier-mine-toggle" role="switch" aria-checked={mine}
+                onClick={() => {setMine(!mine);setOffset(0)}}>
+                <span className="supplier-toggle-track" aria-hidden="true"><span /></span>
+                <span>Ale mele</span>
+              </button>
               <label>Stare<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="">Toate</option>{Object.entries(labels).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
               <label>Risc orientativ<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">Toate</option><option value="high">Ridicat</option><option value="medium">Mediu</option><option value="low">Scăzut</option></select></label>
               <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>

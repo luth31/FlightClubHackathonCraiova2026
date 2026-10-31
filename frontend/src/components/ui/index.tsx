@@ -89,12 +89,14 @@ export function Modal({
   onClose,
   children,
   wide = false,
+  className = "",
 }: {
   title: string;
   subtitle?: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const active = useContext(ViewActiveContext);
@@ -143,7 +145,7 @@ export function Modal({
       }}
     >
       <div
-        className={`modal ${wide ? "modal-wide" : ""}`}
+        className={`modal ${wide ? "modal-wide" : ""} ${className}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
