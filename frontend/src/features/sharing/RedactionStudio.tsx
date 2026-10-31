@@ -6,7 +6,7 @@ import type {DocumentRecord, Session} from '@/types';
 import './redaction.css';
 
 type Word = {id:string;text:string;rect:number[]};
-type Page = {number:number;width:number;height:number;words:Word[]};
+type Page = {number:number;width:number;height:number;words:Word[];method?:string};
 type Basis = {id:string;label:string;url:string;guidance:string};
 type Layout = {source_version:number;source_sha256:string;pages:Page[];ai_available:boolean;legal_bases:Basis[]};
 type Match = {page:number;word_ids:string[]};
@@ -27,7 +27,20 @@ export function RedactionStudio({document:d,onClose,onShared}:{document:Document
   const [step,setStep]=useState<'edit'|'review'>('edit'), [reviewed,setReviewed]=useState(false);
   const [recipient,setRecipient]=useState('carpati'), [department,setDepartment]=useState(''), [expires,setExpires]=useState('2026-12-01');
   const [imageError,setImageError]=useState(false),[imageReady,setImageReady]=useState(false);
-  useEffect(()=>{let active=true;Promise.all([api<Layout>(`/documents/${d.id}/redaction-layout`),api<Session>('/session')]).then(([data,session])=>{if(active){setLayout(data);setRecipient(session.current_user?.airport_id==='carpati'?'dunarea':'carpati')}}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[d.id]);
+  useEffect(()=>{
+    let active=true; let timer:number|undefined;
+    async function load(){
+      try {
+        const extraction=await api<{status:string;error?:string}>(`/documents/${d.id}/extraction`);
+        if(!active)return;
+        if(['queued','processing'].includes(extraction.status)){timer=window.setTimeout(load,1500);return;}
+        if(extraction.status==='failed')throw new Error(extraction.error||'Extragerea textului a eșuat. Reîncearcă din informațiile documentului.');
+        const [data,session]=await Promise.all([api<Layout>(`/documents/${d.id}/redaction-layout`),api<Session>('/session')]);
+        if(active){setLayout(data);setRecipient(session.current_user?.airport_id==='carpati'?'dunarea':'carpati')}
+      }catch(e){if(active)setError((e as Error).message)}
+    }
+    load();return()=>{active=false;window.clearTimeout(timer)};
+  },[d.id]);
   useEffect(()=>{if(imageReady||textMode)paperRef.current?.querySelector('.focused')?.scrollIntoView({block:'center',behavior:'smooth'})},[jump,imageReady,textMode]);
   const words=layout?.pages.flatMap(p=>p.words)||[];
   const page=layout?.pages[pageIndex];
@@ -57,10 +70,10 @@ export function RedactionStudio({document:d,onClose,onShared}:{document:Document
           <nav className="studio-pages" aria-label="Paginile documentului">{layout.pages.map((p,i)=><button key={p.number} className={pageIndex===i?'current':''} onClick={()=>goPage(i)} aria-label={`Pagina ${p.number}`} aria-current={pageIndex===i?'page':undefined}><FileCheck2 size={24}/><span>{p.number}</span>{p.words.some(w=>selectedSet.has(w.id))&&<span className="page-dot"/>}</button>)}</nav>
           <section className="studio-canvas" aria-label="Document interactiv">
             <div className="canvas-toolbar"><span><MousePointer2 size={15}/>Selectează un cuvânt · Shift + clic pentru un fragment</span><div className="canvas-options"><button type="button" className="text-button" aria-pressed={textMode} onClick={()=>{setTextMode(!textMode);setImageReady(false)}}>{textMode?'Vezi PDF':'Mod text'}</button><span>{pageIndex+1} / {layout.pages.length}</span></div></div>
-            <div className="paper-scroll" ref={paperRef}>{textMode?<div className="studio-text-page"><h3>Pagina {pageIndex+1} · text selectabil</h3><p>Același document, cu selecții mai ușor de atins.</p><div>{page?.words.map(w=><button key={w.id} disabled={!!busy} className={`text-word ${selectedSet.has(w.id)?'redacted':''} ${focusSet.has(w.id)?'focused':''}`} aria-pressed={focusSet.has(w.id)} onClick={e=>choose(w,e.shiftKey)}>{w.text}</button>)}</div></div>:page&&<div className="studio-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
+            {page?.method==='ocr'&&<p className="quiet-note">Selecții din OCR local. Verifică vizual conturul fiecărui fragment și copia finală.</p>}<div className="paper-scroll" ref={paperRef}>{textMode?<div className="studio-text-page"><h3>Pagina {pageIndex+1} · text selectabil</h3><p>Același document, cu selecții mai ușor de atins.</p><div>{page?.words.map(w=><button key={w.id} disabled={!!busy} className={`text-word ${selectedSet.has(w.id)?'redacted':''} ${focusSet.has(w.id)?'focused':''}`} aria-pressed={focusSet.has(w.id)} onClick={e=>choose(w,e.shiftKey)}>{w.text}</button>)}</div></div>:page&&<div className="studio-paper" style={{aspectRatio:`${page.width}/${page.height}`}}>
               <img draggable={false} alt={`Original, pagina ${page.number}`} src={fileUrl(`/api/documents/${d.id}/redaction-pages/${page.number}?source_version=${layout.source_version}&source_sha256=${layout.source_sha256}`)} onLoad={()=>{setImageReady(true);setImageError(false)}} onError={()=>setImageError(true)}/>
               {imageError?<div className="paper-notice">Pagina nu poate fi afișată. Redeschide editorul pentru a verifica versiunea.</div>:!imageReady?<div className="paper-notice"><LoaderCircle className="spin"/>Se încarcă pagina…</div>:page.words.map(w=><button key={w.id} type="button" disabled={!!busy} className={`pdf-word ${selectedSet.has(w.id)?'redacted':''} ${focusSet.has(w.id)?'focused':''}`} style={{left:`${w.rect[0]/page.width*100}%`,top:`${w.rect[1]/page.height*100}%`,width:`${(w.rect[2]-w.rect[0])/page.width*100}%`,height:`${(w.rect[3]-w.rect[1])/page.height*100}%`}} title={w.text} aria-label={`${selectedSet.has(w.id)?'Marcat pentru eliminare: ':'Selectează: '}${w.text}`} aria-pressed={focusSet.has(w.id)} onClick={e=>choose(w,e.shiftKey)}/>)}
-            </div>}{!page?.words.length&&<p className="paper-empty">Această pagină nu are text selectabil. Verifică imaginile separat; OCR nu este configurat.</p>}</div>
+            </div>}{!page?.words.length&&<p className="paper-empty">Această pagină nu are text selectabil. OCR nu a identificat text lizibil. Verifică pagina în original.</p>}</div>
             <div className="selection-bar"><div><strong>{focus.length?focus.map(id=>wordMap.get(id)?.text).join(' '):'Tu alegi ce rămâne privat.'}</strong><small>{focus.length?`${focus.length} ${focus.length===1?'cuvânt':'cuvinte'} în fragment`:'Selecțiile sunt reversibile până pregătești copia.'}</small></div>{focus.length>0&&<button className="button primary" disabled={!!busy} onClick={()=>selectedSet.has(focus[0])?changeSelection(selected.filter(id=>!focusSet.has(id))):add(focus)}>{selectedSet.has(focus[0])?<><RotateCcw size={15}/>Păstrează</>:<>Redactează doar aici</>}</button>}</div>
           </section>
           <aside className="studio-inspector">

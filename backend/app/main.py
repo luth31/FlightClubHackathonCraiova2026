@@ -29,7 +29,17 @@ async def lifespan(app):
     config=Config(str(Path(__file__).resolve().parents[1]/'alembic.ini'))
     command.upgrade(config,'head')
     seed()
-    yield
+    from app.database import SessionLocal
+    from app.extraction.service import backfill
+    from app.extraction.worker import start
+    with SessionLocal() as db: backfill(db)
+    worker = start() if settings.extraction_enabled else None
+    try:
+        yield
+    finally:
+        if worker:
+            worker[0].set()
+            worker[1].join(timeout=2)
 
 app=FastAPI(title='AeroDesk API',version='0.1.0',description='Local demonstration workspace. Synthetic airport documents; session-based access control.',lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origins,allow_credentials=True,allow_methods=['GET','POST','PATCH','DELETE','OPTIONS'],allow_headers=['Content-Type'])

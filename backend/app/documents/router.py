@@ -67,6 +67,30 @@ def file(document_id: str,version: int | None=None,download: bool=False,db: Sess
     db.commit()
     return FileResponse(path,media_type='application/pdf',filename=v.filename,content_disposition_type='attachment' if download else 'inline',headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
 
+@router.get('/{document_id}/extraction')
+def extraction(document_id: str,page: int=Query(1,ge=1),db: Session=Depends(get_db),user=Depends(current_user)):
+    from app.core.security import require_role
+    from app.extraction import service as extraction_service
+    doc=service.get_document(db,document_id,user)
+    require_role(user,'director','reviewer','finance','hr')
+    version=service.current_version(db,doc)
+    if service.file_hash(version.file_path)!=version.sha256:
+        raise DomainError('Integritatea originalului nu poate fi confirmată.',409)
+    data=extraction_service.summary(db,version)
+    if data['status']=='ready':
+        result=extraction_service.cached_result(db,version)
+        if page>len(result['pages']): raise DomainError('Pagina nu există.',404)
+        data['page']={k:v for k,v in result['pages'][page-1].items() if k!='words'}
+    return data
+
+@router.post('/{document_id}/extraction/retry')
+def retry_extraction(document_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    from app.extraction import service as extraction_service
+    from sqlalchemy import text
+    db.execute(text('BEGIN IMMEDIATE'))
+    doc=service.get_document(db,document_id,user,edit=True)
+    return extraction_service.retry(db,service.current_version(db,doc),doc)
+
 @router.get('/{document_id}/verify')
 def verify(document_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
     doc=service.get_document(db,document_id,user)

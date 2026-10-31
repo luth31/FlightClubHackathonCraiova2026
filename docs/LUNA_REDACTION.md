@@ -52,7 +52,7 @@ PyMuPDF removes selected content and rebuilds a sanitized derivative without the
 
 ## Limits and verification
 
-The editor accepts up to 100 pages / 40,000 extracted words. AI analysis accepts up to 12,000 words / 120,000 text characters. Large documents fail explicitly rather than being silently truncated. Scanned/image-only content has no selectable words; OCR and region-drawing redaction are not implemented. Images and any non-text sensitive content still require visual review.
+The editor accepts up to 100 pages / 40,000 extracted words. AI analysis accepts up to 12,000 words / 120,000 text characters. Large documents fail explicitly rather than being silently truncated. Scanned content gains selectable words after background OCR. Region-drawing redaction is not implemented; images and non-text sensitive content still require visual review. OCR text and geometry can be imperfect.
 
 Regression coverage includes exact single versus repeated redaction across pages, original-file preservation, rendered preview access/integrity, stale versions and edits during an API call, role boundaries, optional context, grounded word IDs/citations, strict Responses request shape, refusal, malformed output and provider errors. Tests use mock provider responses and do not spend API credits. Real Luna calls were also exercised separately on the fictional corpus with the locally supplied key.
 
@@ -63,3 +63,6 @@ The final branch suite has **99 passing tests**, plus passing frontend lint/buil
 The retained reviewed copy is preview `d6d63cb2035e4ae582710e5658807345`, shared through grant `share-bd30526b3158` to Carpați / Conformitate. After Keycloak login as the recipient reviewer, the received list and the 67,935-byte PDF returned 200. These are local demonstration records, not seeded IDs for a fresh checkout. A separate 390 px mobile run verified text selection, preview rendering, no horizontal overflow, no console errors and a review-screen accessibility/best-practices score of 100.
 
 A second live Docker analysis used contract `doc-115` with the optional context omitted. Luna returned 200 with two grounded recommendations (the example person's name and contact address), explicit qualifications about fictional data, and no automatic claim that the corporate name, contract value or test IBAN required removal.
+
+
+Update (31 October 2026): the studio and Luna now reuse persisted native/OCR text and word geometry. Scans can be selected and redacted after local processing. See [OCR_RESEARCH.md](OCR_RESEARCH.md) for the pipeline, offline checks, and remaining accuracy limits.

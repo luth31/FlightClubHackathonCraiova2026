@@ -5247,3 +5247,11 @@ button {
 .amber-text {
   color: #8a5d21;
 }
+
+.extracted-text { margin: 16px 0; font-size: 13px; color: var(--muted); }
+.extraction-progress { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.extraction-progress small { flex-basis:100%; padding-left:24px; }
+.extracted-text-body { margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:10px; }
+.extracted-text-pagination { display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:11px; }
+.extracted-text pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:360px; overflow:auto; font-family:inherit; font-size:12px; line-height:1.65; color:var(--text); }
+.extraction-note { font-size:12px; line-height:1.5; padding:10px 0; }

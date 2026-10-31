@@ -106,3 +106,13 @@ The first working quality gate is complete. This is a demonstration foundation, 
 - The audit table is application-controlled. An “archived” workflow label does not establish legally compliant archiving.
 
 See the [README](../README.md) for launch instructions, fixture accounts and the demonstration route.
+
+
+## Local document processing — 31 October 2026
+
+- 111 backend tests passed (99 existing plus 12 OCR/cache/queue tests); TypeScript/Vite production build passed.
+- Chrome DevTools on port 5173: generated and uploaded a scan-only PDF. Upload returned in 17 ms with queued status; the document panel updated automatically to ready. OCR populated supplier, 2027-05-12 expiry and 12500 RON, and full-text search found BrowserScanReference. Per-page extracted text is visible and marked OCR local.
+- The API Docker image processed a scanned corpus page with `--network none`: 160 words in 508.78 ms. No separate system Tesseract installation or runtime model download was required on Linux arm64.
+- Tests verify: no synchronous OCR on intake; real OCR + FTS; hash-cache reuse across documents/metadata versions; human and approved fields preserved; stale source version exclusion; expired lease recovery; visible failure/retry; original integrity; HR/technician access; 101-page extraction; mixed-page routing; real removal of image pixels and OCR-recognizable names from a derivative, with original bytes unchanged.
+- See [OCR_RESEARCH.md](OCR_RESEARCH.md) for measured engine comparison, accuracy limitations, and reproducible benchmark.
+- Both Compose airport APIs rebuilt, migrated existing volumes and became healthy. Chrome DevTools on port 8080 confirmed cached native text and 310 studio words for doc-145, with validated metadata unchanged and Luna available. The partner instance on port 8081 returned 404 for that document’s extraction endpoint. The OCR panel was checked at a 500 px viewport with no horizontal overflow.

@@ -27,23 +27,16 @@ def source(db, user, document_id, version=None, sha256=None):
     return doc, current
 
 
-def page_words(page):
-    # Coordinates are unrotated PDF points. UI uses a derotated rendering of the same page.
-    return [{'id': f'p{page.number+1}-w{i}', 'text': w[4], 'rect': list(w[:4])}
-            for i, w in enumerate(page.get_text('words', sort=True))]
-
-
 def layout(db, user, document_id):
     doc, version = source(db, user, document_id)
-    with fitz.open(version.file_path) as pdf:
-        if len(pdf) > 100:
-            raise DomainError('Editorul acceptă maximum 100 de pagini pe document.', 422)
-        pages = []
-        for page in pdf:
-            page.set_rotation(0)
-            pages.append({'number': page.number+1, 'width': page.rect.width, 'height': page.rect.height, 'words': page_words(page)})
-        if sum(len(p['words']) for p in pages) > 40000:
-            raise DomainError('Documentul are prea mult text pentru editorul interactiv.', 422)
+    from app.extraction.service import cached_result
+    result = cached_result(db, version)
+    pages = [{k: p[k] for k in ('number', 'width', 'height', 'words', 'method', 'review_required')}
+             for p in result['pages']]
+    if len(pages) > 100:
+        raise DomainError('Editorul acceptă maximum 100 de pagini pe document.', 422)
+    if sum(len(p['words']) for p in pages) > 40000:
+        raise DomainError('Documentul are prea mult text pentru editorul interactiv.', 422)
     return {'source_version': doc.version, 'source_sha256': version.sha256, 'pages': pages,
             'ai_available': llm.configured(), 'legal_bases': LEGAL_BASES}
 

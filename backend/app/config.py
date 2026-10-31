@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     corpus_dir: Path = ROOT / 'data'
     reference_date: date = date(2026, 10, 30)
     seed_documents: bool = True
+    extraction_enabled: bool = True
+    tessdata_dir: Path = ROOT / "data" / "tessdata"
     airport_id: str = 'dunarea'
     airport_name: str = 'Aeroportul Dunărea'
     cookie_secure: bool = False

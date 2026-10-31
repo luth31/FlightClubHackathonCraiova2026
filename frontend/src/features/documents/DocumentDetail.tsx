@@ -25,6 +25,7 @@ import {
   FileIcon,
   Modal,
 } from "@/components/ui";
+import { ExtractedText } from './ExtractedText';
 import { ShareDialog } from "@/features/sharing";
 import { date, time, money, actionLabel } from "@/utils/format";
 import type { DocumentRecord, User } from "@/types";
@@ -84,6 +85,19 @@ export function DocumentDetail({
   useEffect(() => {
     load();
   }, [load]);
+  useEffect(() => {
+    if (!doc || !['queued', 'processing'].includes(doc.extraction_status || '')) return;
+    let active = true;
+    const timer = window.setInterval(() => {
+      api<DocumentRecord>(`/documents/${id}`).then(d => {
+        if (active) {
+          setDoc(d);
+          if (!editing) setFields({title:d.title, supplier:d.supplier || '', expires_at:d.expires_at || '', value:d.value?.toString() || '', summary:d.summary || ''});
+        }
+      }).catch(() => {});
+    }, 1500);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [id, doc?.extraction_status, editing]);
   async function act(action: string) {
     setBusy(true);
     setError("");
@@ -321,13 +335,7 @@ export function DocumentDetail({
                           Informații de verificat
                         </div>
                       )}
-                      {!doc.validated &&
-                        doc.extraction_status === "needs-ocr" && (
-                          <p className="scan-notice">
-                            Acest PDF este scanat. Completează informațiile din
-                            document înainte de confirmare.
-                          </p>
-                        )}
+                      <ExtractedText doc={doc} canReadText={!user.roles.includes('technician')} onRetry={load} />
                       {editing ? (
                         <div className="edit-fields">
                           <label className="field">

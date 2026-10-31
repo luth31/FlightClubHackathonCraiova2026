@@ -10,6 +10,7 @@ os.environ['AERODESK_DATABASE_URL']=f'sqlite:///{TEST_ROOT}/test.db'
 os.environ['AERODESK_STORAGE_DIR']=str(TEST_ROOT/'storage')
 os.environ['AERODESK_CORPUS_DIR']=str(TEST_ROOT/'corpus')
 os.environ['AERODESK_AIRPORT_ID']='dunarea'
+os.environ['AERODESK_EXTRACTION_ENABLED']='false'
 os.environ['AERODESK_AIRPORT_NAME']='Aeroportul Dunărea'
 from reportlab.pdfgen import canvas
 corpus=TEST_ROOT/'corpus'; (corpus/'pdfs').mkdir(parents=True)
@@ -33,6 +34,8 @@ from app.people.models import User,Delegation
 @pytest.fixture
 def client():
     with TestClient(app) as c:
+        from app.extraction.worker import drain
+        drain()
         yield c
 
 @pytest.fixture
