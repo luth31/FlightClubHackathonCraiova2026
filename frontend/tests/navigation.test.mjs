@@ -96,6 +96,7 @@ test('supplier contract returns to the registry with its query and scroll positi
   browser.scrollTo(0,650);
   await click(find('button','Contractul sursă'));
   assert.equal(heading(),documentRecord.title);
+  assert.equal(document.querySelector('.back-button').textContent.trim(),'Înapoi la Furnizori');
   await click(document.querySelector('.back-button'));
   assert.equal(heading(),'Furnizori');
   assert.equal(document.querySelector('[aria-label="Caută un furnizor"]').value,'Demo');

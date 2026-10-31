@@ -64,6 +64,17 @@ npm --prefix frontend run lint
 
 When adding a new document entry point, add a DOM interaction regression that opens it and exercises its return control. A rendered link assertion alone does not prove the flow works. When adding a section, update `Page`, navigation labels/allowlist, shell rendering and this matrix together.
 
+### Check the application actually being served
+
+Compose serves frontend files baked into its web images. `npm run build` updates the local `frontend/dist` directory; running containers require their own rebuild and recreation. For the local two-airport demonstration, apply frontend changes with:
+
+```powershell
+docker compose build dunarea-web carpati-web
+docker compose up -d --no-deps dunarea-web carpati-web
+```
+
+Check that both `http://127.0.0.1:8080/` and `http://127.0.0.1:8081/` serve the new JavaScript asset. Reload the browser and reopen a contract **from Furnizori**; its URL must include `?from=suppliers` and its button must say **Înapoi la Furnizori**. A document URL left open by an older build may lack origin metadata and uses the documented Documente fallback after reload.
+
 Before release, also check a real browser at desktop and about 390 px width:
 
 - Start with a filtered/paginated supplier list, open a contract through each supplier flow, then return through both controls and browser Back/Forward. Check state and scroll.
