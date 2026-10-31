@@ -1,9 +1,10 @@
-from sqlalchemy import String,Text,Integer,Float,JSON
+from sqlalchemy import String,Text,Integer,Float,JSON,ForeignKey,UniqueConstraint
 from sqlalchemy.orm import Mapped,mapped_column
 from app.database import Base
 
 class Supplier(Base):
     __tablename__='suppliers'
+    __table_args__=(UniqueConstraint('airport_id','tax_id',name='uq_supplier_airport_tax'),)
     id: Mapped[str]=mapped_column(String,primary_key=True)
     name: Mapped[str]=mapped_column(String)
     airport_id: Mapped[str]=mapped_column(String)
@@ -13,6 +14,18 @@ class Supplier(Base):
     verified_contact: Mapped[str]=mapped_column(String)
     trust_status: Mapped[str]=mapped_column(String)
     bank_history: Mapped[list]=mapped_column(JSON,default=list)
+    registry_revision: Mapped[int]=mapped_column(Integer,default=1)
+    tax_id: Mapped[str | None]=mapped_column(String,nullable=True)
+    address: Mapped[str]=mapped_column(String,default='')
+    category: Mapped[str]=mapped_column(String,default='')
+    state: Mapped[str]=mapped_column(String,default='active')
+
+class SupplierContract(Base):
+    __tablename__='supplier_contracts'
+    document_id: Mapped[str]=mapped_column(ForeignKey('documents.id'),primary_key=True)
+    supplier_id: Mapped[str]=mapped_column(ForeignKey('suppliers.id'),index=True)
+    linked_by: Mapped[str]=mapped_column(String)
+    linked_at: Mapped[str]=mapped_column(String)
 
 class SupplierReview(Base):
     __tablename__='supplier_reviews'
@@ -28,6 +41,16 @@ class SupplierReview(Base):
     sender_email: Mapped[str]=mapped_column(String)
     verified_contact: Mapped[str]=mapped_column(String)
     invoice_amount: Mapped[float | None]=mapped_column(Float,nullable=True)
+    invoice_currency: Mapped[str | None]=mapped_column(String,nullable=True)
+    service_date: Mapped[str | None]=mapped_column(String,nullable=True)
+    registry_revision: Mapped[int | None]=mapped_column(Integer,nullable=True)
+    contract_snapshot: Mapped[dict | None]=mapped_column(JSON,nullable=True)
+    checks: Mapped[list | None]=mapped_column(JSON,nullable=True)
+    previous_review_id: Mapped[str | None]=mapped_column(String,nullable=True)
+    assigned_to: Mapped[str | None]=mapped_column(String,nullable=True)
+    due_date: Mapped[str | None]=mapped_column(String,nullable=True)
+    assignment_revision: Mapped[int]=mapped_column(Integer,default=1)
+    assignment_history: Mapped[list]=mapped_column(JSON,default=list)
     message: Mapped[str]=mapped_column(Text)
     reasons: Mapped[list]=mapped_column(JSON)
     status: Mapped[str]=mapped_column(String)
@@ -39,3 +62,20 @@ class SupplierReview(Base):
     approved_by: Mapped[str | None]=mapped_column(String,nullable=True)
     approved_at: Mapped[str | None]=mapped_column(String,nullable=True)
     decision_note: Mapped[str]=mapped_column(Text,default='')
+
+class SupplierRegistration(Base):
+    __tablename__='supplier_registrations'
+    id: Mapped[str]=mapped_column(String,primary_key=True)
+    airport_id: Mapped[str]=mapped_column(String,index=True)
+    payload: Mapped[dict]=mapped_column(JSON)
+    status: Mapped[str]=mapped_column(String)
+    created_by: Mapped[str]=mapped_column(String)
+    created_at: Mapped[str]=mapped_column(String)
+    verified_by: Mapped[str | None]=mapped_column(String,nullable=True)
+    verified_at: Mapped[str | None]=mapped_column(String,nullable=True)
+    verification_note: Mapped[str]=mapped_column(Text,default='')
+    verification_evidence: Mapped[dict | None]=mapped_column(JSON,nullable=True)
+    approved_by: Mapped[str | None]=mapped_column(String,nullable=True)
+    approved_at: Mapped[str | None]=mapped_column(String,nullable=True)
+    decision_note: Mapped[str]=mapped_column(Text,default='')
+    supplier_id: Mapped[str | None]=mapped_column(String,nullable=True)
