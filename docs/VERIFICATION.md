@@ -226,3 +226,21 @@ Fresh checks: **37 frontend tests passed** (33 DOM and 4 supplier render checks)
 Both local API images were rebuilt. Each database was backed up inside its existing state volume before recreation; startup upgraded revision `714af828c311` to `20261031_supplier_ocr_merge`, and both APIs became healthy. Live OpenAPI checks confirm both catalog and registration routes. Read-only catalog serialization against the deployed databases under the local director account returned **20 suppliers and 15 review choices for Dunărea**, with all registry-card fields present; Carpați returned zero of each, consistent with its separate dataset.
 
 Both web containers were also rebuilt and recreated. HTTP checks on ports 8080 and 8081 confirm `/assets/index-CprXs4Sz.js` matches the local production asset by SHA-256 and `/api/health` succeeds through each web proxy. Reload the browser before checking the registry. [NAVIGATION.md](NAVIGATION.md) now requires coordinated API deployment when frontend changes depend on new routes or migrations. Native browser interaction/layout verification remains unavailable; the live catalog checks above are read-only service/schema checks, not an authenticated browser session.
+
+### Supplier registration UI — 31 October 2026
+
+The registration action now sits beside the request-verification action in the supplier page header. The registration dialog uses an 800 px maximum width, padded sections for contract, supplier details and proposed account/contact, one scrolling form body and a persistent action footer. Approved evidence is an expandable list with a selection counter; selecting a contract still includes it automatically. The form retains its existing required fields, evidence limit and registration payload. Styles are scoped to this dialog, including selectors that take precedence over the later generic application stylesheet.
+
+Fresh checks: **37 frontend tests passed**, TypeScript/Vite build and ESLint passed, and `git diff --check` passed. A read-only code review reported no findings after correcting stylesheet specificity. Browser visual, responsive and dark-mode checks were **not executed**: the browser host was unavailable and native Chrome access stopped because it could not establish the current URL confidently.
+
+Both local web images were rebuilt and containers recreated with `--no-deps`. HTTP checks on ports 8080 and 8081 confirm `/assets/index-DYSi0FBw.js` and `/assets/index-D5IhUjBg.css` match the local build by SHA-256, and both `/api/health` responses return 200. Reload the browser to load the updated dialog. No backend changes were required.
+
+### Supplier filter alignment — 31 October 2026
+
+The supplier filter rules previously gave the checkbox the same stacked layout and input padding as date/select fields, while the generic checkbox stylesheet added vertical margins. The checkbox now has its own inline layout, centered contents and zero margins. Dropdowns, dates and export use a matching 44 px height; the filter row aligns controls at their bottom edges and wraps on narrow screens.
+
+Fresh checks: **37 frontend tests passed**, build, ESLint and `git diff --check` passed. A one-off CSSOM check verified the scoped checkbox reset and control heights in the production stylesheet. jsdom's computed-style result did not honor the selectors' specificity against later generic checkbox rules, so it was not used as visual confirmation. Real browser layout verification remains unavailable.
+
+Both frontend containers were refreshed. HTTP checks on ports 8080 and 8081 confirm `/assets/index-mcz764yY.js` and `/assets/index-Bx8Tc_JT.css` match the local build by SHA-256, and both API health endpoints return 200.
+
+The follow-up replaces “Ale mele” with a button using `role="switch"` and `aria-checked`, a sliding thumb, green active state and visible keyboard focus. It preserves the `mine` filter and pagination reset, retains the 44 px target and disables animation for reduced motion. **37 frontend tests**, build, ESLint and `git diff --check` passed. Both refreshed local sites serve `/assets/index-C15wWWVB.js` and `/assets/index-AbmXpHjT.css`, matching the local build by SHA-256; health responses return 200. Browser visual verification remains unavailable.
