@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { UploadCloud, FileText, Check, LoaderCircle } from "lucide-react";
 import { Modal, ErrorMessage } from "@/components/ui";
 import { api } from "@/services/api-client";
@@ -34,6 +34,11 @@ export function UploadDialog({
     [error, setError] = useState(""),
     [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const choose = (f?: File) => {
     if (f) {
       if (!f.name.toLowerCase().endsWith(".pdf")) {
@@ -64,8 +69,9 @@ export function UploadDialog({
         method: "POST",
         body: form,
       });
-      onCreated(d);
+      if (mounted.current) onCreated(d);
     } catch (e) {
+      if (!mounted.current) return;
       setError((e as Error).message);
       setBusy(false);
     }

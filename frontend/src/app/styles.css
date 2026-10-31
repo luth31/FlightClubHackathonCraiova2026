@@ -423,6 +423,15 @@ button {
   font-weight: 500;
   color: #5a6a5f;
 }
+.breadcrumb-parent {
+  font: inherit;
+  color: #356348;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.workspace-view[hidden] {
+  display: none;
+}
 .topbar-actions {
   display: flex;
   align-items: center;

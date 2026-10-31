@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -80,6 +80,9 @@ export function ErrorMessage({
     </div>
   );
 }
+// Retained workspace views must not retain a modal's global keyboard/scroll effects.
+export const ViewActiveContext = createContext(true);
+
 export function Modal({
   title,
   subtitle,
@@ -94,9 +97,14 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const active = useContext(ViewActiveContext);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
+    if (!active) {
+      closeRef.current();
+      return;
+    }
     const prev = document.activeElement as HTMLElement;
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeRef.current();
@@ -123,9 +131,10 @@ export function Modal({
     return () => {
       document.removeEventListener("keydown", key);
       document.body.style.overflow = overflow;
-      prev?.focus();
+      if (prev?.isConnected && !prev.closest('[hidden],[inert]')) prev.focus({preventScroll: true});
     };
-  }, []);
+  }, [active]);
+  if (!active) return null;
   return (
     <div
       className="modal-backdrop"

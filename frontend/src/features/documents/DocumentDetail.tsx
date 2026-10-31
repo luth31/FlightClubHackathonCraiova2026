@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { api, fileUrl, download } from "@/services/api-client";
+import {documentHref, pageLabels} from '@/services/navigation';
 import {
   Loading,
   ErrorMessage,
@@ -28,16 +29,20 @@ import {
 import { ExtractedText } from './ExtractedText';
 import { ShareDialog } from "@/features/sharing";
 import { date, time, money, actionLabel } from "@/utils/format";
-import type { DocumentRecord, User } from "@/types";
+import type { DocumentRecord, Page, User } from "@/types";
 export function DocumentDetail({
   id,
   onClose,
+  onOpen,
+  origin,
   onChanged,
   notify,
   user,
 }: {
   id: string;
   onClose: () => void;
+  onOpen: (id: string) => void;
+  origin: Page;
   onChanged: () => void;
   notify: (s: string) => void;
   user: User;
@@ -195,7 +200,7 @@ export function DocumentDetail({
     <div className="detail-page">
       <button className="back-button" onClick={onClose}>
         <ArrowLeft size={16} />
-        Înapoi la spațiul de lucru
+        Înapoi la {pageLabels[origin]}
       </button>
       {!doc ? (
         error ? (
@@ -839,7 +844,12 @@ export function DocumentDetail({
                     {doc.related_documents.map((rel) => (
                       <a
                         key={rel.id}
-                        href={`#document/${encodeURIComponent(rel.id)}`}
+                        href={documentHref(rel.id, origin)}
+                        onClick={event => {
+                          if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+                          event.preventDefault();
+                          onOpen(rel.id);
+                        }}
                       >
                         <FileIcon category={rel.category} />
                         <span>

@@ -190,3 +190,39 @@ Fresh checks after integration:
 | Alembic heads | One: `20261031_supplier_ocr_merge` |
 
 The API image was rebuilt from the committed dependency lock before testing to include the upstream `pdf-inspector` dependency. Backend checks used temporary databases and files; previous verification counts above remain historical records.
+
+## Navigation regression fix — 31 October 2026
+
+The `fix-navigation` branch fixes the document router's discarded origin and unconditional return to Documente. Supplier contracts now return to Furnizori with their existing list state. Documents opened from other sections and related-document chains retain their own origin, including direct links with `?from=...`. The shell retains its active workspace, reveals it before restoring scroll, selects the parent in the sidebar and provides a parent breadcrumb. Inactive workspace dialogs close and release their focus/scroll effects.
+
+The original supplier return failure was reproduced by a failing DOM interaction test before implementation. Additional failing checks exposed retained-dialog scroll locks and missing focus transfer; each passed after its fix. The regression contract and browser checklist are in [NAVIGATION.md](NAVIGATION.md).
+
+| Check | Observed result |
+|---|---|
+| Combined frontend test gate (`npm --prefix frontend test`) | **35 passed**: 31 real-App DOM interaction tests and 4 existing supplier render checks |
+| TypeScript and Vite production build | Passed |
+| Frontend ESLint | Passed |
+| `git diff --check` | Passed |
+| Browser interaction/layout checks | **Not executed**: browser access host unavailable |
+
+The DOM suite covers document entry points across sections, supplier query/tab/scroll retention, Back/Forward, related chains, breadcrumb and sidebar selection, all eight sidebar destinations and mobile drawer cleanup, modified anchor clicks, workflow links, overlays, safe origin/route fallbacks, account changes, keyboard focus and upload completion. API responses are fixtures at the fetch boundary; jsdom does not establish native layout, actual scroll limits, PDF behavior or browser accessibility. No backend code changed in this fix. Previous browser results in this file apply to their recorded versions.
+
+A fresh code review found an Important late-upload callback that could overwrite navigation after dismissal, and a Minor stale return-focus reference when opening through the assistant. Both were reproduced by failing DOM checks and fixed. The final gate above includes delayed upload completion after cancellation, sidebar navigation, browser Back and account switching, plus successful active upload and assistant-focus regressions.
+
+### Running frontend refresh
+
+A follow-up screenshot still showed the old workspace return label. HTTP checks confirmed both running web containers served `/assets/index-Ja566dyO.js`, which contained `Înapoi la spațiul de lucru` and lacked the new origin/history handling. The source fix had not yet been deployed to those containers.
+
+Both local web images were rebuilt and their containers recreated with `--no-deps`. Ports 8080 and 8081 now serve `/assets/index-bkVecpS9.js`, byte-for-byte matching the local production build; the old label is absent and the origin/history code is present. The targeted supplier interaction test also passes with an explicit **Înapoi la Furnizori** text assertion. [NAVIGATION.md](NAVIGATION.md) now includes the deployment check and instructions to reload and reopen from Furnizori when an existing document URL lacks origin metadata. These are served-asset and DOM checks; browser layout verification remains unavailable.
+
+### Supplier registry empty despite counts
+
+The next screenshot showed review-choice counts but an empty registry. Both running API schemas exposed only the older supplier-review routes; their images lacked `/api/suppliers` and `/api/supplier-registrations`. The frontend's independent catalog failure also shared an error variable with reviews, so a later successful review response erased it. The registry displayed an empty state while its catalog was still pending or had failed.
+
+The catalog now owns its loading and error state, retains a retryable error across review responses, and supplies both registry counts. Review choices remain separate because they exclude ineligible suppliers. Two real-App DOM regressions reproduced the hidden error and premature empty state before the fix; they now pass, including retry and a catalog containing more suppliers than the review choices.
+
+Fresh checks: **37 frontend tests passed** (33 DOM and 4 supplier render checks), production build and ESLint passed, and **150 backend tests passed** with the same two dependency deprecation warnings. A separate read-only code review reported no findings and independently passed the two new tests. `git diff --check` passed.
+
+Both local API images were rebuilt. Each database was backed up inside its existing state volume before recreation; startup upgraded revision `714af828c311` to `20261031_supplier_ocr_merge`, and both APIs became healthy. Live OpenAPI checks confirm both catalog and registration routes. Read-only catalog serialization against the deployed databases under the local director account returned **20 suppliers and 15 review choices for Dunărea**, with all registry-card fields present; Carpați returned zero of each, consistent with its separate dataset.
+
+Both web containers were also rebuilt and recreated. HTTP checks on ports 8080 and 8081 confirm `/assets/index-CprXs4Sz.js` matches the local production asset by SHA-256 and `/api/health` succeeds through each web proxy. Reload the browser before checking the registry. [NAVIGATION.md](NAVIGATION.md) now requires coordinated API deployment when frontend changes depend on new routes or migrations. Native browser interaction/layout verification remains unavailable; the live catalog checks above are read-only service/schema checks, not an authenticated browser session.
