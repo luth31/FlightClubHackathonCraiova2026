@@ -481,4 +481,4 @@ def test_hr_offboards_locally_even_if_keycloak_is_down(client, people_state, db,
     assert response.status_code == 200, response.text
     assert not response.json()['active']
     assert response.json()['identity_sync_pending']
-    assert client.post('/api/auth/login', json={'user_id': 'technician', 'password': 'AeroDesk2026!'}).status_code == 401
+    assert client.post('/api/auth/login', json={'user_id': 'technician', 'password': 'FlyLeaf2026!'}).status_code == 401

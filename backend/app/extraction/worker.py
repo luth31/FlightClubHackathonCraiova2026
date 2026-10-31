@@ -51,7 +51,7 @@ def run_one():
     job_id, token, path, digest = claimed
     result = error = None
     try:
-        with tempfile.TemporaryDirectory(prefix='aerodesk-extraction-') as directory:
+        with tempfile.TemporaryDirectory(prefix='flyleaf-extraction-') as directory:
             output = Path(directory) / 'result.json'
             # Whitelist environment: the parser process has no OpenAI key. Its
             # only inputs are a local PDF and the bundled Romanian/English models.

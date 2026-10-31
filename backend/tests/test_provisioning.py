@@ -168,14 +168,14 @@ def test_offboarding_does_not_touch_another_identity(provider):
 @pytest.mark.parametrize('airport',['dunarea','carpati'])
 def test_realm_service_client_has_only_user_management_scope(airport):
     realm=json.loads((Path(__file__).resolve().parents[2]/'deploy/keycloak'/f'{airport}-realm.json').read_text(encoding='utf-8'))
-    client=next(c for c in realm['clients'] if c['clientId']=='aerodesk-provisioner')
+    client=next(c for c in realm['clients'] if c['clientId']=='flyleaf-provisioner')
     assert not client['publicClient'] and client['serviceAccountsEnabled']
     assert not client['standardFlowEnabled'] and not client['fullScopeAllowed']
-    assert realm['clientScopeMappings']['realm-management']==[{'client':'aerodesk-provisioner','roles':['manage-users']}]
+    assert realm['clientScopeMappings']['realm-management']==[{'client':'flyleaf-provisioner','roles':['manage-users']}]
     profile=json.loads(realm['components']['org.keycloak.userprofile.UserProfileProvider'][0]['config']['kc.user.profile.config'][0])
     assert realm['editUsernameAllowed'] is True
     username_attribute=next(a for a in profile['attributes'] if a['name']=='username')
     assert username_attribute['permissions']=={'view':['admin','user'],'edit':['admin']}
-    for name in ('aerodesk_user_id','aerodesk_airport_id'):
+    for name in ('flyleaf_user_id','flyleaf_airport_id'):
         attribute=next(a for a in profile['attributes'] if a['name']==name)
         assert attribute['permissions']=={'view':['admin'],'edit':['admin']}

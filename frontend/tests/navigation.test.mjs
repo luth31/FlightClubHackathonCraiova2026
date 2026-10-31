@@ -6,7 +6,7 @@ import { build } from 'esbuild';
 import { JSDOM } from 'jsdom';
 import { act, createElement, StrictMode } from 'react';
 
-const initialDOM = new JSDOM('<div></div>', {url:'http://aerodesk.test/', pretendToBeVisual:true});
+const initialDOM = new JSDOM('<div></div>', {url:'http://flyleaf.test/', pretendToBeVisual:true});
 installDOM(initialDOM.window);
 const { createRoot } = await import('react-dom/client');
 const bundle = await build({entryPoints:[fileURLToPath(new URL('../src/app/App.tsx',import.meta.url))],
@@ -45,7 +45,7 @@ const supplier={id:'supplier-demo',name:'Demo SRL',document_id:documentRecord.id
     version:1,eligible_for_review:true}]};
 
 async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse}={}) {
-  const dom=new JSDOM('<div id="root"></div>',{url:`http://aerodesk.test/${hash}`,pretendToBeVisual:true});
+  const dom=new JSDOM('<div id="root"></div>',{url:`http://flyleaf.test/${hash}`,pretendToBeVisual:true});
   installDOM(dom.window);
   let currentUser={...user,roles};
   globalThis.fetch=async (input,options={})=>{
@@ -104,7 +104,7 @@ const heading=()=>[...document.querySelectorAll('main h1')].find(visible)?.textC
 
 test('logout is available without opening the account menu and clears the workspace',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
-  assert.equal(localStorage.getItem('aerodesk-user'),'admin');
+  assert.equal(localStorage.getItem('flyleaf-user'),'admin');
   const originalFetch=globalThis.fetch;
   globalThis.fetch=(input,options)=>{
     if(String(input)==='/api/session')throw new Error('Session refresh unavailable');
@@ -113,7 +113,7 @@ test('logout is available without opening the account menu and clears the worksp
   await click(find('.topbar button','Ieși din cont'));
   assert.ok(document.querySelector('.login-page'),'Successful logout should show login without another session request');
   assert.equal(document.querySelector('.app-shell'),null);
-  assert.equal(localStorage.getItem('aerodesk-user'),null);
+  assert.equal(localStorage.getItem('flyleaf-user'),null);
   assert.equal(location.hash,'#home');
   globalThis.fetch=originalFetch;
   await click(find('.login-page button','Intră în spațiul de lucru'));
@@ -144,7 +144,7 @@ test('failed logout keeps the account active and offers a retry',async t=>{
   await click(find('.sidebar-bottom button','Ieși din cont'));
   assert.ok(find('[role="alert"]','Logout temporarily unavailable'));
   assert.ok(find('.user-button',user.name));
-  assert.equal(localStorage.getItem('aerodesk-user'),'admin');
+  assert.equal(localStorage.getItem('flyleaf-user'),'admin');
   assert.equal(find('.sidebar-bottom button','Ieși din cont').disabled,false);
   fail=false;
   await click(find('.sidebar-bottom button','Ieși din cont'));
@@ -152,7 +152,7 @@ test('failed logout keeps the account active and offers a retry',async t=>{
 });
 
 test('OIDC logout clears local content before navigating to the provider',async t=>{
-  const redirect='http://identity.test/realms/demo/protocol/openid-connect/logout?client_id=aerodesk-web';
+  const redirect='http://identity.test/realms/demo/protocol/openid-connect/logout?client_id=flyleaf-web';
   await setup(t,'#home',{authMode:'oidc',logoutResponse:()=>Response.json({ok:true,redirect_url:redirect})});
   const destinations=[];
   globalThis.location={search:'',assign:url=>destinations.push(url)};
@@ -161,7 +161,7 @@ test('OIDC logout clears local content before navigating to the provider',async 
   assert.equal(document.querySelector('.app-shell'),null);
   assert.ok(document.querySelector('.login-page a.login-button'));
   assert.equal(document.querySelector('.login-page select'),null);
-  assert.equal(localStorage.getItem('aerodesk-user'),null);
+  assert.equal(localStorage.getItem('flyleaf-user'),null);
 });
 
 for (const lateResult of ['success','error'])
@@ -182,7 +182,7 @@ for (const lateResult of ['success','error'])
     await settle();
     assert.ok(document.querySelector('.login-page'),'A late session result must not replace the logged-out screen');
     assert.equal(document.querySelector('.app-shell'),null);
-    assert.equal(localStorage.getItem('aerodesk-user'),null);
+    assert.equal(localStorage.getItem('flyleaf-user'),null);
     assert.equal(document.querySelector('.app-load-error'),null);
   });
 
@@ -273,8 +273,8 @@ test('assistant document return does not reuse a previous list trigger',async t=
   await click(trigger);
   await click(document.querySelector('.back-button'));
   assert.ok(document.activeElement===trigger);
-  await click(find('button','Întreabă AeroDesk'));
-  assert.equal(document.activeElement.id,'aerodesk-question');
+  await click(find('button','Întreabă FlyLeaf'));
+  assert.equal(document.activeElement.id,'flyleaf-question');
   await click(find('[role="dialog"] button','Documente în aprobare'));
   await click(find('[role="dialog"] button',related.title));
   assert.equal(heading(),related.title);
@@ -365,7 +365,7 @@ test('browser Forward dismisses supplier dialogs and releases their scroll lock'
 
 test('native workflow links close global overlays and select Approvals',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers',{workflowTask:true});
-  await click(find('button','Întreabă AeroDesk'));
+  await click(find('button','Întreabă FlyLeaf'));
   assert.ok(document.querySelector('[role="dialog"]'));
   // A native hash link must be handled just like a sidebar button.
   await click(find('a','Vezi sarcinile echipei'));

@@ -23,7 +23,7 @@ def token_hash(token: str):
 def issue_session(db, user, response, request=None, auth_source='demo'):
     """Rotate the browser's app session; identity-provider tokens never reach it."""
     if request:
-        previous = request.cookies.get(f'aerodesk_session_{settings.airport_id}')
+        previous = request.cookies.get(f'flyleaf_session_{settings.airport_id}')
         if previous:
             old_session = db.get(Session, token_hash(previous))
             if old_session:
@@ -33,14 +33,14 @@ def issue_session(db, user, response, request=None, auth_source='demo'):
     db.add(Session(token_hash=token_hash(token), user_id=user.id,
         expires_at=(datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat(),
         auth_source=auth_source, auth_issuer=settings.oidc_issuer if auth_source == 'oidc' else None))
-    response.set_cookie(f'aerodesk_session_{settings.airport_id}', token,
+    response.set_cookie(f'flyleaf_session_{settings.airport_id}', token,
         httponly=True, secure=settings.cookie_secure, samesite='strict', max_age=seconds, path='/api')
 
 def optional_user(request: Request, db: DbSession = Depends(get_db)):
-    aerodesk_session=request.cookies.get(f'aerodesk_session_{settings.airport_id}')
-    if not aerodesk_session:
+    flyleaf_session=request.cookies.get(f'flyleaf_session_{settings.airport_id}')
+    if not flyleaf_session:
         return None
-    session = db.get(Session, token_hash(aerodesk_session))
+    session = db.get(Session, token_hash(flyleaf_session))
     if not session or datetime.fromisoformat(session.expires_at) <= datetime.now(timezone.utc):
         return None
     if session.auth_source != settings.auth_mode:

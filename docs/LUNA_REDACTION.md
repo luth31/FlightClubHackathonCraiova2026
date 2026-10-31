@@ -5,7 +5,7 @@ The original document and its signature remain unchanged; the editor creates a s
 ## Run with OpenAI
 
 1. Copy `.env.example` to `.env` in the repository root and set `OPENAI_API_KEY` locally. The real file is ignored by Git and excluded from Docker build contexts.
-2. `AERODESK_OPENAI_MODEL=gpt-6-luna` is the shared default. `AERODESK_OPENAI_REDACTION_MODEL` optionally overrides this one task.
+2. `FLYLEAF_OPENAI_MODEL=gpt-6-luna` is the shared default. `FLYLEAF_OPENAI_REDACTION_MODEL` optionally overrides this one task.
 3. Run `./scripts/start-demo.sh` for the two-airport OIDC demonstration, or `./scripts/dev.sh` for local development. Restart the backend after changing credentials/configuration.
 4. Open an approved document → **Partajează**. This opens **Pregătește copia**.
 

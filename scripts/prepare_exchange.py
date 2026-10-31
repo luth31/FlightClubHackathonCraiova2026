@@ -15,7 +15,7 @@ if (ROOT / 'ready').exists():
 
 now = datetime.now(timezone.utc)
 ca_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
-name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'AeroDesk local demonstration CA')])
+name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'FlyLeaf local demonstration CA')])
 ca = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(ca_key.public_key())
     .serial_number(x509.random_serial_number()).not_valid_before(now-timedelta(days=1))
     .not_valid_after(now+timedelta(days=365)).add_extension(x509.BasicConstraints(ca=True,path_length=0),critical=True)

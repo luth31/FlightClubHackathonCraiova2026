@@ -82,7 +82,7 @@ export function DocumentLibrary({
     try {
       await download(
         "/reports/register.csv",
-        "Registru-documente-AeroDesk.csv",
+        "Registru-documente-FlyLeaf.csv",
       );
       notify("Registrul a fost exportat.");
     } catch (e) {

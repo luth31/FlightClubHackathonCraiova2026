@@ -1,10 +1,10 @@
-# AeroDesk: complete handoff for the implementing agent
+# FlyLeaf: complete handoff for the implementing agent
 
 Last updated: 30 October 2026.
 
 You are taking over a hackathon project. This file is meant to stand alone: sections 1 to 11 give the full context and the work to do, and the appendices hold the detailed plan and research. Read sections 1 to 8 before changing anything.
 
-**Your job:** turn AeroDesk from a partial operations demo into a working product demo that can win the hackathon and convince an airport director to run a pilot. Start with section 8.
+**Your job:** turn FlyLeaf from a partial operations demo into a working product demo that can win the hackathon and convince an airport director to run a pilot. Start with section 8.
 
 ## 1. Situation
 
@@ -44,11 +44,11 @@ You are taking over a hackathon project. This file is meant to stand alone: sect
 
 ## 4. Product
 
-AeroDesk (working name) is a single workspace for contracts, documents, equipment, approvals, KPIs, reports and email protection. The full plan is in Appendix A.
+FlyLeaf (working name) is a single workspace for contracts, documents, equipment, approvals, KPIs, reports and email protection. The full plan is in Appendix A.
 
 **Core idea:** every contract becomes structured data. Once validated, its supplier, contacts, IBAN, prices and expiry dates power everything else: alerts, invoice checks, fake email detection, machine service information and answers.
 
-**The strongest story:** an email from a nearly identical address asks for payment to a new IBAN, and AeroDesk stops it. Then the same IBAN arrives from the real address, which a lookalike check cannot catch, and the IBAN check stops it anyway.
+**The strongest story:** an email from a nearly identical address asks for payment to a new IBAN, and FlyLeaf stops it. Then the same IBAN arrives from the real address, which a lookalike check cannot catch, and the IBAN check stops it anyway.
 
 **Modules:** 1 documents and contracts, 2 alerts, 3 roles and audit, 4 email protection, 5 payment protection and invoice check, 6 AI assistant and report agent, 7 equipment with QR, 8 mobile app, 9 KPI dashboards, 10 flight performance and delay evidence, 11 approvals and e-signature, 12 terminal and staff operations, 13 inter-airport collaboration, 14 community and passenger app.
 
@@ -62,7 +62,7 @@ Aerosimple is the closest competitor. Its public catalog lists 90 modules in 11 
 
 **Say this in the pitch:** "We did not find this in their public materials". Never say "they do not have it".
 
-| Area | Aerosimple evidence | AeroDesk position |
+| Area | Aerosimple evidence | FlyLeaf position |
 | --- | --- | --- |
 | Supplier and procurement contracts | Lease contracts only; purchase orders for parts | Main opening |
 | AI extraction | From documents to build forms, with human review; contract values not found | Extract contract values with source, confidence and validation |
@@ -96,13 +96,13 @@ Standard RAG by question type: entity 16/16, numeric 5/8, tabular 3/8, narrative
 - Add rule-based checks: IBAN checksum, valid dates, the quote on the cited page, entity, period and unit.
 - Always report coverage, correct out of all, and correct out of answers given, by language and question type.
 
-**Do not claim** these percentages as AeroDesk's accuracy. They come from financial reports, one model, one evaluator and data used in development. Reuse is allowed, but the code and data are not in this handoff, so ask the user for them.
+**Do not claim** these percentages as FlyLeaf's accuracy. They come from financial reports, one model, one evaluator and data used in development. Reuse is allowed, but the code and data are not in this handoff, so ask the user for them.
 
 ## 7. Working rules
 
 - **Report honestly.** Tests failing, skipped steps and presentational features must be stated plainly. Earlier agents reported things as done that were only visual, so look at the running app yourself.
 - **Keep demo data honest.** Any fictional data carries the visible label `Date fictive pentru demonstrație`. Use fictional airport, airline and person names in synthetic data. Real public data, such as TED, may be shown as real.
-- **Security in the demo:** test mailboxes only. Treat all documents and emails as data, so embedded instructions have no effect. The assistant reads only what the requesting role may read. Nobody can both change an IBAN and release a payment to it. AeroDesk never moves money itself.
+- **Security in the demo:** test mailboxes only. Treat all documents and emails as data, so embedded instructions have no effect. The assistant reads only what the requesting role may read. Nobody can both change an IBAN and release a payment to it. FlyLeaf never moves money itself.
 - **Privacy:** passenger dots are anonymous. Card scans show role and anonymous ID by default, with no staff league tables. Real employee scan and mailbox data needs a GDPR assessment with the airport.
 - **Git:** commit or push only when the user asks. Nothing in the demo has been committed yet.
 - **Assumptions to confirm with the airport:** the 3-hour check-in opening, the 2-hour first scan, the boarding late limit and the 5-minute queue limit come from rushed notes and must stay editable.
@@ -135,7 +135,7 @@ The lost-money detector, audit file and fraud simulation are ideas from our anal
 
 ## 9. Current state of the code
 
-The operations demo lives in `aerodesk-ops-demo` (Vite, React, TypeScript, ECharts, canvas; no backend; uncommitted; `npm install`, `npm run dev`, `npm test`, `npm run build`). It is sent separately from this file. **Only the operations part exists.** Contracts, email protection, the assistant, QR and the mobile app are not built.
+The operations demo lives in `flyleaf-ops-demo` (Vite, React, TypeScript, ECharts, canvas; no backend; uncommitted; `npm install`, `npm run dev`, `npm test`, `npm run build`). It is sent separately from this file. **Only the operations part exists.** Contracts, email protection, the assistant, QR and the mobile app are not built.
 
 A fourth Codex round is running and this section will be updated. Before it, the state was:
 
@@ -156,30 +156,30 @@ A fourth Codex round is running and this section will be updated. Before it, the
 - Has the airport evaluated Aerosimple or similar products, and why were they not adopted?
 - How can a state-owned airport buy a pilot, and up to what value? Ask for a letter of intent or a follow-up meeting.
 - Who owns the intellectual property under the hackathon rules?
-- What finance and document systems must AeroDesk connect to?
+- What finance and document systems must FlyLeaf connect to?
 
 ## Appendix contents
 
 - Appendix A: full product plan
 - Appendix B: Aerosimple feature map
-- Appendix C: Aerosimple compared with AeroDesk
+- Appendix C: Aerosimple compared with FlyLeaf
 - Appendix D: Aerosimple video review
 - Appendix E: operations demo specifications
 - Appendix F: the airport head's conversation, as noted by the user
 
 ## Appendix A: full product plan
 
-### AeroDesk: Full Product Plan
+### FlyLeaf: Full Product Plan
 
 Oct 30, 2026
 
 #### Summary
 
-AeroDesk (working name) is one web and mobile workspace for an airport's administrative staff: contracts, documents, equipment, approvals, KPIs, reports and email protection. This plan describes the complete product, ignoring time limits; the build order lets the team stop at any phase with something that works.
+FlyLeaf (working name) is one web and mobile workspace for an airport's administrative staff: contracts, documents, equipment, approvals, KPIs, reports and email protection. This plan describes the complete product, ignoring time limits; the build order lets the team stop at any phase with something that works.
 
-The core idea is that **every contract becomes structured data**. Once AeroDesk knows a supplier's contacts, IBAN, prices and expiry dates, it can use them everywhere: to warn about renewals, check invoices, spot fake emails, show who services a machine and answer questions.
+The core idea is that **every contract becomes structured data**. Once FlyLeaf knows a supplier's contacts, IBAN, prices and expiry dates, it can use them everywhere: to warn about renewals, check invoices, spot fake emails, show who services a machine and answer questions.
 
-The first customer target is Craiova International Airport, followed by Sibiu and other regional airports. AeroDesk works beside flight operations systems and does not replace them.
+The first customer target is Craiova International Airport, followed by Sibiu and other regional airports. FlyLeaf works beside flight operations systems and does not replace them.
 
 #### Problem and evidence
 
@@ -213,11 +213,11 @@ The requirements come from a long conversation with the airport's head on 30 Oct
 
 #### Market position
 
-AeroDesk should not compete on flight operations; its opening is the link between supplier contracts, payments and email. An all-in-one app alone is not a differentiator, because [Aerosimple](https://www.aerosimple.com/) already sells a broad modular platform and claims more than 170 airports.
+FlyLeaf should not compete on flight operations; its opening is the link between supplier contracts, payments and email. An all-in-one app alone is not a differentiator, because [Aerosimple](https://www.aerosimple.com/) already sells a broad modular platform and claims more than 170 airports.
 
 "Not found" below means not seen on the pages we reviewed, not that the feature is absent. Vendor claims are marketing and unverified.
 
-| Capability | Aerosimple | AeroCloud | Specialist tools | AeroDesk |
+| Capability | Aerosimple | AeroCloud | Specialist tools | FlyLeaf |
 | --- | --- | --- | --- | --- |
 | Flights, gates, information displays | Yes | Yes | SkyCore, iAirport | Imports data only |
 | Maintenance and QR on mobile | Yes | Asset module; QR not found | Maximo, Fiix | Yes, linked to contracts |
@@ -234,9 +234,9 @@ AeroDesk should not compete on flight operations; its opening is the link betwee
 | Romanian language | Not found; English, Spanish, Portuguese named | Not found | Not found | **Yes** |
 | Airport references | 170+ claimed, incl. Malta | Not found | Large | **None yet** |
 
-**Prices:** none of Aerosimple, AeroCloud or Trustpair publish one in what we reviewed, so AeroDesk cannot claim to be cheaper yet. E-signature is not a differentiator either: a 2024 Murfreesboro airport tutorial shows a DocuSign step and staff approval in Aerosimple's tenant lease flow. Aerosimple also offers a free 30-day pilot, so the airport can compare directly.
+**Prices:** none of Aerosimple, AeroCloud or Trustpair publish one in what we reviewed, so FlyLeaf cannot claim to be cheaper yet. E-signature is not a differentiator either: a 2024 Murfreesboro airport tutorial shows a DocuSign step and staff approval in Aerosimple's tenant lease flow. Aerosimple also offers a free 30-day pilot, so the airport can compare directly.
 
-**Answer to "Why not Aerosimple?":** AeroDesk starts from supplier contracts, connects them to payment and email checks, and works in Romanian. The team must confirm this against a real Aerosimple demo before saying it to a client.
+**Answer to "Why not Aerosimple?":** FlyLeaf starts from supplier contracts, connects them to payment and email checks, and works in Romanian. The team must confirm this against a real Aerosimple demo before saying it to a client.
 
 **Out of scope:** real-time flight tracking, gate allocation, safety management systems, tenant billing and common-use check-in kiosks.
 
@@ -303,7 +303,7 @@ The product has 14 modules, and modules 1 to 3 feed all the others. Priority sho
 - Check the IBAN, supplier, contract validity, price, quantity and remaining contract value.
 - For revision invoices, check that the matching inspection took place and is still valid.
 - Put mismatches on hold. An IBAN change requires a call to the phone number in the contract, recorded by one person and approved by a second.
-- Export a clean payment list to the finance system; AeroDesk never moves money itself.
+- Export a clean payment list to the finance system; FlyLeaf never moves money itself.
 
 ##### 6. AI assistant and report agent (P1)
 
@@ -371,7 +371,7 @@ The protection flow is the centre of the demo, and it depends on contracts valid
 
 **Payment and email protection**
 
-1. An email or invoice arrives; AeroDesk reads the sender, IBAN and amount.
+1. An email or invoice arrives; FlyLeaf reads the sender, IBAN and amount.
 2. It compares them with the validated contract.
 3. If everything matches, the payment goes to the payment list.
 4. If not, the payment is held and the reason is shown.
@@ -384,7 +384,7 @@ The protection flow is the centre of the demo, and it depends on contracts valid
 1. A user uploads a contract or photographs it on a phone.
 2. OCR and AI extract the fields, with a confidence level for each.
 3. A person reviews each field beside its source and validates it.
-4. AeroDesk creates the supplier, known contacts, IBAN and expiry alerts automatically.
+4. FlyLeaf creates the supplier, known contacts, IBAN and expiry alerts automatically.
 
 **Renewal**
 
@@ -396,7 +396,7 @@ The protection flow is the centre of the demo, and it depends on contracts valid
 **Approval with an absent manager**
 
 1. An employee submits a leave request or contract review from the phone.
-2. AeroDesk routes it through the hierarchy, using a delegate if an approver is on leave.
+2. FlyLeaf routes it through the hierarchy, using a delegate if an approver is on leave.
 3. If nobody acts within the time limit, it escalates one level up.
 4. Each decision and signature goes to the audit log.
 
@@ -409,13 +409,13 @@ The protection flow is the centre of the demo, and it depends on contracts valid
 **Flight dispute**
 
 1. Flight and service events come in through import.
-2. AeroDesk compares actual times with the rules and flags a late boarding opening.
+2. FlyLeaf compares actual times with the rules and flags a late boarding opening.
 3. The duty manager records the reason and attributes the delay.
 4. The report shows the evidence for each airline, ready for a dispute.
 
 #### Architecture and tech stack
 
-AeroDesk is one backend serving a web app and two mobile apps, with permissions enforced in a single API layer. Services share one codebase at first, keeping it simple until usage justifies splitting them.
+FlyLeaf is one backend serving a web app and two mobile apps, with permissions enforced in a single API layer. Services share one codebase at first, keeping it simple until usage justifies splitting them.
 
 - **Apps:** web app, staff mobile app, passenger app.
 - **API:** login, roles, airport isolation and audit log on every request.
@@ -480,7 +480,7 @@ Until real data arrives, the team uses fictional documents and logs, marked clea
 
 #### Security, privacy and AI safety
 
-AeroDesk will hold contracts, bank details and email, so a breach could enable the very fraud it is meant to stop. These controls are part of the product and should be in place before any real data enters it.
+FlyLeaf will hold contracts, bank details and email, so a breach could enable the very fraud it is meant to stop. These controls are part of the product and should be in place before any real data enters it.
 
 **Access and accounts**
 
@@ -512,16 +512,16 @@ AeroDesk will hold contracts, bank details and email, so a breach could enable t
 
 #### AI accuracy design
 
-AeroDesk should answer counts and values from validated records, and use retrieval only to find and cite text. This follows Andra-Maria Smarandache's DATA SWEEP pilot on Romgaz and OMV Petrom reports, where standard RAG gave 33 correct answers out of 48, in Romanian and English.
+FlyLeaf should answer counts and values from validated records, and use retrieval only to find and cite text. This follows Andra-Maria Smarandache's DATA SWEEP pilot on Romgaz and OMV Petrom reports, where standard RAG gave 33 correct answers out of 48, in Romanian and English.
 
-| Question type | Pilot, standard RAG | AeroDesk approach |
+| Question type | Pilot, standard RAG | FlyLeaf approach |
 | --- | --- | --- |
 | Entities such as people and roles | 16/16 correct | Good candidate for contact extraction; a person still validates |
 | Numeric | 5/8 correct | Answer from validated fields; the model never calculates |
 | Tabular | 3/8 correct | Parse tables separately, and test this before relying on it |
 | Narrative | 9/16 correct | Show cited passages and label the answer as a draft |
 
-**Verification:** the best verifier, v2, kept 14 correct and 4 wrong answers, but blocked 19 correct and 9 wrong ones. So AeroDesk sends doubtful answers to a review queue and does not silently hide them. It adds rule-based checks that need no model: IBAN checksum, valid dates, the quote appearing on the cited page, and the entity, period and unit.
+**Verification:** the best verifier, v2, kept 14 correct and 4 wrong answers, but blocked 19 correct and 9 wrong ones. So FlyLeaf sends doubtful answers to a review queue and does not silently hide them. It adds rule-based checks that need no model: IBAN checksum, valid dates, the quote appearing on the cited page, and the entity, period and unit.
 
 **Measurement:** always report coverage, correct out of all questions and correct out of answers given, by language and question type. A higher share among answered questions can hide a loss of correct answers.
 
@@ -573,7 +573,7 @@ The product succeeds if the pilot airport saves measurable time and catches real
 | Measure | How to measure | Proposed target |
 | --- | --- | --- |
 | Extraction accuracy | Compare with hand-checked contracts, per field | 90% overall; IBAN and expiry date on every test contract |
-| Time to find a contract | Timed tasks, today vs AeroDesk | From hours to under one minute |
+| Time to find a contract | Timed tasks, today vs FlyLeaf | From hours to under one minute |
 | Assistant correctness | Fixed question set with known answers | 90% correct; every answer with a source |
 | Assistant permissions | Same questions asked from each role | Zero leaks |
 | Injection resistance | Malicious text in documents and emails | Zero unauthorized actions |
@@ -591,7 +591,7 @@ The pitch asks the airport for one concrete next step: a pilot at Craiova, then 
 
 1. **Upload:** a scanned contract goes in; fields appear highlighted in the document, and a person validates them.
 2. **Ask:** "Which contracts expire in the next 60 days?" The answer links to each contract.
-3. **Attack:** an email arrives from an almost identical address with a new IBAN. AeroDesk explains both signals and holds the payment.
+3. **Attack:** an email arrives from an almost identical address with a new IBAN. FlyLeaf explains both signals and holds the payment.
 4. **The harder attack:** the same IBAN change arrives from the real address. The address looks fine, but the IBAN check still stops it.
 5. **Scan:** a phone scans the QR on stairs no. 2, showing the replaced tyre, the warranty and the service contract; an alert goes out.
 6. **Report:** the agent generates the monthly finance and KPI report, and a role switch shows that a technician cannot see it.
@@ -623,7 +623,7 @@ The largest risk is breadth: 14 modules done superficially would lose to a small
 - [ ] Has the airport evaluated Aerosimple or a similar product? If so, why was it rejected?
 - [ ] How can a state-owned airport buy a pilot, and up to what value?
 - [ ] Who owns the intellectual property under the hackathon rules?
-- [ ] What finance and document systems does AeroDesk need to connect to?
+- [ ] What finance and document systems does FlyLeaf need to connect to?
 - [ ] Who maintains and supports the product after the event?
 - [ ] Which sources could supply queue and passenger counts?
 
@@ -868,16 +868,16 @@ Pages read:
 - https://www.aerosimple.com/solutions/ai-powered-form-inspection-builder
 - https://www.aerosimple.com/solutions/intelligent-incident-response
 
-#### Ten findings for AeroDesk
+#### Ten findings for FlyLeaf
 
-1. Aerosimple is far broader than the AeroDesk plan's existing comparison suggests: its public catalog says 90 modules across 11 suites.
+1. Aerosimple is far broader than the FlyLeaf plan's existing comparison suggests: its public catalog says 90 modules across 11 suites.
 2. It directly offers lease and contract management, versioned agreements, expiry alerts, tenant portals, billing and revenue reporting. “Supplier contracts not found” in the plan's Market position is too broad: the public pages do describe contracts, but chiefly airport leases/licenses and tenant agreements.
 3. Maintenance supports QR/barcode scanning, mobile job actions, labor tracking, GIS location, inventory requests and work orders linked to inspections.
 4. Its AI suite claims natural-language queries over operational records/audit logs, anomaly detection, summarization, forecasting, triage and priority scoring. SOP search gives source references.
-5. It covers real-time flight/gate operations, AODB, resource planning, turnaround visibility, disruption workflows and FIDS integration; AeroDesk's scope intentionally does not.
+5. It covers real-time flight/gate operations, AODB, resource planning, turnaround visibility, disruption workflows and FIDS integration; FlyLeaf's scope intentionally does not.
 6. It offers mobile digital inspections, paperless field reporting and audit trails, with customer stories claiming substantial time savings. These are vendor-reported case-study outcomes.
 7. Aerosimple advertises a free 30-day pilot with data import and no commitment on multiple solution pages; the plan's note that a pilot is offered is confirmed.
-8. Pricing is modular/custom quote, not public fixed pricing. A claim that AeroDesk is cheaper is unsupported.
+8. Pricing is modular/custom quote, not public fixed pricing. A claim that FlyLeaf is cheaper is unsupported.
 9. Its public claims are inconsistent: homepage/about say 170+ airports, 15 countries; the plan cites 150+; other page areas and solution copy sometimes say 70+ modules while catalog says 90.
 10. Public pages mention mobile apps (Apple/Google), Windows app, cloud and region-specific/possibly single-tenant deployments; details vary by suite and page. No security certification list was found in pages read.
 
@@ -1031,7 +1031,7 @@ Functions below summarize linked detail pages. For the six entries marked `could
 
 #### Cross-cutting facts
 
-- Scale: homepage/about say 170+ airports and 15 countries (About says 15+); the AeroDesk plan says 150+. These are different figures; current public pages read here favor 170+. Homepage has 24/7 support and about page says 99.99% uptime.
+- Scale: homepage/about say 170+ airports and 15 countries (About says 15+); the FlyLeaf plan says 150+. These are different figures; current public pages read here favor 170+. Homepage has 24/7 support and about page says 99.99% uptime.
 - Module count: solutions catalog says 90; homepage hero says 70+ and suite cards describe counts that do not add cleanly to 90. Treat as inconsistent page-level marketing counts.
 - Named customers in stories: Blue Grass Airport, Des Moines International Airport, Rapid City Regional Airport, John Glenn Columbus International Airport. Case-study savings and outcomes are vendor-published claims.
 - Regions/languages: homepage claims US, EU and Middle East data residency options, including single-tenant deployments; EU/EASA references EU data residency. Several modules explicitly offer English, Spanish and Portuguese. Romanian not found.
@@ -1054,100 +1054,100 @@ Functions below summarize linked detail pages. For the six entries marked `could
 - **Languages and European customers:** Digital Transformation explicitly states English, Spanish, and Portuguese. Romanian was not stated. Public pages refer to EU/EASA and European data residency; the customer-story pages reviewed name US airports. Presence of European customers is not established by those stories; any conclusion about customer footprint is **inferred**.
 - **Module page inventory:** The catalog link list is at https://www.aerosimple.com/solutions. Individual detail routes are catalog-linked; the 84 successfully opened module pages were reviewed for their stated functions. The one failed module route and two failed suite slugs are listed above.
 
-## Appendix C: Aerosimple compared with AeroDesk
+## Appendix C: Aerosimple compared with FlyLeaf
 
-### Aerosimple vs AeroDesk
+### Aerosimple vs FlyLeaf
 
-Comparison uses the AeroDesk plan and the public-page evidence in [AEROSIMPLE_FEATURES.md](AEROSIMPLE_FEATURES.md). “Both” means a related capability appears in both descriptions, not equal depth. Each catalog module has a row; details are limited to statements on pages read.
+Comparison uses the FlyLeaf plan and the public-page evidence in [AEROSIMPLE_FEATURES.md](AEROSIMPLE_FEATURES.md). “Both” means a related capability appears in both descriptions, not equal depth. Each catalog module has a row; details are limited to statements on pages read.
 
-| Aerosimple function | URL | AeroDesk module (or none) | Status | Worth adding to AeroDesk | One-line reason |
+| Aerosimple function | URL | FlyLeaf module (or none) | Status | Worth adding to FlyLeaf | One-line reason |
 |---|---|---|---|---|---|
 | A01 Inspections and Checklist Designer: digital field checklists capture findings in real time and support reporting/compliance tracking | https://www.aerosimple.com/solutions/inspections | Approvals / KPI dashboards | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | A02 Form Builder: no-code custom digital forms capture structured airport data | https://www.aerosimple.com/solutions/form-builder | Approvals | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | A03 Workflow Automation: rules and triggers route tasks, approvals, and notifications | https://www.aerosimple.com/solutions/workflow-automation | Alerts / approvals | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| A04 Flows/Decision Trees: step-by-step conditional logic guides staff through procedures | https://www.aerosimple.com/solutions/flows-decision-trees | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| A04 Flows/Decision Trees: step-by-step conditional logic guides staff through procedures | https://www.aerosimple.com/solutions/flows-decision-trees | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | A05 Document Management: controlled document storage, versioning, and distribution | https://www.aerosimple.com/solutions/document-management | Documents and contracts | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| A06 Global Reporting Format (GRF): standardized runway-third condition reports record contamination, coverage, depth, and RWYCC | https://www.aerosimple.com/solutions/global-reporting-format-grf | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| A07 Airport Phone Book: airport phone book and staff directory | https://www.aerosimple.com/solutions/airport-phone-book | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B01 Airfield Operations Management: real-time airfield inspections, GPS/photo observations, logs, issue tracking, offline collection, and escalation | https://www.aerosimple.com/solutions/airfield-operations-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B02 Part 139 Compliance Management: Part 139 inspections, deficiency corrective actions, mobile GPS/photo evidence, and audit dashboards | https://www.aerosimple.com/solutions/part-139-compliance-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| A06 Global Reporting Format (GRF): standardized runway-third condition reports record contamination, coverage, depth, and RWYCC | https://www.aerosimple.com/solutions/global-reporting-format-grf | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| A07 Airport Phone Book: airport phone book and staff directory | https://www.aerosimple.com/solutions/airport-phone-book | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B01 Airfield Operations Management: real-time airfield inspections, GPS/photo observations, logs, issue tracking, offline collection, and escalation | https://www.aerosimple.com/solutions/airfield-operations-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B02 Part 139 Compliance Management: Part 139 inspections, deficiency corrective actions, mobile GPS/photo evidence, and audit dashboards | https://www.aerosimple.com/solutions/part-139-compliance-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | B04 Shift Management: shift scheduling, assignments, and activity tracking | https://www.aerosimple.com/solutions/shift-management | Approvals / mobile | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| B05 Operations Logs: digital operational logs record shift activities and operational events | https://www.aerosimple.com/solutions/operations-logs | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B06 Comm Log: structured communications log records airport communications | https://www.aerosimple.com/solutions/comm-log | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| B05 Operations Logs: digital operational logs record shift activities and operational events | https://www.aerosimple.com/solutions/operations-logs | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B06 Comm Log: structured communications log records airport communications | https://www.aerosimple.com/solutions/comm-log | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | B07 Airfield Condition Reporting: runway/taxiway/apron monitoring, NOTAM generation, friction/RCC data, and condition alerts | https://www.aerosimple.com/solutions/airfield-condition-reporting | Flight performance (partial) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| B08 Gate and Stand Management: gate/stand assignments and operational status tracking | https://www.aerosimple.com/solutions/gate-stand-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| B08 Gate and Stand Management: gate/stand assignments and operational status tracking | https://www.aerosimple.com/solutions/gate-stand-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | B09 Resource Allocation & Planning: automated gate assignment, conflict detection, schedule planning, and utilization analytics | https://www.aerosimple.com/solutions/resource-allocation-planning | Terminal and staff operations (partial) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| B10 Gate & Stand Visualization: visual gate/stand overview for airport resource planning | https://www.aerosimple.com/solutions/gate-stand-visualization | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| B10 Gate & Stand Visualization: visual gate/stand overview for airport resource planning | https://www.aerosimple.com/solutions/gate-stand-visualization | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | B11 AODB - Airport Operational Database: airport operational database consolidates flight/schedule/resource information | https://www.aerosimple.com/solutions/aodb-airport-operational-database | Flight performance (imports) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| B12 Fuel Operations: fuel operation tracking | https://www.aerosimple.com/solutions/fuel-operations | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B13 Lost and Found: lost-property intake and tracking | https://www.aerosimple.com/solutions/lost-and-found | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B14 Airside Driver Permit (ADP): airside driver permit issuance/tracking | https://www.aerosimple.com/solutions/airside-driver-permit | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B15 Airside Vehicle Permits (AVP): airside vehicle permit management | https://www.aerosimple.com/solutions/airside-vehicle-permits-avp | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B16 Permit Management: airport permit applications, approvals, and status tracking | https://www.aerosimple.com/solutions/permit-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B17 Notice of Violation (NOV) Management: violation recording, escalation, evidence, fines, appeals, and corrective plans | https://www.aerosimple.com/solutions/nov-violations | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B18 FOD Management: FOD reports capture location/photos and track airfield debris removal | https://www.aerosimple.com/solutions/fod-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B19 Noise Management: noise event monitoring and complaint tracking | https://www.aerosimple.com/solutions/noise-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B20 Snow Removal Management: snow removal task/resource tracking | https://www.aerosimple.com/solutions/snow-removal-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B21 Luggage Storage Operations: luggage storage operations tracking | https://www.aerosimple.com/solutions/luggage-storage-operations | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B22 Mowing Management: mowing management page could not open; catalog identifies mowing capability | https://www.aerosimple.com/solutions/mowing-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| B12 Fuel Operations: fuel operation tracking | https://www.aerosimple.com/solutions/fuel-operations | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B13 Lost and Found: lost-property intake and tracking | https://www.aerosimple.com/solutions/lost-and-found | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B14 Airside Driver Permit (ADP): airside driver permit issuance/tracking | https://www.aerosimple.com/solutions/airside-driver-permit | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B15 Airside Vehicle Permits (AVP): airside vehicle permit management | https://www.aerosimple.com/solutions/airside-vehicle-permits-avp | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B16 Permit Management: airport permit applications, approvals, and status tracking | https://www.aerosimple.com/solutions/permit-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B17 Notice of Violation (NOV) Management: violation recording, escalation, evidence, fines, appeals, and corrective plans | https://www.aerosimple.com/solutions/nov-violations | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B18 FOD Management: FOD reports capture location/photos and track airfield debris removal | https://www.aerosimple.com/solutions/fod-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B19 Noise Management: noise event monitoring and complaint tracking | https://www.aerosimple.com/solutions/noise-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B20 Snow Removal Management: snow removal task/resource tracking | https://www.aerosimple.com/solutions/snow-removal-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B21 Luggage Storage Operations: luggage storage operations tracking | https://www.aerosimple.com/solutions/luggage-storage-operations | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B22 Mowing Management: mowing management page could not open; catalog identifies mowing capability | https://www.aerosimple.com/solutions/mowing-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | B23 Turnaround Time Management: turnaround milestones and aircraft servicing progress visibility | https://www.aerosimple.com/solutions/turnaround-time-management | Flight performance (partial) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| B25 Enforcement Program: enforcement rules, violations, fines, appeals, and compliance reporting | https://www.aerosimple.com/solutions/enforcement-program | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B26 Dispatch Management: dispatch tasks and field response coordination | https://www.aerosimple.com/solutions/dispatch-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B27 ARFF Equipment Database: ARFF equipment inventory/database | https://www.aerosimple.com/solutions/arff-equipment-database | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B28 ARFF Equipment Inspections: ARFF equipment inspection records | https://www.aerosimple.com/solutions/arff-equipment-inspections | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| B29 ARFF Equipment Preventive Maintenance: preventive maintenance scheduling for ARFF equipment | https://www.aerosimple.com/solutions/arff-equipment-preventive-maintenance | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| B25 Enforcement Program: enforcement rules, violations, fines, appeals, and compliance reporting | https://www.aerosimple.com/solutions/enforcement-program | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B26 Dispatch Management: dispatch tasks and field response coordination | https://www.aerosimple.com/solutions/dispatch-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B27 ARFF Equipment Database: ARFF equipment inventory/database | https://www.aerosimple.com/solutions/arff-equipment-database | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B28 ARFF Equipment Inspections: ARFF equipment inspection records | https://www.aerosimple.com/solutions/arff-equipment-inspections | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| B29 ARFF Equipment Preventive Maintenance: preventive maintenance scheduling for ARFF equipment | https://www.aerosimple.com/solutions/arff-equipment-preventive-maintenance | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | C01 Airfield Work Orders: airfield work orders track corrective maintenance through completion | https://www.aerosimple.com/solutions/airfield-work-orders | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | C02 Non-Airfield Work Orders: terminal/facility work orders track non-airfield repairs | https://www.aerosimple.com/solutions/non-aiefield-work-orders | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | C03 Preventative Maintenance: recurring preventive maintenance schedules generate work orders | https://www.aerosimple.com/solutions/preventative-maintenance | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | C04 Job Actions: mobile job actions record technician work against work orders | https://www.aerosimple.com/solutions/job-actions | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | C05 Labor Hour Tracking: labor hours logged against maintenance work | https://www.aerosimple.com/solutions/labor-hour-tracking | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| C06 Warehouse Requisition Requests: warehouse parts requisitions linked to maintenance needs | https://www.aerosimple.com/solutions/warehouse-requisition-requests | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| C10 Purchase Orders: purchase orders support parts procurement | https://www.aerosimple.com/solutions/purchase-orders | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| C06 Warehouse Requisition Requests: warehouse parts requisitions linked to maintenance needs | https://www.aerosimple.com/solutions/warehouse-requisition-requests | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| C10 Purchase Orders: purchase orders support parts procurement | https://www.aerosimple.com/solutions/purchase-orders | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | D02 GIS Asset Tracking: GIS maps locate airport assets | https://www.aerosimple.com/solutions/gis-asset-tracking | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | D03 Asset Registry: central asset registry stores asset records | https://www.aerosimple.com/solutions/asset-registry | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| D04 Inventory Management: inventory quantities and stock records support maintenance | https://www.aerosimple.com/solutions/inventory-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| D04 Inventory Management: inventory quantities and stock records support maintenance | https://www.aerosimple.com/solutions/inventory-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | D05 Asset Scanning: QR/barcode scans open asset records and support mobile updates | https://www.aerosimple.com/solutions/asset-scanning | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | D06 Asset Condition Assessment: asset condition assessments record current state | https://www.aerosimple.com/solutions/asset-condition-assessment | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | D07 Asset Lifecycle Tracking: asset lifecycle records track commissioning through service and disposal | https://www.aerosimple.com/solutions/asset-lifecycle-tracking | Equipment and maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | E01 Safety Hazard Management: hazard reports and tracking support safety risk management | https://www.aerosimple.com/solutions/safety-hazard-management | Flight performance (delay evidence) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| E02 Safety Risk Assessment: safety risk assessments document likelihood/severity and mitigation | https://www.aerosimple.com/solutions/safety-risk-assessment | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| E02 Safety Risk Assessment: safety risk assessments document likelihood/severity and mitigation | https://www.aerosimple.com/solutions/safety-risk-assessment | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | E03 Corrective & Preventive Actions (CAPA): corrective/preventive actions are assigned and tracked to closure | https://www.aerosimple.com/solutions/corrective-preventive-actions-capa | Approvals / maintenance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| E04 Safety Audits: safety audits schedule and record findings/evidence | https://www.aerosimple.com/solutions/safety-audits | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| E04 Safety Audits: safety audits schedule and record findings/evidence | https://www.aerosimple.com/solutions/safety-audits | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | E05 Safety Reporting & Analytics: safety reporting and analytics summarize trends and performance | https://www.aerosimple.com/solutions/safety-reporting-analytics | KPI dashboards / reports | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| E06 Management of Change (MOC): management-of-change workflows document operational changes and risks | https://www.aerosimple.com/solutions/management-of-change-moc | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| E07 Safety Communication & Promotion: safety communication/promotion distributes safety information | https://www.aerosimple.com/solutions/safety-communication-promotion | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| E08 Safety Portal: safety portal provides a safety information/reporting entry point | https://www.aerosimple.com/solutions/safety-portal | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| E09 Safety Policy: safety policy records and controlled policy information | https://www.aerosimple.com/solutions/safety-policy | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| F01 Customer Relationship Management (CRM): tenant/customer relationship records for commercial airport operations | https://www.aerosimple.com/solutions/customer-relationship-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| F02 Property & Space Management: property and space allocation records airport premises | https://www.aerosimple.com/solutions/property-space-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| E06 Management of Change (MOC): management-of-change workflows document operational changes and risks | https://www.aerosimple.com/solutions/management-of-change-moc | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| E07 Safety Communication & Promotion: safety communication/promotion distributes safety information | https://www.aerosimple.com/solutions/safety-communication-promotion | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| E08 Safety Portal: safety portal provides a safety information/reporting entry point | https://www.aerosimple.com/solutions/safety-portal | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| E09 Safety Policy: safety policy records and controlled policy information | https://www.aerosimple.com/solutions/safety-policy | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| F01 Customer Relationship Management (CRM): tenant/customer relationship records for commercial airport operations | https://www.aerosimple.com/solutions/customer-relationship-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| F02 Property & Space Management: property and space allocation records airport premises | https://www.aerosimple.com/solutions/property-space-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | F03 Lease & Contract Management: airport lease/contract versions and renewal alerts | https://www.aerosimple.com/solutions/lease-contract-management | Documents and contracts (partial; supplier contracts) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | F04 Online Invoicing & Payments: tenant invoicing and online payment with finance reconciliation | https://www.aerosimple.com/solutions/online-invoicing-and-payments | Invoice check (partial) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| F05 Based Aircraft Management: based-aircraft records and relationships | https://www.aerosimple.com/solutions/based-aircraft-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| F06 Waitlist Management: waitlist applications, timestamping, and applicant notifications | https://www.aerosimple.com/solutions/applications-requests-waitlist | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| F07 Tenant Self-Service Portal: tenant portal exposes leases/invoices, payments, requests, and contact updates | https://www.aerosimple.com/solutions/tenant-portal | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| F08 Hangar Inspections: hangar inspection records linked to tenant/property records | https://www.aerosimple.com/solutions/hangar-inspections | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| F09 GASB 87: GASB 87 lease liability and right-of-use asset calculations | https://www.aerosimple.com/solutions/gasb-87 | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| F05 Based Aircraft Management: based-aircraft records and relationships | https://www.aerosimple.com/solutions/based-aircraft-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| F06 Waitlist Management: waitlist applications, timestamping, and applicant notifications | https://www.aerosimple.com/solutions/applications-requests-waitlist | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| F07 Tenant Self-Service Portal: tenant portal exposes leases/invoices, payments, requests, and contact updates | https://www.aerosimple.com/solutions/tenant-portal | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| F08 Hangar Inspections: hangar inspection records linked to tenant/property records | https://www.aerosimple.com/solutions/hangar-inspections | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| F09 GASB 87: GASB 87 lease liability and right-of-use asset calculations | https://www.aerosimple.com/solutions/gasb-87 | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | F10 Revenue Management: aeronautical/non-aeronautical revenue tracking and dashboards | https://www.aerosimple.com/solutions/revenue-management | KPI dashboards | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | G01 Incident Reporting & Tracking: incident intake, reporting, tracking, and follow-up records | https://www.aerosimple.com/solutions/incident-reporting-tracking | Flight performance (incident evidence) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| G02 Mass Notifications: mass alerts notify airport stakeholders | https://www.aerosimple.com/solutions/mass-notifications | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| G03 Emergency Planning: emergency plans and response planning records | https://www.aerosimple.com/solutions/emergency-planning | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| G04 ARFF Operations: ARFF response operations management | https://www.aerosimple.com/solutions/arff-operations | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| G05 Incident History & Records: incident history and records support later review | https://www.aerosimple.com/solutions/incident-history | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| G06 Incident Communication: incident communications capture updates across responders | https://www.aerosimple.com/solutions/incident-communication | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| G07 Emergency Response: emergency response coordination and actions | https://www.aerosimple.com/solutions/emergency-response-protocols | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| G02 Mass Notifications: mass alerts notify airport stakeholders | https://www.aerosimple.com/solutions/mass-notifications | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| G03 Emergency Planning: emergency plans and response planning records | https://www.aerosimple.com/solutions/emergency-planning | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| G04 ARFF Operations: ARFF response operations management | https://www.aerosimple.com/solutions/arff-operations | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| G05 Incident History & Records: incident history and records support later review | https://www.aerosimple.com/solutions/incident-history | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| G06 Incident Communication: incident communications capture updates across responders | https://www.aerosimple.com/solutions/incident-communication | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| G07 Emergency Response: emergency response coordination and actions | https://www.aerosimple.com/solutions/emergency-response-protocols | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | G08 Incident Dashboard: incident status and activity dashboard | https://www.aerosimple.com/solutions/incident-dashboard | KPI dashboards | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| G09 SOPs and Response Protocols: searchable SOP/protocol library with AI natural-language search and source references | https://www.aerosimple.com/solutions/sops-and-response-protocols | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| H01 Badge Management & Access Control: badge issuance/renewal approvals, zone/time access, visitor escorts, and audit reporting | https://www.aerosimple.com/solutions/badge-management-access-control | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| H02 TSA - Aviation Screening Program: TSA aviation screening program tracking | https://www.aerosimple.com/solutions/tsa-aviation-screening-program | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| H03 Vigil - See Something, Say Something: QR/web and AI phone hotline intake classifies, prioritizes, and routes safety/security tips | https://www.aerosimple.com/solutions/see-something-say-something | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| H04 Breath Analyser Management: breath analyser records and testing management | https://www.aerosimple.com/solutions/breath-analyser-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| I01 Training & Courses: course content creation/upload and organization | https://www.aerosimple.com/solutions/training-courses | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| G09 SOPs and Response Protocols: searchable SOP/protocol library with AI natural-language search and source references | https://www.aerosimple.com/solutions/sops-and-response-protocols | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| H01 Badge Management & Access Control: badge issuance/renewal approvals, zone/time access, visitor escorts, and audit reporting | https://www.aerosimple.com/solutions/badge-management-access-control | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| H02 TSA - Aviation Screening Program: TSA aviation screening program tracking | https://www.aerosimple.com/solutions/tsa-aviation-screening-program | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| H03 Vigil - See Something, Say Something: QR/web and AI phone hotline intake classifies, prioritizes, and routes safety/security tips | https://www.aerosimple.com/solutions/see-something-say-something | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| H04 Breath Analyser Management: breath analyser records and testing management | https://www.aerosimple.com/solutions/breath-analyser-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| I01 Training & Courses: course content creation/upload and organization | https://www.aerosimple.com/solutions/training-courses | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | I02 Training Assignment & Tracking: role/department/regulation-based assignment and completion tracking | https://www.aerosimple.com/solutions/training-assignment-tracking | Roles / access (training reminders only) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| I03 LMS Calendar & Scheduling: classroom/simulator/drill scheduling around shifts | https://www.aerosimple.com/solutions/calendar-scheduling | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| I04 Assessments & Quizzes: quizzes, pass thresholds, and automatic retakes | https://www.aerosimple.com/solutions/assessments-quizzes | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| I03 LMS Calendar & Scheduling: classroom/simulator/drill scheduling around shifts | https://www.aerosimple.com/solutions/calendar-scheduling | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| I04 Assessments & Quizzes: quizzes, pass thresholds, and automatic retakes | https://www.aerosimple.com/solutions/assessments-quizzes | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | I05 Training Records & Logs: training completion records and logs | https://www.aerosimple.com/solutions/training-records-logs | Roles / access (training records only) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
-| I06 Learning Dashboard: learning progress, overdue, and deadline dashboard | https://www.aerosimple.com/solutions/learning-dashboard | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
-| J01 Wildlife & Birdstrike Management: wildlife/birdstrike reporting and follow-up | https://www.aerosimple.com/solutions/wildlife-birdstrike-management | none | Aerosimple only | no | Outside the current AeroDesk value case; defer unless customer discovery validates it. |
+| I06 Learning Dashboard: learning progress, overdue, and deadline dashboard | https://www.aerosimple.com/solutions/learning-dashboard | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
+| J01 Wildlife & Birdstrike Management: wildlife/birdstrike reporting and follow-up | https://www.aerosimple.com/solutions/wildlife-birdstrike-management | none | Aerosimple only | no | Outside the current FlyLeaf value case; defer unless customer discovery validates it. |
 | J03 Environmental Inspections & Compliance: environmental inspections, compliance records, and GIS/sensor-linked monitoring | https://www.aerosimple.com/solutions/environmental-inspections-compliance | Alerts / compliance | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | K02 GateView AI: natural-language operational data queries, insights, automated reports, forecasting, and role-based access | https://www.aerosimple.com/solutions/gateview-ai | AI assistant (partial) | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
 | K03 AI-Powered Form & Inspection Builder: AI converts prompts or uploaded documents into forms/checklists and extracts fields for human review | https://www.aerosimple.com/solutions/ai-powered-form-inspection-builder | AI assistant / inspections | Both | later | Related capability is planned, but Aerosimple may provide a broader airport workflow. |
@@ -1155,19 +1155,19 @@ Comparison uses the AeroDesk plan and the public-page evidence in [AEROSIMPLE_FE
 
 ##### Distinct function rows
 
-| Aerosimple function | Evidence URL | AeroDesk comparison |
+| Aerosimple function | Evidence URL | FlyLeaf comparison |
 |---|---|---|
-| A05 Controlled document library, document versioning, and distribution of current revisions | https://www.aerosimple.com/solutions/document-management | AeroDesk stores and extracts supplier contracts; field-level contract extraction differs. |
+| A05 Controlled document library, document versioning, and distribution of current revisions | https://www.aerosimple.com/solutions/document-management | FlyLeaf stores and extracts supplier contracts; field-level contract extraction differs. |
 | A05 AI conversion of uploaded PDFs, SOPs, manuals, and checklists into forms; extracted fields/questions are reviewable | https://www.aerosimple.com/solutions/ai-powered-form-inspection-builder | Related document AI exists, but supplier-contract metadata validation is not stated. |
-| A03 Automated routing of tasks, approvals, and notifications based on rules and triggers | https://www.aerosimple.com/solutions/workflow-automation | Related approvals and alerts are planned in AeroDesk. |
+| A03 Automated routing of tasks, approvals, and notifications based on rules and triggers | https://www.aerosimple.com/solutions/workflow-automation | Related approvals and alerts are planned in FlyLeaf. |
 | F03 Airport lease agreement version control and renewal alerts | https://www.aerosimple.com/solutions/lease-contract-management | Adjacent contract capability; supplier procurement scope is not stated. |
-| F04 Tenant online invoices/payments and finance reconciliation | https://www.aerosimple.com/solutions/online-invoicing-and-payments | AeroDesk checks supplier invoices and creates payment holds; it does not move funds. |
-| H01 Badge issuance/renewal approvals, time/zone permissions, and visitor escort tracking | https://www.aerosimple.com/solutions/badge-management-access-control | No direct AeroDesk capability. |
-| K02 Natural-language operational search, automated reports, trend insights, predictive analytics, configurable alerts, and role-based access | https://www.aerosimple.com/solutions/gateview-ai | AeroDesk offers read-only AI reports; scope and data differ. |
+| F04 Tenant online invoices/payments and finance reconciliation | https://www.aerosimple.com/solutions/online-invoicing-and-payments | FlyLeaf checks supplier invoices and creates payment holds; it does not move funds. |
+| H01 Badge issuance/renewal approvals, time/zone permissions, and visitor escort tracking | https://www.aerosimple.com/solutions/badge-management-access-control | No direct FlyLeaf capability. |
+| K02 Natural-language operational search, automated reports, trend insights, predictive analytics, configurable alerts, and role-based access | https://www.aerosimple.com/solutions/gateview-ai | FlyLeaf offers read-only AI reports; scope and data differ. |
 | K03 Prompt/document-based form generation, field extraction, validation rules, and human review | https://www.aerosimple.com/solutions/ai-powered-form-inspection-builder | Adjacent AI; not supplier contract extraction with source confidence. |
-| K04 Incident-specific SOP generation, response recommendations, stakeholder escalation, approvals, and audit records | https://www.aerosimple.com/solutions/intelligent-incident-response | AeroDesk has incident workflows; no equivalent airport emergency SOP function is specified. |
+| K04 Incident-specific SOP generation, response recommendations, stakeholder escalation, approvals, and audit records | https://www.aerosimple.com/solutions/intelligent-incident-response | FlyLeaf has incident workflows; no equivalent airport emergency SOP function is specified. |
 
-#### AeroDesk functions not found at Aerosimple
+#### FlyLeaf functions not found at Aerosimple
 
 “Not found” means not seen on the pages read, not necessarily absent from the product.
 
@@ -1177,21 +1177,21 @@ Comparison uses the AeroDesk plan and the public-page evidence in [AEROSIMPLE_FE
 - Supplier invoice checks against contract value, line quantity and remaining value, including Romanian e-Factura and revision-inspection validity; Aerosimple describes tenant billing/payments, not these procurement checks.
 - Email lookalike/domain authentication checks and matching email/attachment IBAN wording against supplier contracts; no such email security feature was stated.
 - Dual-person IBAN change verification by calling the phone number in the contract, with separation from payment release.
-- Payment holds and clean payment-list export to finance; AeroDesk itself does not move funds.
+- Payment holds and clean payment-list export to finance; FlyLeaf itself does not move funds.
 - Scheduled AI reports in Word/PDF/Excel with source citations, clear missing-data refusals and read-only actions.
 - Private airport-to-airport finance collaboration with explicit redaction and public tender comparisons; no cross-airport collaboration was stated.
-- Passenger route-demand collection and passenger alerts/feedback as specified in AeroDesk.
+- Passenger route-demand collection and passenger alerts/feedback as specified in FlyLeaf.
 - Romanian language support (Aerosimple Digital Transformation page names English, Spanish, and Portuguese; Romanian was not stated).
 
-#### AeroSimple functions AeroDesk should add
+#### AeroSimple functions FlyLeaf should add
 
-- **Later — airport operations:** AODB, live flight/gate/stand operations, FIDS, disruption handling, turnaround intelligence and resource conflict detection. AeroDesk explicitly stays beside flight systems.
+- **Later — airport operations:** AODB, live flight/gate/stand operations, FIDS, disruption handling, turnaround intelligence and resource conflict detection. FlyLeaf explicitly stays beside flight systems.
 - **Later — airport compliance:** Part 139, GRF, TSA/ICAO workflows, wildlife, FOD, snow/mowing, ARFF and safety management. Validate scope with customers first.
-- **Later — leases and tenants:** tenant portal, hangar/property allocation, based aircraft, waitlists and airport lease billing. Aerosimple describes airport leases/licenses; AeroDesk targets supplier procurement contracts.
+- **Later — leases and tenants:** tenant portal, hangar/property allocation, based aircraft, waitlists and airport lease billing. Aerosimple describes airport leases/licenses; FlyLeaf targets supplier procurement contracts.
 - **Later — training LMS:** role-based courses, classroom scheduling, quizzes, certification records and completion dashboards.
 - **Later — deeper asset management:** GIS, inventory/warehouse issuance, purchase orders, asset condition and lifecycle/depreciation records. QR, work orders and maintenance are already planned.
 - **Later — passenger/incident intake:** QR reports, AI hotline, mass notifications and emergency response.
-- **No for current pitch — badges and biometrics:** badge lifecycle, visitor escorts and physical door/turnstile integration are outside AeroDesk’s opening.
+- **No for current pitch — badges and biometrics:** badge lifecycle, visitor escorts and physical door/turnstile integration are outside FlyLeaf’s opening.
 - **No for current pitch — GASB 87:** US-specific accounting requirements are not in the Romanian plan.
 
 #### Market position claims checked
@@ -1325,7 +1325,7 @@ The video alternates customer interview, airport activity and short software vie
 - QR scanning, detailed work-order lifecycle, report generation/export, AI answers, AI document extraction, OCR provenance/confidence, supplier contract lifecycle, suspicious-email checks, domain/authentication checks, IBAN verification, payment holds, and Romanian support were not shown in the analyzed footage or available transcripts.
 - Website claims and a video title are not proof that a feature was operationally demonstrated. The videos are dated 2022–2025, so observed screens should be treated as historical examples rather than a current-product guarantee.
 
-#### What AeroDesk should learn
+#### What FlyLeaf should learn
 
 ##### Interaction ideas worth matching
 
@@ -1333,22 +1333,22 @@ The video alternates customer interview, airport activity and short software vie
 - Make review status and expiry dates visible in the same list as the document; connect the tenant’s upload/sign step to an explicit staff review/final-approval step. The tutorial also describes an expiry reminder.
 - Airport stories emphasize field context: map/location, photos/annotations, and easy inspection/checklist capture. These are useful interaction patterns to explore, though much of the evidence is testimonial rather than screen-level.
 
-##### Gaps AeroDesk can beat
+##### Gaps FlyLeaf can beat
 
-- The reviewed lease screens show basic human-entered/document-level metadata (type, description, validity, status). They do not show extracted values with page/source, confidence, correction history, or audit trail. AeroDesk can make provenance and human validation explicit.
-- The videos offer no evidence of supplier contract intake, invoice-to-contract matching, suspicious email/domain authentication, IBAN-change controls, payment holds, or payment approval checks. Those remain distinct areas for AeroDesk to differentiate; absence from this video set is not proof they do not exist in the product.
-- Approval is visible as a staff review/final-sign step, but there is no demonstrated configurable approval routing, delegation, segregation of duties, or audit record. AeroDesk can show those rules and their history directly.
+- The reviewed lease screens show basic human-entered/document-level metadata (type, description, validity, status). They do not show extracted values with page/source, confidence, correction history, or audit trail. FlyLeaf can make provenance and human validation explicit.
+- The videos offer no evidence of supplier contract intake, invoice-to-contract matching, suspicious email/domain authentication, IBAN-change controls, payment holds, or payment approval checks. Those remain distinct areas for FlyLeaf to differentiate; absence from this video set is not proof they do not exist in the product.
+- Approval is visible as a staff review/final-sign step, but there is no demonstrated configurable approval routing, delegation, segregation of duties, or audit record. FlyLeaf can show those rules and their history directly.
 - AI extraction/answers and Romanian support are not demonstrated. Do not make competitor-comparison claims that Aerosimple lacks them based solely on this footage; characterize them as unverified in public videos.
 
-##### Impact on AeroDesk positioning
+##### Impact on FlyLeaf positioning
 
-The footage changes one possible assumption: Aerosimple does publicly demonstrate airport tenant lease-document management, including document type/description/validity/status, tenant signing, expiry messaging, and staff review. Rapid City’s transcript additionally claims lease holds, expiry, insurance linkage and hangar contacts. AeroDesk should not claim that the competitor has no lease/contract workflow. The clearer distinction is **airport tenant lease administration versus supplier-contract, document-evidence and payment-risk controls**. Nothing reviewed changes AeroDesk’s planned emphasis on source-linked extraction, suspicious-email security, IBAN/payment checks, approval auditability, or Romanian support; the videos simply do not verify those competitor capabilities.
+The footage changes one possible assumption: Aerosimple does publicly demonstrate airport tenant lease-document management, including document type/description/validity/status, tenant signing, expiry messaging, and staff review. Rapid City’s transcript additionally claims lease holds, expiry, insurance linkage and hangar contacts. FlyLeaf should not claim that the competitor has no lease/contract workflow. The clearer distinction is **airport tenant lease administration versus supplier-contract, document-evidence and payment-risk controls**. Nothing reviewed changes FlyLeaf’s planned emphasis on source-linked extraction, suspicious-email security, IBAN/payment checks, approval auditability, or Romanian support; the videos simply do not verify those competitor capabilities.
 
 ## Appendix E: operations demo specifications
 
-### AeroDesk operations demo: build specification
+### FlyLeaf operations demo: build specification
 
-Build a runnable web prototype of AeroDesk's operations view: people shown as moving dots, as many KPIs and visualizations as can stay readable, and a daily report that includes staff card scans and late starts. It is for a hackathon pitch to an airport director. Product background is in `C:\Users\smarandA\Documents\CraiovaHackathon\AERODESK_PLAN.md`.
+Build a runnable web prototype of FlyLeaf's operations view: people shown as moving dots, as many KPIs and visualizations as can stay readable, and a daily report that includes staff card scans and late starts. It is for a hackathon pitch to an airport director. Product background is in `C:\Users\smarandA\Documents\CraiovaHackathon\FLYLEAF_PLAN.md`.
 
 #### Technical requirements
 

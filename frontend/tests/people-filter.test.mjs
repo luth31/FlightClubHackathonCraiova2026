@@ -11,7 +11,7 @@ function installDOM(window) {
     Object.defineProperty(globalThis, key, { value: key === 'window' ? window : window[key], configurable: true });
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 }
-const initialDOM = new JSDOM('', { url: 'http://aerodesk.test/' });
+const initialDOM = new JSDOM('', { url: 'http://flyleaf.test/' });
 installDOM(initialDOM.window);
 const { createRoot } = await import('react-dom/client');
 const bundle = await build({
@@ -25,7 +25,7 @@ const { PeoplePage } = module.exports;
 initialDOM.window.close();
 
 async function setup(t) {
-  const dom = new JSDOM('<div id="root"></div><button id="outside">Outside</button>', { url: 'http://aerodesk.test/' });
+  const dom = new JSDOM('<div id="root"></div><button id="outside">Outside</button>', { url: 'http://flyleaf.test/' });
   installDOM(dom.window);
   const base = { email: 'demo@example.test', role: 'technician', roles: ['technician'], active: true, availability: 'available', job_title: 'Demo' };
   const previousFetch = globalThis.fetch;

@@ -1,6 +1,6 @@
 # Application navigation contract
 
-This contract applies to new features and changes to the AeroDesk shell. A user opening a supplier contract must be able to return to **Furnizori**, with the same tab, search, filters and page. The same rule applies to every document entry point.
+This contract applies to new features and changes to the FlyLeaf shell. A user opening a supplier contract must be able to return to **Furnizori**, with the same tab, search, filters and page. The same rule applies to every document entry point.
 
 ## Routes and return destinations
 
@@ -26,7 +26,7 @@ Allowed origins are `home`, `documents`, `contracts`, `suppliers`, `approvals`, 
 3. Related documents and assistant sources opened from document detail retain the original section. A document opened after selecting another sidebar section belongs to that new section.
 4. Retain the originating workspace while showing detail. Its wrapper must be `hidden` and `inert`, and use `ViewActiveContext` to dismiss its dialogs. Opening a document must preserve local list state; changing section or user may reset it. The main workspace remains keyed by user identity.
 5. Browser Back/Forward must update the visible route. Listen to both `popstate` and `hashchange`: `pushState` does not emit `hashchange`, whereas ordinary section anchors do. Do not push another history entry when handling either event.
-6. The explicit return controls skip a known document chain back to its list. `history.state.aerodeskNavigation` records the origin, user and chain depth. Use that history only for the matching user and origin. Direct/copied links without that state replace the document route with the origin section; they must not call an unconditional `history.back()` that could leave the application.
+6. The explicit return controls skip a known document chain back to its list. `history.state.flyleafNavigation` records the origin, user and chain depth. Use that history only for the matching user and origin. Direct/copied links without that state replace the document route with the origin section; they must not call an unconditional `history.back()` that could leave the application.
 7. Save list scroll before opening detail and restore it after React reveals the list. Document visits, including Forward, start at the top. Move keyboard focus into detail and back to the retained list trigger, or the main landmark when that trigger is unavailable.
 8. Close mobile navigation, user menus, upload and assistant overlays when routing. Feature dialogs must use the shared `Modal`, which releases keyboard handlers and body scroll locks when their retained view becomes inactive. Modal cleanup must not focus a hidden or removed trigger.
 9. Async completion callbacks must respect their view's lifetime. A dismissed upload may still finish on the server, but its late response must not open a document, replace the current section's history entry or use a previous account's navigation context. Cover dismissal, browser Back and account changes with delayed-response regressions. Starting a new visit through an assistant/upload overlay must also clear any saved trigger from an earlier list visit.

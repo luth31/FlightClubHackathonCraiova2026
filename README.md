@@ -1,4 +1,8 @@
-# AeroDesk
+# FlyLeaf
+
+Built by **Flight Club**. The product name is **FlyLeaf**; the existing logo is retained until its replacement is ready.
+
+For an existing installation, follow [the branding upgrade notes](docs/BRANDING_UPGRADE.md) to preserve database volumes and identity links. The published fixture password below applies to fresh installations; existing identity-provider passwords remain unchanged.
 
 For architecture diagrams, feature explanations, implementation details, the data model and setup instructions, see the [complete project documentation](docs/PROJECT_DOCUMENTATION.md).
 
@@ -27,7 +31,7 @@ A fresh installation seeds the Dunărea corpus and the fixture accounts in both 
 
 Each airport has its own database, document volume, signing keystore, Keycloak instance, realm, users and session cookies. Carpați intentionally starts with an empty local archive; it receives only explicitly shared Dunărea copies and can upload its own local documents. The gateway network contains only gateways. Neither gateway mounts a document, database, identity or signing-key volume. Only the application and identity web entry points bind to loopback; identity uses ports 8180 and 8181.
 
-Docker uses real Keycloak authorization-code login with PKCE, state, nonce and strict token validation. Local application roles and active-account checks remain authoritative. Sign in with a fixture account from the table below and password `AeroDesk2026!`. The local password-switching endpoint is disabled in this mode. Logging out clears the application session and opens Keycloak's sign-out confirmation. See [identity configuration and trust boundaries](docs/OIDC.md).
+Docker uses real Keycloak authorization-code login with PKCE, state, nonce and strict token validation. Local application roles and active-account checks remain authoritative. Sign in with a fixture account from the table below and password `FlyLeaf2026!`. The local password-switching endpoint is disabled in this mode. Logging out clears the application session and opens Keycloak's sign-out confirmation. See [identity configuration and trust boundaries](docs/OIDC.md).
 
 Gateway certificates are generated locally under ignored `.runtime/exchange/`. They use mutual TLS and a demo CA. Independent connector secrets authenticate the local application-to-gateway boundary. Exchange requests are read-only, recipient-scoped, version-specific and checked for revocation, expiry and file integrity at the source. A downloaded copy cannot be recalled.
 
@@ -52,7 +56,7 @@ Local development uses a convenient **demo account selector**; Docker uses the s
 | `hr` / Ioana Stancu | Personnel records and leave decisions |
 | `technician` / Andrei Neagu | Permitted technical records and own uploads |
 
-All fixture passwords are `AeroDesk2026!`. Never deploy these accounts with real airport data. Demo reference date: **30 October 2026**, displayed in the application and used for deadlines/delegations; actual audit timestamps remain actual timestamps.
+All fixture passwords are `FlyLeaf2026!`. Never deploy these accounts with real airport data. Demo reference date: **30 October 2026**, displayed in the application and used for deadlines/delegations; actual audit timestamps remain actual timestamps.
 
 ## Demonstrate the complete flow
 
@@ -61,7 +65,7 @@ In **Documente → Flux achiziții**, follow the document cards and arrows acros
 1. Search `scari` to find **Scări pasageri mobile SP-02**, including matches inside PDF text. Open its invoice, reception and service report from the linked case file.
 2. Upload `data/pdfs/doc-001.pdf`. Compare suggested supplier, value and expiry with the source; correct them, validate and submit.
 3. Sign in as Elena, the manager's authorized delegate. Approve the exact assigned version. Sign in as Ana to explicitly sign it and verify the embedded signature. A changed version requires fresh validation and approval. Coordinators can explicitly reassign eligible tasks with a due date and reason; deactivation leaves outstanding work flagged for reassignment.
-4. Open contracts and their deadlines; ask AeroDesk about the register. Counts come from structured records and answers identify their sources.
+4. Open contracts and their deadlines; ask FlyLeaf about the register. Counts come from structured records and answers identify their sources.
 5. Share an approved procedure or contract. In the redaction studio, select a word/phrase, choose one or all occurrences, or ask Luna for suggestions with optional purpose/context. Review its reasons and legal references, apply the selections, inspect each derivative page and compare against the original. Check the partner airport, choose an optional recipient department and access expiry, and confirm review. Open Carpați's **Partajate → Primite**. Revoke access at Dunărea and verify that Carpați can no longer open it.
 6. Inspect the audit trail, team directory, leave workflow and scoped delegation. Switch to the technician to demonstrate restricted access.
 7. In **Furnizori**, compare a sample request with the verified fictional registry. A changed IBAN remains under review even from a known sender. Record verification through the known contact, then sign in as another authorized employee to approve the change. Bank history is preserved; no money moves.

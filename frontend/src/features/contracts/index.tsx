@@ -68,7 +68,7 @@ export function ContractsPage({
             try {
               await download(
                 "/reports/register.csv?category=Contract",
-                "Registru-contracte-AeroDesk.csv",
+                "Registru-contracte-FlyLeaf.csv",
               );
               notify("Registrul a fost exportat.");
             } catch (e) {
