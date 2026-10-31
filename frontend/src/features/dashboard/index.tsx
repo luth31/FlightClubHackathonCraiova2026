@@ -17,14 +17,12 @@ import { date, time, actionLabel } from "@/utils/format";
 import type { Dashboard, Page } from "@/types";
 export function DashboardPage({
   name,
-  referenceDate,
   onOpen,
   onNavigate,
   onUpload,
   revision,
 }: {
   name: string;
-  referenceDate: string;
   onOpen: (id: string) => void;
   onNavigate: (page: Page, filter?: string) => void;
   onUpload: () => void;
@@ -91,13 +89,6 @@ export function DashboardPage({
             <span className="greeting-dot">.</span>
           </h1>
           <p>O privire de ansamblu. Un început de zi mai clar.</p>
-        </div>
-        <div className="today">
-          <CalendarDays size={16} />
-          <span>
-            {date(referenceDate)}
-            <small>Dată de referință a demonstrației</small>
-          </span>
         </div>
       </div>
       <div className="welcome-strip">

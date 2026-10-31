@@ -631,10 +631,10 @@ export function DocumentDetail({
                           <p>
                             {verification.signer === user.id
                               ? user.name
-                              : verification.signer || "Semnatar demo"}
+                              : verification.signer || "Semnatar neidentificat"}
                           </p>
                           <small>
-                            Certificat demonstrativ, nu semnătură calificată.
+                            Certificat local, fără statut de semnătură calificată.
                           </small>
                         </div>
                       )}
@@ -827,7 +827,7 @@ export function DocumentDetail({
                         </button>
                       )}
                       <small className="quiet-note">
-                        Semnătură criptografică cu certificat de demonstrație.
+                        Semnătură criptografică cu certificat local.
                       </small>
                     </>
                   )}
@@ -895,7 +895,7 @@ export function DocumentDetail({
                   {confirm === "archive"
                     ? "Documentul și istoricul său vor rămâne în registru, în secțiunea Arhivă. Nu se șterge niciun fișier."
                     : confirm === "sign"
-                      ? "Semnătura se aplică exact PDF-ului afișat. Versiunea semnată va fi păstrată fără modificări. Certificatul este demonstrativ."
+                      ? "Semnătura se aplică exact PDF-ului afișat. Versiunea semnată va fi păstrată fără modificări. Certificatul este local, fără statut de semnătură calificată."
                       : confirm === "reject"
                         ? "Lasă un motiv clar pentru colegul care va actualiza documentul."
                         : "Confirmă că ai verificat conținutul și informațiile acestei versiuni."}
