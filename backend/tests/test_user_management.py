@@ -9,7 +9,8 @@ from app.people.models import User
 
 
 def employee(**changes):
-    return {'name': 'Mara Test' + ''.join(chr(97 + int(c, 16)) for c in uuid4().hex),
+    parts = changes.pop('name', 'Mara Test' + uuid4().hex).split()
+    return {'first_name': parts[0], 'middle_name': ' '.join(parts[1:-1]), 'last_name': parts[-1],
             'email': f'm.test-{uuid4().hex}@arm.ro',
             'department_id': 'dept-tehnic', 'job_title': 'Inginer',
             'manager_id': None, 'access_profile': 'employee', **changes}
@@ -20,8 +21,8 @@ def people_state(client, db):
     # Existing suites share one demo database. Restore authority and account state.
     from app.people.models import Department, HeadAppointment
     from app.tasks.models import WorkflowTask
-    users = {u.id: {key: getattr(u, key) for key in (
-        'active', 'roles', 'department', 'department_id', 'manager_id', 'job_title',
+    users = {u.id: {key: getattr(u, key, None) for key in (
+        'active', 'roles', 'name', 'first_name', 'middle_name', 'last_name', 'department', 'department_id', 'manager_id', 'job_title',
         'identity_issuer', 'identity_subject', 'provisioning_status', 'identity_sync_pending')}
         for u in db.scalars(select(User))}
     departments = {d.id: (d.head_user_id, d.revision) for d in db.scalars(select(Department))}
@@ -63,6 +64,46 @@ def test_hr_creates_employee_with_account_and_leave_access(client):
         'ends_at': '2026-12-02', 'reason': 'Concediu de odihnă'}).status_code == 201
 
 
+def test_employee_name_parts_persist_and_profile_edits_preserve_surname(client, db, people_state):
+    login(client, 'hr')
+    response = client.post('/api/people', json=employee(
+        first_name=' Ștefan ', middle_name=' Mihai ', last_name=' De la Cruz '))
+    assert response.status_code == 201, response.text
+    person = response.json()['user']
+    assert person['name'] == 'Ștefan Mihai De la Cruz'
+    assert (person['first_name'], person['middle_name'], person['last_name']) == ('Ștefan', 'Mihai', 'De la Cruz')
+    stored = db.get(User, person['id'])
+    assert stored.last_name == 'De la Cruz'
+    updated = client.patch(f"/api/people/{person['id']}/profile", json={'middle_name': ''})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()['name'] == 'Ștefan De la Cruz'
+    assert updated.json()['last_name'] == 'De la Cruz'
+    assert updated.json()['email'] == person['email']
+    assert updated.json()['roles'] == ['employee']
+    assert client.patch(f"/api/people/{person['id']}/profile", json={
+        'middle_name': 'm' * 75, 'last_name': 'x' * 100}).status_code == 422
+    listed = next(p for p in client.get('/api/people').json()['items'] if p['id'] == person['id'])
+    assert listed['middle_name'] == ''
+    assert listed['last_name'] == 'De la Cruz'
+
+
+@pytest.mark.parametrize('changes', [{'first_name': ''}, {'last_name': ' '}, {'first_name': None}, {'last_name': None}])
+def test_first_and_last_name_are_required(client, changes):
+    login(client, 'hr')
+    assert client.post('/api/people', json=employee(**changes)).status_code == 422
+    assert client.patch('/api/people/technician/profile', json=changes).status_code == 422
+
+
+def test_employee_middle_name_is_optional(client):
+    login(client, 'hr')
+    payload = employee(first_name='Ana', last_name='Popescu')
+    del payload['middle_name']
+    response = client.post('/api/people', json=payload)
+    assert response.status_code == 201, response.text
+    assert response.json()['user']['name'] == 'Ana Popescu'
+    assert response.json()['user']['middle_name'] == ''
+
+
 @pytest.mark.parametrize('role', ['technician', 'manager', 'finance'])
 def test_ordinary_staff_cannot_create_accounts(client, role):
     login(client, role)
@@ -85,7 +126,7 @@ def test_hr_can_adjust_work_email_and_duplicate_addresses_are_reported(client):
     assert response.status_code == 201, response.text
     assert response.json()['user']['email'] == 'stefan.ionescu@arm.ro'
     assert client.post('/api/people', json=employee(email='stefan.ionescu@arm.ro')).status_code == 409
-    replacement = client.post('/api/people', json=employee(name=payload['name'], email='s.ionescu2@arm.ro'))
+    replacement = client.post('/api/people', json={**payload, 'email': 's.ionescu2@arm.ro'})
     assert replacement.status_code == 201, replacement.text
     assert replacement.json()['user']['email'] == 's.ionescu2@arm.ro'
 

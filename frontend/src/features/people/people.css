@@ -20,5 +20,7 @@
 .employee-email-row { display:flex; flex-wrap:wrap; gap:10px; }
 .employee-email-row input { flex:1 1 220px; min-width:0; width:auto; }
 .employee-email-row .button { flex:none; white-space:nowrap; }
+.form-grid.employee-name-fields { grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; }
+@media(max-width:700px){.form-grid.employee-name-fields { grid-template-columns:1fr; }}
 .appointment-panel { margin-bottom:24px; }
 .appointment-panel h2 { font-size:18px; margin-bottom:8px; }

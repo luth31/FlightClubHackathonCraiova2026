@@ -1,5 +1,6 @@
 export interface Person {
   id:string; name:string; email:string; department:string; department_id?:string; role:string;
+  first_name?:string; middle_name?:string; last_name?:string;
   roles:string[]; active:boolean; availability:string; job_title:string; manager_id?:string|null;
   manager_name?:string; is_department_head?:boolean; provisioning_status?:string;
   identity_sync_pending?:boolean; login_username?:string;

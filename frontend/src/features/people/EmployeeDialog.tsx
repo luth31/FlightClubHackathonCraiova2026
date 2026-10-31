@@ -3,12 +3,10 @@ import {api} from '@/services/api-client';
 import {ErrorMessage, Modal} from '@/components/ui';
 import type {Directory, Person, ProvisionResult} from './types';
 
-function workEmail(name:string) {
-  const parts=name.trim().split(/\s+/);
-  if(parts.length<2)return '';
+function workEmail(firstName:string,lastName:string) {
   const normalize=(part:string)=>part.normalize('NFKD').replace(/\P{ASCII}/gu,'').toLowerCase();
-  const first=normalize(parts[0]);
-  const last=normalize(parts.at(-1)!).replace(/['’]/g,'');
+  const first=normalize(firstName.trim());
+  const last=normalize(lastName.trim()).replace(/['’]/g,'').replace(/\s+/g,'-');
   if(!/^[a-z]/.test(first)||! /^[a-z]+(?:-[a-z]+)*$/.test(last)||last.length+2>64)return '';
   return `${first[0]}.${last}@arm.ro`;
 }
@@ -17,7 +15,10 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
   directory:Directory;person?:Person;onClose:()=>void;onChanged:(message:string)=>void;
 }) {
   const departments=directory.department_records||[];
-  const [name,setName]=useState(person?.name||'');
+  const legacyParts=person?.name.trim().split(/\s+/)||[];
+  const [firstName,setFirstName]=useState(person?.first_name??legacyParts[0]??'');
+  const [middleName,setMiddleName]=useState(person?.middle_name??legacyParts.slice(1,-1).join(' '));
+  const [lastName,setLastName]=useState(person?.last_name??(legacyParts.length>1?legacyParts.at(-1)!:''));
   const [email,setEmail]=useState(person?.email||'');
   const [departmentId,setDepartmentId]=useState(person?.department_id||departments[0]?.id||'');
   const [jobTitle,setJobTitle]=useState(person?.job_title||'');
@@ -80,7 +81,7 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
     ...(departmentId===person?.department_id&&person.job_title?[person.job_title]:[]),
   ])];
   const coordinators=directory.items.filter(p=>p.active&&p.id!==person?.id&&p.department_id===departmentId);
-  const suggestedEmail=workEmail(name);
+  const suggestedEmail=workEmail(firstName,lastName);
   const failed=result?.user.provisioning_status==='failed';
   return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} subtitle="Datele angajatului și accesul său la AeroDesk." onClose={onClose}>
     <div className="modal-body">
@@ -96,7 +97,11 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
         {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button className="button primary" onClick={onClose}>{result.temporary_password?'Am preluat datele':'Închide'}</button></div>
       </div>:<>
         <form onSubmit={save}>
-          <label className="field">Nume complet<input name="name" value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={150} required/></label>
+          <div className="form-grid employee-name-fields">
+            <label className="field">Prenume<input name="first_name" value={firstName} onChange={e=>setFirstName(e.target.value)} minLength={1} maxLength={75} autoComplete="given-name" required/></label>
+            <label className="field">Al doilea prenume (opțional)<input name="middle_name" value={middleName} onChange={e=>setMiddleName(e.target.value)} maxLength={75} autoComplete="additional-name"/></label>
+            <label className="field">Nume de familie<input name="last_name" value={lastName} onChange={e=>setLastName(e.target.value)} minLength={1} maxLength={100} autoComplete="family-name" required/></label>
+          </div>
           {!person&&<div className="field"><label htmlFor="employee-email">Email de serviciu</label>
             <div className="employee-email-row"><input id="employee-email" name="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={254} required placeholder="Inițială prenume.nume@arm.ro" aria-describedby="employee-email-help"/>
               <button type="button" className="button secondary" disabled={busy||!suggestedEmail} onClick={()=>setEmail(suggestedEmail)}>Generează emailul</button></div>

@@ -11,6 +11,7 @@ from app.core.models import AuditEvent
 from app.core.security import hash_password
 from app.suppliers.service import seed_suppliers
 from app.tasks.service import seed_tasks
+from app.people.names import split_name
 
 USERS=[
  ('admin','Ana Ionescu','Conducere','Director aeroport',['admin','director','reviewer','signer'],'AI',None),
@@ -31,7 +32,7 @@ def seed():
     with SessionLocal() as db:
         for uid,name,department,role,roles,avatar,manager in USERS:
             if not db.get(User,uid):
-                db.add(User(id=uid,name=name,email=f'{uid}@{settings.airport_id}.example',department=department,role=role,roles=roles,airport_id=settings.airport_id,active=True,password_hash=hash_password('AeroDesk2026!'),avatar=avatar,manager_id=manager,job_title=role))
+                db.add(User(id=uid,name=name,**split_name(name),email=f'{uid}@{settings.airport_id}.example',department=department,role=role,roles=roles,airport_id=settings.airport_id,active=True,password_hash=hash_password('AeroDesk2026!'),avatar=avatar,manager_id=manager,job_title=role))
         db.flush()
         from app.people.management import seed_departments
         seed_departments(db)

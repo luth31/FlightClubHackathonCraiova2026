@@ -72,7 +72,10 @@ def provision(person):
     base, headers = connection()
     existing = owned_user(base, headers, person)
     if not existing:
-        first, _, last = person.name.partition(' ')
+        from app.people.names import person_names
+        names = person_names(person)
+        first = ' '.join(part for part in (names['first_name'], names['middle_name']) if part)
+        last = names['last_name']
         response = request('POST', base, headers=headers, json={'username': username(person),
             'firstName': first, 'lastName': last, 'email': person.email, 'enabled': True,
             'emailVerified': False, 'requiredActions': ['UPDATE_PASSWORD'],

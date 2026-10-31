@@ -10,6 +10,7 @@ from app.core.audit import now, record
 from app.core.exceptions import DomainError
 from app.core.security import has_role, require_role, user_dict, hash_password
 from app.people.models import User, Department, HeadAppointment, Session, Delegation
+from app.people.names import person_names, display_name
 from app.identity import provisioning
 
 DEPARTMENTS = [('dept-conducere', 'Conducere', 'admin'), ('dept-achizitii', 'Achiziții', 'manager'),
@@ -78,6 +79,7 @@ def is_head(db, person, department_name=None):
 
 def employee_dict(db, person):
     data = user_dict(person)
+    data.update(person_names(person))
     data.update({'department_id': person.department_id, 'job_title': person.job_title,
         'manager_id': person.manager_id, 'is_department_head': is_head(db, person),
         'provisioning_status': person.provisioning_status, 'identity_sync_pending': person.identity_sync_pending,
@@ -111,6 +113,7 @@ def create_employee(db, actor, body):
         raise DomainError('Există deja un angajat cu această adresă de email.', 409)
     uid = 'emp-' + uuid4().hex
     person = User(id=uid, name=body.name, email=email, department=dept.name, department_id=dept.id,
+        first_name=body.first_name, middle_name=body.middle_name, last_name=body.last_name,
         job_title=body.job_title, role=body.job_title, roles=['employee'] + (['technician'] if body.access_profile == 'technician' else []),
         airport_id=actor.airport_id, manager_id=manager, active=False,
         password_hash=hash_password(secrets.token_urlsafe(32)), avatar='', provisioning_status='pending')
@@ -202,7 +205,14 @@ def update_profile(db, actor, uid, body):
                 record(db, actor, 'employee_coordinator_cleared', detail=f'{report.id}; coordonator transferat: {uid}')
         person.department_id, person.department = dept.id, dept.name
     if 'manager_id' in changes: person.manager_id = validate_manager(db, changes['manager_id'], person.department_id, uid)
-    if changes.get('name') is not None: person.name = changes['name']
+    name_fields = {'first_name', 'middle_name', 'last_name'}
+    if name_fields & changes.keys():
+        names = {**person_names(person), **{key: value for key, value in changes.items() if key in name_fields}}
+        full_name = display_name(**names)
+        if len(full_name) > 150:
+            raise DomainError('Numele complet poate avea cel mult 150 de caractere.', 422)
+        for key, value in names.items(): setattr(person, key, value)
+        person.name = full_name
     if changes.get('job_title') is not None: person.job_title = person.role = changes['job_title']
     record(db, actor, 'employee_updated', detail=f'{person.id}; câmpuri: {", ".join(changes)}')
     db.commit()

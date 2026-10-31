@@ -44,6 +44,16 @@ def test_provisioning_has_owned_stable_identity_and_temporary_password(provider)
     assert not any(method=='POST' and url.endswith('/users') for method,url,_ in calls)
 
 
+def test_provisioning_preserves_given_names_and_compound_surname(provider):
+    person, calls, _ = provider
+    person.name = 'Ana Maria De la Cruz'
+    person.first_name, person.middle_name, person.last_name = 'Ana', 'Maria', 'De la Cruz'
+    provisioning.provision(person)
+    payload = next(kwargs['json'] for method, url, kwargs in calls if method == 'POST' and url.endswith('/users'))
+    assert payload['firstName'] == 'Ana Maria'
+    assert payload['lastName'] == 'De la Cruz'
+
+
 def test_collision_never_links_unowned_provider_account(provider):
     person,calls,users=provider
     users.append({'id':'stranger','username':provisioning.username(person),'attributes':{}})

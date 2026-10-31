@@ -6,6 +6,9 @@ class User(Base):
     __tablename__ = 'users'
     id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String)
+    first_name: Mapped[str] = mapped_column(String, default='')
+    middle_name: Mapped[str] = mapped_column(String, default='')
+    last_name: Mapped[str] = mapped_column(String, default='')
     email: Mapped[str] = mapped_column(String)
     department: Mapped[str] = mapped_column(String)
     role: Mapped[str] = mapped_column(String)
