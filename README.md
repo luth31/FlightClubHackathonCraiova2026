@@ -37,6 +37,16 @@ Gateway certificates are generated locally under ignored `.runtime/exchange/`. T
 
 ## Develop locally
 
+For live UI and backend updates inside the two-airport Docker environment, use the development override from the repository root:
+
+```sh
+docker compose -f compose.yaml -f compose.dev.yaml up -d --build
+```
+
+The first run builds a Vite development image. Afterwards, edits to `frontend/src`, `frontend/public`, the frontend configuration and `backend/app` are mounted directly into both airports: Vite updates the browser and Uvicorn reloads Python changes. The URLs stay at ports 8080 and 8081, with the same Keycloak instances and persistent data volumes. Vite uses polling for reliable Docker Desktop file detection on Windows; backend reload uses Uvicorn's built-in polling.
+
+Repeat that command after dependency or Dockerfile changes. After adding or editing database migrations, restart both APIs with `docker compose -f compose.yaml -f compose.dev.yaml restart dunarea-api carpati-api`. Use the same two `-f` arguments for subsequent development Compose commands. Return to the static demonstration images with `docker compose -f compose.yaml up -d --build`; `scripts/start-demo.sh` also starts that static mode.
+
 Requirements: Node 24 (matching Docker; `.nvmrc` is included), Python 3.12 and optionally `uv`.
 
 ```sh
@@ -55,8 +65,11 @@ Local development uses a convenient **demo account selector**; Docker uses the s
 | `finance` / Radu Marinescu | Finance reviewer |
 | `hr` / Ioana Stancu | Personnel records and leave decisions |
 | `technician` / Andrei Neagu | Permitted technical records and own uploads |
+| `technical-head` / Sorin Pavel | Technical and operations head; department approvals, without automatic signing authority |
 
 All fixture passwords are `FlyLeaf2026!`. Never deploy these accounts with real airport data. Demo reference date: **30 October 2026**, displayed in the application and used for deadlines/delegations; actual audit timestamps remain actual timestamps.
+
+Four departments report to the director, with role-specific menus and record permissions. See [organization, access matrix and existing-realm upgrade](docs/DEMO_ACCESS.md). Existing realms receive the missing technical-head account through the launcher, with an initial temporary password displayed once.
 
 ## Demonstrate the complete flow
 
@@ -95,7 +108,7 @@ Python direct dependencies live in `backend/requirements.txt`; the cross-platfor
 
 Feature changes must follow the [navigation contract](docs/NAVIGATION.md): document visits retain their originating section and list state, and new entry points require interaction regression coverage.
 
-The frontend is browser-tested through Chrome DevTools MCP. Fonts are bundled locally. All displayed document totals respect the active user's permissions; the director sees fewer than 148 records because sensitive HR records remain restricted.
+The current access model is browser-tested with isolated headless Playwright sessions on both airports, including a 390 px mobile viewport. Fonts are bundled locally. All displayed document totals respect the active user's permissions; the director sees fewer than 148 records because sensitive HR records remain restricted.
 
 ## Repository map
 

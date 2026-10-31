@@ -6,6 +6,55 @@ Recorded **31 October 2026** against the local demonstration. This is evidence f
 
 ## Quality gate
 
+### Four-department access model — 31 October 2026
+
+The current demo uses director → department head → employee reporting across four departments. See [the access model](DEMO_ACCESS.md) for account scopes and existing-realm upgrades.
+
+| Check | Result |
+|---|---|
+| Full backend suite | 223 passed; two dependency deprecation warnings |
+| Full frontend suite | 62 passed |
+| Production frontend build and ESLint | Passed |
+| Headless Playwright, technician on ports 8080 and 8081 | Real Keycloak login; exactly four menu items; personal tasks load; forbidden sections render the permitted library without forbidden requests; section APIs return 403; HR records and current/historical files return 404 |
+| Headless Playwright, directory and session | Four departments; technician reports to the technical head; colleague roles/provisioning fields are absent from the basic directory; OIDC session returns only the signed-in account |
+| Headless Playwright, director and procurement | Four department cards below the director; no blanket HR file access; supplier catalog/details omit banking fields, history and controls; banking API returns 403 |
+| Headless Playwright, 390 px viewport | Mobile menu and loaded task page work on both airports; no horizontal page overflow |
+| Browser runtime | No page errors in these scenarios; screenshots inspected |
+
+The two application stacks were rebuilt and refreshed with existing database and identity volumes. The missing technical-head account was created once in each existing realm; subsequent synchronization reported `existing` without resetting credentials. Password-change handoff for these new accounts remains an interactive first-login step. Historical/custom area heads, completed delegation boundaries and provisioning retries are covered by API regressions; these browser scenarios do not cover every workflow.
+
+### Dedicated organigram follow-up — 31 October 2026
+
+The hierarchy now has a dedicated **Echipă → Organigramă** tab, with active support staff outside the four functional departments and their actual coordinators. Viewing uses the existing authenticated directory access; editing and private data remain under existing management permissions.
+
+The 62 frontend tests passed using a 256 MB Node heap and one test worker; TypeScript, ESLint and the production build passed. Independent review found no material issues. Headless Playwright tested the production bundle with a mocked API as technician and admin: four departments, every active fixture user, no duplicate support staff, no chart actions/private fields, preserved colleague search, no horizontal overflow at 390 px, and no page errors. Desktop/mobile screenshots were inspected.
+
+The container refresh and live two-airport follow-up have not run: the current sandbox denies the Docker engine pipe, and the automatic escalation review service returned 404. The earlier live-airport evidence above applies to the prior deployed chart, not this new tab. The new source and production build are ready for deployment once Docker access is restored.
+
+A subsequent authenticated read of the live Dunărea directory confirmed eight active users. Daniel Ilie Voicu is an active Asistent conducere, outside the four functional departments, reporting to Ana Ionescu. Headless Playwright rendered the production build using that live directory snapshot: all eight users appeared once, including Daniel with his correct coordinator, and the 390 px viewport had no horizontal page overflow or page errors. The named-user regression passed. The selected react-organizational-chart installation was not executed because automatic approval review failed with 404; integration of that library is still pending, and these results verify the existing renderer only.
+
+### Connected library renderer — 31 October 2026
+
+The user installed react-organizational-chart 2.2.1; its Tree/TreeNode components now render the dedicated organigram. The model exposes basic organizational fields, preserves every active user exactly once, places support users under actual coordinators and retains known department placement when a coordinator is unavailable. Missing leadership and reporting cycles no longer cause missing users or recursive rendering.
+
+Fresh validation: **65 frontend tests passed**, TypeScript, production build, ESLint and whitespace checks passed. Independent review found an unavailable-coordinator placement issue; it was reproduced by a failing regression and fixed. Headless Playwright rendered the production build using a fresh authenticated live-directory snapshot: **8/8 active users**, four departments, Daniel directly below Ana Ionescu, the whole tree fitting at 1440 px, working keyboard/mobile panel scrolling at 390 px, no horizontal page overflow and no page errors. Screenshots were inspected.
+
+The running Docker apps have not been refreshed: the current sandbox denies the Docker engine pipe. Rebuild/recreate the two web services to use this bundle: `docker compose up -d --build --no-deps dunarea-web carpati-web`. These new browser results validate the actual installed library and production build with live directory data, while deployment verification remains pending.
+
+### Department-head proposal eligibility — 31 October 2026
+
+The directory and PeoplePage incorrectly offered a head proposal to Daniel in Conducere with `department_id=null`. AuthorityDialog then posted null to the required string field, producing Pydantic's `string_type` validation response and a generic form error. The directory now requires a current functional department for eligibility, PeoplePage checks membership even with stale capability data, and the dialog independently blocks null/retired department IDs with an assignment prerequisite. Valid proposals send the matched department ID. Existing signing-authority and independent director approval behavior is preserved.
+
+The issue was reproduced by one failing backend and three failing UI checks. Fresh validation passed: **50 affected backend tests**, **69 frontend tests**, TypeScript, production build and ESLint. Independent review found no material issues. Headless Playwright used the production build and a live-directory snapshot with a mocked proposal endpoint: Daniel has an actionable prerequisite and no invalid proposal button; an eligible candidate submits `dept-tehnic` as a string; mobile has no horizontal overflow or page errors. No live appointment or user record was changed during browser verification.
+
+The current sandbox still prevents Docker refresh. To apply both the API eligibility and UI correction, rebuild/recreate `dunarea-api`, `carpati-api`, `dunarea-web`, and `carpati-web`.
+
+### Commit preparation — 1 November 2026
+
+The complete pending tree passed **224 backend tests** and **69 frontend tests**, TypeScript, the production frontend build, ESLint and whitespace checks. The backend run included OCR and database migration checks. Pytest's default temporary-directory setup was denied by the current sandbox; rerunning with a fresh `--basetemp` directory inside the workspace passed with two dependency deprecation warnings. These checks validate the source tree; the Docker deployment limitations above still apply. Deputy/acting-director appointments and authority remain outside the implemented department-head workflow.
+
+### Original release
+
 | Check | Result |
 |---|---|
 | Backend regression suite | **84 passed**; temporary databases and file storage |
