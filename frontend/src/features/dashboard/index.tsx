@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { api } from "@/services/api-client";
 import { Loading, ErrorMessage, SectionHead, Empty } from "@/components/ui";
+import { OperationsPulse } from "@/features/operations/OperationsPulse";
 import { DocumentTable } from "@/features/documents";
 import { date, time, actionLabel } from "@/utils/format";
 import type { Dashboard, Page } from "@/types";
@@ -125,6 +126,7 @@ export function DashboardPage({
           </button>
         ))}
       </div>
+      <OperationsPulse onOpen={() => onNavigate("operations")} />
       <div className="dashboard-main">
         <div className="dashboard-primary">
           <div className="panel attention-panel">

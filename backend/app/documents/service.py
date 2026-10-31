@@ -90,6 +90,18 @@ def serialize(document, db=None, details=False, user=None):
             if active_task and details: data['workflow']['task']=task_service.serialize(db,active_task,user,document)
         data['permissions'].setdefault('can_validate',can_edit(user,document))
         data['permissions']['can_submit']=can_edit(user,document) and document.validated
+    from app.people.leave_documents import is_leave_document
+    if is_leave_document(document):
+        state = document.extra['metadata']['request_status']
+        data['managed_workflow'] = {'type':'leave', 'label':'Cerere de concediu', 'url':'#people?tab=leave',
+                                    'status':state, 'message':'Decizia se înregistrează în Echipă → Concedii.'}
+        if user:
+            data['permissions'] = {key:False for key in ('can_edit','can_review','can_sign','can_share','can_validate','can_submit')}
+        if details:
+            data['workflow'] = {'steps':[{'label':'Cerere înregistrată','status':'done'},
+                {'label':'Decizie independentă','status':'current' if state=='pending' else 'done'},
+                {'label':'Aprobată' if state=='approved' else 'Respinsă' if state=='rejected' else 'Document de decizie',
+                 'status':'pending' if state=='pending' else 'done'}], 'current_step':state}
     data=without_private_text(data)
     if user and has_role(user,'technician'):
         data=sanitize_for_technician(data)

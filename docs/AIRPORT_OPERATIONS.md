@@ -1,42 +1,47 @@
 # Airport operations in FlyLeaf
 
-Open **Operațiuni la sol** from the sidebar. Craiova and Sibiu each have their own airport geometry, simulation state and event history. Documents, accounts and existing development commands keep working as before.
+The operations workspace connects an interactive demonstration, a grouped airport ledger and reviewable SOP improvements. It is available for Craiova and Sibiu, with separate tenant state. Existing native, Docker and Tailscale deployment commands remain separate; see [Tailscale setup](TAILSCALE.md).
 
-## Start and demonstrate
+## The presentation story
 
-- Native development: `./scripts/dev.sh`, API 8000 and Vite 5173, demo account selector, Google mode when configured or the bundled airport model.
-- Local Docker: `./scripts/start-demo.sh`, Craiova 8080 and Sibiu 8081, Keycloak 8180/8181, the same map modes as presentation.
-- Presentation: `./scripts/start-tailscale.sh`, a separate `flyleaf-presentation` Compose project, 18080/18081 upstreams, separate state and identities. Only this launcher reads `.env.tailscale`. See [Tailscale setup](TAILSCALE.md).
+Start a new **interactive** run. The clock starts paused at 08:00 and 1×, so scanning cards does not unexpectedly fast-forward the presentation. Cards, gate openings and closures are recorded by the presenter, never invented by the scenario. The clock can be paused, stepped or advanced to an exact stage; it is shared across signed-in browser/mobile clients.
 
-Set `GOOGLE_MAPS_API_KEY` in the ignored root `.env` to enable Google in native development, both local Docker airports and the presentation deployment. A key in `.env.tailscale` overrides the shared value only for presentation; omit that line to inherit the root key. With a key the app selects **Fotorealist**; **Model 3D** remains available without it. Restrict browser keys to Map Tiles API and the intended localhost/Tailscale web origins. Deployment-specific hostnames, cookies and login routing remain separate.
+1. Scan a worker's NFC card, or select its demo card. The attendance event records the person's identity, expected arrival and actual scenario time, plus the real recording time.
+2. G1 is assigned to Mara Stoica, with an 08:04 opening and an 08:20 departure from the stand. With no check-in or gate opening, the aircraft remains at the stand and an operational risk appears.
+3. Advance to 08:22, scan Alexandru Marin's reserve card, then explicitly open G1 as the substitute. The ledger records who was assigned and who actually opened it.
+4. The model requires 16 minutes of boarding with an open gate. FL101 leaves the stand at 08:38: 18 minutes late. Only now does this flight affect measured punctuality and accumulated actual delay. Three modeled taxi minutes lead to a distinct take-off event.
+5. Open the flight's ledger tree to connect scheduling, assignment, missing attendance, substitute arrival, late opening and departure. Use attention filtering to find exceptions without scrolling a flat event table.
+6. Inspect the reserve-staff SOP proposal. It references affected rotations and shows a clearly labeled counterfactual. Generate a real procedure draft, then use document review and controlled sharing to continue the story across airports.
+7. Reset and check in/open G1 on time. That intervention prevents the delay. Closing the gate during unfinished boarding pauses progress, so the simulation responds to later decisions too.
 
-For a compact demonstration:
+Opening G2 on time produces a completed punctual flight first; a later delayed FL101 then visibly lowers the actual punctuality percentage. A blocked flight affects risk/projection indicators without masquerading as a completed departure.
 
-1. Start **Simulare** at 30×, or use **Următorul eveniment** to pause at each change. The scenario begins at 08:00.
-2. Open **Pontaj NFC** to simulate a worker checking in or out. The card controls are demonstrative, without a physical reader integration.
-3. Watch FL303 turn yellow with a seven-minute delay. FL404 declares and clears a simulated emergency. FL101 becomes red with an 18-minute delay caused by late gate opening.
-4. Select FL101, focus the aircraft, then choose **Vezi firul evenimentelor**. The filtered history includes the missing assigned worker, substitute's card scan, substitution and gate opening. It is backed by persisted events; recording times and scenario times remain distinct.
-5. Reset the scenario, check in an operator and open G1 before its planned time. The model recalculates departure from the first opening plus preparation time; this can prevent the delay. Subsequent closing/reopening is logged but does not model interrupted boarding.
-6. Choose **Trafic ADS-B** to see live positions around the airport. This is a separate source: it does not populate synthetic attendance, gate events or invented flight delays. Empty and unavailable responses have explicit states.
+The prerecorded replay remains an explicit alternative. Reset preserves prior run history, available from the run archive and paginated event endpoint. Card labels `DEMO-NFC-101` through `DEMO-NFC-104` are demonstration identities; they do not grant physical access. An NFC Tools link opens an authenticated card-confirmation screen; the user must confirm before attendance is recorded. iPhone browser Web NFC is not assumed.
 
-The punctuality percentage uses completed simulated departures only; before the first departure it displays no result. Projected and actual delay values are distinguished in each flight's details. Default colors are neutral under one minute, yellow from one to below 15 minutes, and red from 15 minutes or a declared emergency.
+## Ledger and metrics
 
-## Interaction and rendering
+Seven seeded historical days contain 56 departures and 28 operational activity groups; upcoming plans cover the next three days. The fixture has over 800 granular entries: schedules created three days earlier, gate/team allocations, briefing, card arrival, ground handling, boarding, load sheets, off-block and take-off. Airport groups cover runway/FOD inspection, shifts, maintenance and SOP review. The names, routes and timings are synthetic; the sequence follows plausible operational relationships.
 
-Drag to orbit, use the mouse wheel or zoom buttons, and choose the overview/focus controls. Aircraft and their labels are selectable. Full screen expands the scene. Neutral aircraft keep their normal livery; yellow/red aircraft use a clear alert livery and matching labels.
+Each day's tree opens into flights or activity groups and then the individual events. Expected and actual times sit together. Yellow means at least one complete minute of lateness; red means 15 minutes or an emergency. The worst child color reaches its group and day, while the global KPI cards retain their own calculated meaning.
 
-The local model uses real OSM runway, taxiway, apron and building footprints, with illustrative heights, materials, trees and aircraft. Google mode streams Google's 3D tiles and includes its logo and visible-tile provider attribution. These datasets have different dates: imagery may show an older apron, parked vehicles or buildings. A distant view initially uses coarse detail; focused views load finer geometry where the provider has coverage. The independently sourced simulation routes are not traced from Google imagery.
+Actual punctuality and delay minutes use completed departing flights only. Open risks and projected delay are separate. Filters expose both period and filtered metrics. Current manual actions join the same ledger immediately, and real departure outcomes update its aggregate values. Deterministic IDs persist seeded history across reloads. Reset starts a new comparison but keeps old run events queryable.
 
-Google tiles remain in the current browser session while navigating to other sections. Hidden views stop rendering and polling. There is no persistent/offline Google tile archive or background prefetch; newly requested data follows provider restrictions. OSM assets are bundled and usable without the map service. Switching map modes releases the old renderer and its GPU resources.
+Document changes and personnel/leave details remain in their existing permission-filtered audit flows; the operational ledger does not leak confidential HR records. ADS-B positions are a separate feed and cannot supply gates, staffing or airline punctuality.
 
-Live ADS-B requests are shared and cached for 30 seconds per airport, with bounded payloads, timeouts and failure backoff. Stale snapshots and individual position ages are identified. Aircraft without a reported altitude stay in the list but are not placed on the ground by assumption. For visualization, reported altitude is offset by airport elevation; pressure and ellipsoid altitude are not surveyed height above terrain. This is a demonstration, not an air traffic control instrument.
+## SOP direction
+
+The first two proposals address reserve staffing and equipment checks. Each includes the observed problem, reference rule, proposed rule, explicit changes, affected flights and assumptions. The impact is an estimate under those assumptions, not a promise or measured improvement. It is intentionally understandable arithmetic rather than an opaque optimizer.
+
+Creating a proposal generates a PDF in the normal document registry, at draft status, with validation/review tasks. It never activates a procedure automatically. Independent review, approval and reviewed sharing to an opted-in partner airport remain the next steps. Identical requests reuse the same evidence snapshot; changed evidence generates a new proposal.
+
+A future planning engine can add resource constraints, qualifications, shift/leave availability and alternative schedules to this same evidence/procedure loop. The current implementation does not claim to optimize ATC slots or dispatch aircraft.
+
+## Geography and live traffic
+
+The model uses independently sourced OSM airport geometry; Google mode streams 3D imagery with provider attribution. Imagery and source geometry can have different dates. The live ADS-B mode displays actual reported positions around the airport, with freshness and source information, and does not invent schedules or delays. Missing altitude is explicit. The representation is not an air traffic control instrument.
+
+Google Maps can be enabled through the ignored root `.env` in native development, default Docker and the separate presentation deployment. An optional `.env.tailscale` overrides presentation values only. See [sources and licensing](AIRPORT_3D_SOURCES.md) and the [API contract](OPERATIONS_API.md).
 
 ## Verification
 
-Validated with Chrome DevTools: Craiova and Sibiu local geometry and Google coverage; camera focus and ground contact; live aircraft from ADSB.lol; red/yellow/neutral states; manual NFC and emergency events; flight-to-staff history filtering; and preserved map instance with paused background rendering on sidebar navigation.
-
-Verification run: **273 backend tests and 76 frontend tests passed**; frontend lint and production builds passed. The final browser run also confirmed speed changes during playback without stale-clock conflicts, and verified deployment isolation. The map-key configuration was subsequently corrected to support the shared root key in both environments.
-
-Automated coverage includes persisted replay, restart and reset history, optimistic concurrency, tenant isolation, authorization, gate intervention, delay boundaries, provider parsing/cache/failure handling, map-config authentication, local scenario time, altitude conversion, NFC request IDs and linked-staff event filtering.
-
-See [API contract](OPERATIONS_API.md), [research and source licenses](AIRPORT_3D_SOURCES.md) and [geometry reconstruction](../data/airports/README.md).
+Focused tests cover default interactive behavior, NFC request idempotency, missing prerequisites, the 18-minute causal chain and successful early intervention, interrupted boarding, off-block/takeoff ordering, server-clock concurrency, ledger seeding/filtering/KPI arithmetic, actual SOP PDF generation, evidence snapshots and access controls. Whole-application and browser verification are recorded in the change's completion report; older verification counts are not claims about this implementation.

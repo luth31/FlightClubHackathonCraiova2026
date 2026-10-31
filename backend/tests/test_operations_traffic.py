@@ -105,3 +105,18 @@ def test_surface_beacons_and_vehicles_are_not_rendered_as_aircraft():
         {**base, 'hex': 'unknown', 'category': 'C0'},
     ]}
     assert [item['hex'] for item in normalize_aircraft(data, airport)] == ['parked', 'unknown']
+
+
+def test_reported_position_has_geographic_distance_bearing_and_no_invented_altitude():
+    airport = AIRPORTS['craiova']
+    result = traffic.normalize_aircraft({'ac': [
+        aircraft(lat=airport['lat'], lon=airport['lon']+.1, alt_baro=None),
+        aircraft(hex='abc002', lat=airport['lat']+.1, lon=airport['lon'], alt_baro='ground', gs=12),
+    ]}, airport)
+    assert 4 < result[0]['distance_nm'] < 5
+    assert 89 < result[0]['bearing_degrees'] < 91
+    assert result[0]['position']['altitude_m'] is None
+    assert result[0]['altitude_reference'] == 'unknown'
+    assert 5.9 < result[1]['distance_nm'] < 6.1
+    assert result[1]['bearing_degrees'] == 0
+    assert result[1]['phase'] == 'taxiing'

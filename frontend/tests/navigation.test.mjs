@@ -32,6 +32,10 @@ function installDOM(window) {
 
 const user={id:'admin',name:'Ana Demo',role:'director',roles:['director','finance'],department:'Conducere'};
 const technician={id:'tech',name:'Teo Demo',role:'technician',roles:['technician'],department:'Tehnic'};
+const operationsRecord={airport:{id:'craiova',name:'Demo airport',icao:'LRCV',lat:44.318,lon:23.889,elevation_m:191},
+  simulation:{run_id:'test-run',revision:1,running:false,speed:1,elapsed_seconds:0,duration_seconds:3600,
+    clock_time:'2026-10-30T08:00:00',scenario_mode:'interactive'},flights:[],gates:[],staff:[],events:[],kpis:{},
+  thresholds:{minor_delay_minutes:1,major_delay_minutes:15},permissions:{can_control:true}};
 const documentRecord={id:'doc-contract',title:'Contract Demo Navigation',number:'DEMO-1',category:'Contract',
   department:'Achiziții',status:'approved',created_at:'2026-10-01',expires_at:'2027-01-01',supplier:'Demo SRL',
   value:1000,currency:'RON',owner:user.name,confidentiality:'internal',tags:[],summary:'Demo contract',
@@ -69,6 +73,8 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/documents'&&options.method==='POST')return uploadResponse?await uploadResponse():Response.json(documentRecord);
     else if(path==='/api/documents')body={items:[documentRecord],total:1,categories:['Contract']};
     else if(path==='/api/contracts')body={items:[documentRecord]};
+    else if(path==='/api/operations')body=operationsRecord;
+    else if(path==='/api/operations/map-config')body={google_api_key:null,photorealistic_available:false,default_mode:'model'};
     else if(path==='/api/dashboard')body={stats:{documents:1,pending:0,expiring:0,approved:1},recent_documents:[documentRecord],attention:[],activity:[],departments:[]};
     else if(path==='/api/tasks')body={items:[{id:'task-demo',document_id:documentRecord.id,title:documentRecord.title,department:'Achiziții',
       assignee:user.name,status:'pending',priority:'normal',due_date:'2026-11-01',type:'approval',can_act:false}]};
@@ -101,6 +107,17 @@ async function setInput(input,value){assert.ok(input);await act(async()=>{
   input.dispatchEvent(new window.Event('input',{bubbles:true}));
 });await settle(280);}
 const heading=()=>[...document.querySelectorAll('main h1')].find(visible)?.textContent;
+
+test('leaving the retained mobile NFC station restores the normal application shell',async t=>{
+  await setup(t,'#operations?view=station');
+  assert.ok(document.querySelector('.ops-station-mode'));
+  await click(find('aside button','Acasă'));
+  assert.equal(heading(),'Bine ai venit, Ana.');
+  const retained=document.querySelector('.operations-page');
+  assert.ok(retained?.closest('[hidden]'),'The operations page remains mounted for session state');
+  assert.equal(document.querySelector('.ops-station-mode'),null,
+    'A hidden station must not trigger the CSS rule that hides the global sidebar and topbar');
+});
 
 test('technician sidebar contains only personal work and forbidden hashes do not fetch sections',async t=>{
   const paths=[];

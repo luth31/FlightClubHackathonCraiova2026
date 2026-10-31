@@ -34,14 +34,14 @@ def flight(snapshot, identifier='flight-101'):
 def test_replay_explains_delay_and_event_order(ops):
     factory, user = ops
     with factory() as db:
-        initial = service.get_snapshot(db, user)
+        initial = service.control(db, user, ControlInput(action='reset', scenario_mode='replay'))
         assert initial['kpis']['on_time_percent'] is None
         assert initial['thresholds'] == {'minor_delay_minutes': 1, 'major_delay_minutes': 15}
-        emergency = service.control(db, user, ControlInput(action='advance', seconds=720))
+        emergency = service.control(db, user, ControlInput(action='advance', seconds=900))
         assert flight(emergency, 'flight-404')['severity'] == 'red'
         assert flight(emergency, 'flight-404')['emergency']
         assert flight(emergency, 'flight-303')['severity'] == 'yellow'
-        result = service.control(db, user, ControlInput(action='advance', seconds=2400))
+        result = service.control(db, user, ControlInput(action='advance', seconds=2220))
         assert flight(result)['delay_minutes'] == 18
         assert flight(result)['actual_departure_seconds'] == 2280
         assert flight(result)['severity'] == 'red'
@@ -55,7 +55,7 @@ def test_replay_explains_delay_and_event_order(ops):
         opening = next(event for event in result['events'] if event['id']==flight(result)['cause_event_id'])
         assert opening['kind']=='gate_open' and opening['staff_id']=='staff-relief'
         assert any(event['kind']=='staff_absent' for event in result['events'])
-        assert len(list(db.scalars(select(AuditEvent)))) == len(result['events'])
+        assert len(list(db.scalars(select(AuditEvent)))) == len(list(db.scalars(select(OperationEvent))))
         assert all(event.document_id is None for event in db.scalars(select(AuditEvent)))
         repeated = service.get_snapshot(db, user)
         assert repeated['events'] == result['events']
@@ -69,17 +69,17 @@ def test_next_event_and_clock_persist_across_sessions(ops, monkeypatch):
     monkeypatch.setattr(service, 'utc_now', lambda: now)
     with factory() as db:
         step = service.control(db, user, ControlInput(action='step'))
-        assert step['simulation']['elapsed_seconds'] == 30
+        assert step['simulation']['elapsed_seconds'] == 120
         service.control(db, user, ControlInput(action='start', speed=30))
     now += timedelta(seconds=2)
     with factory() as db:
         advanced = service.get_snapshot(db, user)
-        assert advanced['simulation']['elapsed_seconds'] == 90
+        assert advanced['simulation']['elapsed_seconds'] == 180
         stopped = service.control(db, user, ControlInput(action='pause'))
         assert not stopped['simulation']['running']
     now += timedelta(seconds=100)
     with factory() as db:
-        assert service.get_snapshot(db, user)['simulation']['elapsed_seconds'] == 90
+        assert service.get_snapshot(db, user)['simulation']['elapsed_seconds'] == 180
 
 
 def test_reset_keeps_previous_run_and_stale_revision_is_rejected(ops):
@@ -154,7 +154,7 @@ def test_simultaneous_reads_advance_clock_once_without_duplicate_events(ops, mon
     with factory() as db:
         events = list(db.scalars(select(OperationEvent)))
         assert len({(event.run_id,event.event_key) for event in events}) == len(events)
-        assert len([event for event in events if event.kind=='staff_absent']) == 1
+        assert len([event for event in events if event.kind=='staff_absent' and event.gate_id=='G1']) == 1
 
 
 def test_airport_geometry_on_apron_and_threshold_boundaries(ops):
@@ -184,7 +184,7 @@ def test_endpoints_auth_roles_schema_and_persistence(client):
     assert initial.status_code==200,initial.text
     assert initial.json()['permissions']['can_control']
     step=client.post('/api/operations/control',json={'action':'step'})
-    assert step.status_code==200 and step.json()['simulation']['elapsed_seconds']==30
+    assert step.status_code==200 and step.json()['simulation']['elapsed_seconds']==120
     assert client.get('/api/operations').json()['simulation']['run_id']==step.json()['simulation']['run_id']
     assert client.post('/api/operations/control',json={'action':'advance','seconds':-1}).status_code==422
     assert client.post('/api/operations/events',json={'kind':'gate_open','gate_id':'unknown'}).status_code==422

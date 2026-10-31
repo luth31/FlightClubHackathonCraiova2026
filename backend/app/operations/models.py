@@ -9,6 +9,7 @@ class OperationSimulation(Base):
     run_id: Mapped[str] = mapped_column(String, unique=True)
     revision: Mapped[int] = mapped_column(Integer, default=1)
     elapsed_seconds: Mapped[float] = mapped_column(Float, default=0)
+    scenario_mode: Mapped[str] = mapped_column(String, default='interactive')
     running: Mapped[bool] = mapped_column(Boolean, default=False)
     speed: Mapped[int] = mapped_column(Integer, default=30)
     updated_at: Mapped[str] = mapped_column(String)
@@ -40,3 +41,12 @@ class OperationEvent(Base):
     gate_id: Mapped[str | None] = mapped_column(String, nullable=True)
     staff_id: Mapped[str | None] = mapped_column(String, nullable=True)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class OperationLedgerGroup(Base):
+    """Persistent synthetic history, partitioned by tenant and operational day."""
+    __tablename__ = 'operation_ledger_groups'
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    airport_id: Mapped[str] = mapped_column(String, index=True)
+    operational_date: Mapped[str] = mapped_column(String, index=True)
+    data: Mapped[dict] = mapped_column(JSON)

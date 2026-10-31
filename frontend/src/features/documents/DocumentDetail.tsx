@@ -333,7 +333,7 @@ export function DocumentDetail({
                       {doc.validated ? (
                         <div className="verified-line">
                           <Check size={14} />
-                          Informații validate de un coleg
+                          {doc.metadata?.managed_by === "leave_workflow" ? "Informații preluate din cerere" : "Informații validate de un coleg"}
                         </div>
                       ) : (
                         <div className="unverified-line">
@@ -724,7 +724,17 @@ export function DocumentDetail({
                   )}
                 </div>
               </div>
-              {!["archived", "signed"].includes(doc.status) && (
+              {doc.metadata?.managed_by === "leave_workflow" && (
+                <div className="panel document-actions">
+                  <h2>{doc.metadata.request_status === "approved" ? "Concediul este aprobat" :
+                    doc.metadata.request_status === "rejected" ? "Concediul a fost respins" : "Cerere în așteptarea deciziei"}</h2>
+                  <p>Cererea și decizia sunt păstrate în istoricul versiunilor. Documentul se actualizează automat din Concedii.</p>
+                  <a className="button secondary full-width" href="#people?tab=leave">
+                    Vezi cererile de concediu <ArrowRight size={15}/>
+                  </a>
+                </div>
+              )}
+              {doc.metadata?.managed_by !== "leave_workflow" && !["archived", "signed"].includes(doc.status) && (
                 <div className="panel document-actions">
                   {doc.workflow?.task?.status === "pending" && (
                     <div className="document-task-owner">
