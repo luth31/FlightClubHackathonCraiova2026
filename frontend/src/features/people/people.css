@@ -61,3 +61,19 @@
 @media(max-width:700px){.form-grid.employee-name-fields { grid-template-columns:1fr; }}
 .appointment-panel { margin-bottom:24px; }
 .appointment-panel h2 { font-size:18px; margin-bottom:8px; }
+.organization-chart{padding:24px;margin-bottom:20px}
+.organization-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.organization-title h2{font-size:17px;margin:0}
+.organization-title>span{margin-left:auto;color:var(--muted,#65746b);font-size:12px}
+.organization-help{color:var(--muted,#65746b);font-size:12px;margin:0 0 18px}
+.organization-scroll{max-width:100%;overflow:auto;overscroll-behavior-x:contain;border:1px solid var(--border,#dce4df);border-radius:12px;background:#f7faf7}
+.organization-scroll:focus-visible{outline:2px solid var(--forest,#174c3f);outline-offset:3px}
+.organization-canvas{width:max-content;min-width:100%;padding:24px 8px 30px}
+.organization-card{display:inline-block;vertical-align:top;width:180px;padding:15px 12px;border:1px solid var(--border,#dce4df);border-radius:9px;background:var(--surface,#fff);text-align:center;overflow-wrap:anywhere}
+.organization-card strong{display:block;font-size:13px;color:var(--forest,#174c3f)}
+.organization-card span,.organization-card small{display:block;color:var(--muted,#65746b);font-size:11px;line-height:1.5;margin-top:5px}
+.organization-card-department{width:190px;border-top:3px solid #91aa9c}
+.organization-card-department h3{font-size:12px;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--border,#dce4df);color:var(--forest,#174c3f)}
+.organization-card-leadership{width:230px;padding:18px;border-color:var(--forest,#174c3f);background:var(--green-soft,#edf3ee)}
+.organization-card-leadership strong{font-size:14px}
+@media(max-width:650px){.organization-chart{padding:16px}.organization-title>span{margin-left:0;width:100%}}

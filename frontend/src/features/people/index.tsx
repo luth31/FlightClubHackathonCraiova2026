@@ -8,6 +8,7 @@ import './people.css';
 import {EmployeeDialog} from './EmployeeDialog';
 import {AuthorityDialog} from './AuthorityDialog';
 import {AppointmentPanel} from './AppointmentPanel';
+import {OrganizationChart} from './OrganizationChart';
 import type {Person, Directory, Leave} from './types';
 
 type Dialog = 'leave'|'delegation'|'employee'|null;
@@ -37,7 +38,10 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   if(!data)return <Loading/>;
   const selectedData=data;
   const people=data.items.filter(p=>(!department||p.department===department)&&`${p.name} ${p.job_title}`.toLocaleLowerCase('ro').includes(query.toLocaleLowerCase('ro')));
-  const reviewers=data.items.filter(p=>p.active&&(p.is_department_head||p.roles.some(r=>['reviewer','director'].includes(r))));
+  const reviewers=data.items.filter(p=>p.active&&(p.is_department_head||p.roles?.some(r=>['reviewer','director'].includes(r))));
+  const departmentIds=new Set(data.department_records?.map(department=>department.id));
+  const canProposeHead=(person:Person)=>data.can_propose_heads&&person.active&&!person.is_department_head&&
+    person.can_propose_head!==false&&departmentIds.has(person.department_id||'');
   const managementChanged=(message:string)=>{notify(message);setRefresh(v=>v+1)};
   const pending=data.leaves.filter(l=>l.status==='pending');
   function submitLeave(event:FormEvent<HTMLFormElement>){event.preventDefault();const f=new FormData(event.currentTarget);void mutate('/people/leave',Object.fromEntries(f),'Cererea de concediu a fost trimisă.');}
@@ -45,17 +49,19 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   return <>
     <div className="page-heading"><div><div className="eyebrow">OAMENII DIN SPATELE DOCUMENTELOR</div><h1>Echipa ta</h1><p>Responsabilități clare. Lucrurile merg înainte, chiar și în absență.</p></div><div className="people-heading-actions"><button className="button secondary" onClick={()=>{setDialog('leave');setFormError('')}}><CalendarDays size={17}/>Cerere de concediu</button>{data.can_manage_delegations&&<button className="button primary" onClick={()=>{setDialog('delegation');setFormError('')}}><Plus size={17}/>Delegare</button>}{data.can_create_users&&<button className="button primary" onClick={()=>setDialog('employee')}><Plus size={17}/>Adaugă angajat</button>}</div></div>
     <div className="people-overview"><div><Users size={20}/><span><strong>{data.items.filter(p=>p.active).length}</strong> colegi activi</span></div><div><CalendarDays size={20}/><span><strong>{data.items.filter(p=>p.availability==='away').length}</strong> în concediu</span></div><div><ShieldCheck size={20}/><span><strong>{data.delegations.filter(d=>d.status==='active').length}</strong> delegări active</span></div></div>
-    <div className="people-tabs" role="tablist" aria-label="Informații echipă">{[['directory','Colegi'],['delegations','Delegări'],['leave','Concedii'],...(data.can_view_appointments?[['appointments','Numiri']]:[])].map(([key,label])=><button key={key} role="tab" aria-selected={tab===key} onClick={()=>setTab(key)}>{label}{key==='leave'&&pending.length>0&&<span>{pending.length}</span>}</button>)}</div>
+    <div className="people-tabs" role="tablist" aria-label="Informații echipă">{[['directory','Colegi'],['organization','Organigramă'],['delegations','Delegări'],['leave','Concedii'],...(data.can_view_appointments?[['appointments','Numiri']]:[])].map(([key,label])=><button key={key} role="tab" aria-selected={tab===key} onClick={()=>setTab(key)}>{label}{key==='leave'&&pending.length>0&&<span>{pending.length}</span>}</button>)}</div>
     {error&&<ErrorMessage message={error}/>}
+    {tab==='organization'&&<OrganizationChart directory={data}/>}
     {tab==='directory'&&<div className="panel"><div className="filters"><div className="search-input people-search"><Search size={18} aria-hidden="true"/><input ref={searchInput} aria-label="Caută un coleg" placeholder="Caută un coleg…" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button type="button" className="people-search-clear" aria-label="Șterge căutarea" title="Șterge căutarea" onClick={()=>{setQuery('');searchInput.current?.focus()}}><X size={16} aria-hidden="true"/></button>}</div><DepartmentFilter departments={data.departments} value={department} onChange={setDepartment}/><span className="result-count">{people.length} persoane</span></div><div className="people-grid">{people.map(p=><article className="person-card" key={p.id}>
       <div className="person-card-top"><span className="person-avatar">{initials(p.name)}</span><span className={`availability availability-${p.availability}`}><i/>{p.availability==='away'?'În concediu':p.availability==='inactive'?'Cont inactiv':'Disponibil'}</span></div>
       <h2>{p.name}</h2><p className="person-job">{p.job_title}</p><span className="person-department">{p.department}</span>
-      <div className="person-authority">{p.is_department_head&&<span>Șef de departament</span>}{data.can_view_appointments&&p.head_appointment&&<span>{p.head_appointment.status==='approved'?`Numire aprobată · din ${date(p.head_appointment.effective_date)}`:'Numire în aprobare'}</span>}{p.roles.includes('signer')&&<span>Semnatar autorizat</span>}{p.provisioning_status==='failed'&&<span>Activare de reîncercat</span>}{p.identity_sync_pending&&<span>Sincronizare în așteptare</span>}</div>
+      <div className="person-authority">{p.is_department_head&&<span>Șef de departament</span>}{data.can_view_appointments&&p.head_appointment&&<span>{p.head_appointment.status==='approved'?`Numire aprobată · din ${date(p.head_appointment.effective_date)}`:'Numire în aprobare'}</span>}{p.roles?.includes('signer')&&<span>Semnatar autorizat</span>}{p.provisioning_status==='failed'&&<span>Activare de reîncercat</span>}{p.identity_sync_pending&&<span>Sincronizare în așteptare</span>}</div>
       <div className="person-details"><a href={`mailto:${p.email}`}>{p.email}</a>{p.manager_name&&<span><UserRound size={14}/>Coordonator: {p.manager_name}</span>}</div>
       <div className="person-management-actions">
         {data.can_manage_accounts&&p.id!==data.current_user_id&&<button className="person-action person-action-manage" onClick={()=>setAccount(p)}><span>Gestionează angajatul</span><ArrowRight size={16} aria-hidden="true"/></button>}
-        {((data.can_propose_heads&&p.active&&!p.is_department_head&&p.can_propose_head!==false)||(data.can_manage_signing&&p.active&&p.id!==data.current_user_id))&&<div className="person-authority-actions">
-          {data.can_propose_heads&&p.active&&!p.is_department_head&&p.can_propose_head!==false&&<button className="person-action" onClick={()=>setAuthority({person:p,signing:false})}><UserRoundPlus size={16} aria-hidden="true"/><span>Propune șef</span></button>}
+        {data.can_propose_heads&&p.active&&p.id!==data.current_user_id&&!departmentIds.has(p.department_id||'')&&<small className="quiet-note">Atribuie un departament funcțional în „Gestionează angajatul” înainte de a propune numirea ca șef.</small>}
+        {(canProposeHead(p)||(data.can_manage_signing&&p.active&&p.id!==data.current_user_id))&&<div className="person-authority-actions">
+          {canProposeHead(p)&&<button className="person-action" onClick={()=>setAuthority({person:p,signing:false})}><UserRoundPlus size={16} aria-hidden="true"/><span>Propune șef</span></button>}
           {data.can_manage_signing&&p.active&&p.id!==data.current_user_id&&<button className="person-action" onClick={()=>setAuthority({person:p,signing:true})}><ShieldCheck size={16} aria-hidden="true"/><span>Autoritate de semnare</span></button>}
         </div>}
       </div>

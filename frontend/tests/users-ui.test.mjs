@@ -28,6 +28,40 @@ const person={id:'employee',name:'Mara Demo',email:'mara@airport.example',depart
 const base={items:[person],total:1,departments:['Tehnic'],department_records:[{id:'dept-tehnic',name:'Tehnic',head_user_id:null,job_titles:['Inginer','Tehnician mentenanță']}],
   delegations:[],leaves:[],current_user_id:'hr',reference_date:'2026-10-30',auth_mode:'oidc'};
 
+test('ordinary users can open a read-only organigram including active support staff without private roles',async t=>{
+  const head={...person,id:'technical-head',name:'Sorin Demo',is_department_head:true};
+  const colleague={...person,roles:undefined,login_username:undefined,provisioning_status:undefined};
+  const support={...colleague,id:'daniel',name:'Daniel Ilie Voicu',department:'Conducere',department_id:null,job_title:'Asistent conducere',manager_id:'admin',manager_name:'Ana Demo'};
+  const inactive={...support,id:'former',name:'Former Support',active:false};
+  const {calls}=await setup(t,{current_user_id:colleague.id,items:[head,colleague,support,inactive],organization_leaders:[{id:'admin',name:'Ana Demo',job_title:'Director aeroport'}],
+    department_records:[{id:'dept-tehnic',name:'Tehnic',label:'Tehnic și operațiuni',head_user_id:head.id,head_name:head.name},
+      {id:'dept-achizitii',name:'Achiziții'},{id:'dept-hr',name:'Resurse umane'},{id:'dept-conformitate',name:'Conformitate'}]});
+  assert.equal(document.querySelector('[aria-label="Structura aeroportului"]'),null);
+  await click('Organigramă');
+  const organization=document.querySelector('[aria-label="Structura aeroportului"]');
+  assert.ok(organization);
+  assert.match(organization.textContent,/Ana Demo/);
+  assert.match(organization.textContent,/Tehnic și operațiuni/);
+  assert.match(organization.textContent,/Sorin Demo/);
+  assert.match(organization.textContent,/Mara Demo/);
+  assert.match(organization.textContent,/Daniel Ilie Voicu/);
+  assert.doesNotMatch(organization.textContent,/Coordonator:/);
+  assert.doesNotMatch(organization.textContent,/Former Support/);
+  assert.equal(organization.querySelectorAll('button,input').length,0);
+  assert.equal(organization.textContent.split('Sorin Demo').length-1,1);
+  assert.equal(organization.textContent.split('Daniel Ilie Voicu').length-1,1);
+  assert.equal(organization.querySelectorAll('[data-department-id]').length,4);
+  const daniel=organization.querySelector('[data-person-id="daniel"]');
+  assert.ok(daniel);
+  const managerNode=daniel.closest('li').parentElement.closest('li');
+  assert.equal(managerNode.querySelector('[data-person-id]').dataset.personId,'admin');
+  assert.equal(organization.querySelector('.organization-scroll').tabIndex,0);
+  assert.equal(calls.length,0);
+  await click('Colegi');
+  assert.equal(document.querySelector('[aria-label="Structura aeroportului"]'),null);
+  assert.ok(document.querySelector('.people-grid'));
+});
+
 async function setup(t, capabilities={}, createResponse) {
   const dom=new JSDOM('<div id="root"></div>',{url:'http://flyleaf.test/',pretendToBeVisual:true});
   install(dom.window);
@@ -125,6 +159,15 @@ test('HR sees pending or approved head appointments without a repeat proposal ac
   assert.match(document.querySelector('.people-grid').textContent,/Numire aprobată.*01 nov\. 2026/);
   assert.match(document.querySelector('.people-grid').textContent,/Numire în aprobare/);
   assert.equal([...document.querySelectorAll('.person-card button')].filter(b=>b.textContent==='Gestionează angajatul').length,3);
+});
+
+test('a department-less employee keeps management access but is not offered a head proposal even with stale eligibility',async t=>{
+  const daniel={...person,id:'daniel',name:'Daniel Ilie Voicu',department:'Conducere',department_id:null,can_propose_head:true};
+  await setup(t,{can_manage_accounts:true,can_propose_heads:true,items:[daniel]});
+  const card=document.querySelector('.person-card');
+  assert.doesNotMatch(card.textContent,/Propune șef/);
+  assert.match(card.textContent,/Atribuie un departament/);
+  assert.match(card.textContent,/Gestionează angajatul/);
 });
 
 test('email is generated on demand and HR edits survive name changes',async t=>{
