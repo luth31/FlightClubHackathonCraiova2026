@@ -61,7 +61,8 @@ export function SuppliersPage({
   user: User;
 }) {
   const [data, setData] = useState<Registry>(),
-    [catalog,setCatalog]=useState<Supplier[]>([]),[registrations,setRegistrations]=useState<Registration[]>([]),[registrationOpen,setRegistrationOpen]=useState(false),[registrationId,setRegistrationId]=useState<string>(),
+    [catalog,setCatalog]=useState<Supplier[]>(),[catalogError,setCatalogError]=useState(''),
+    [registrations,setRegistrations]=useState<Registration[]>([]),[registrationOpen,setRegistrationOpen]=useState(false),[registrationId,setRegistrationId]=useState<string>(),
     [error, setError] = useState(""),
     [tab, setTab] = useState("reviews"),
     [query, setQuery] = useState(""),
@@ -93,7 +94,18 @@ export function SuppliersPage({
       active = false;
     };
   }, [revision, refresh, request]);
-  useEffect(()=>{let active=true;api<{items:Supplier[]}>('/suppliers').then(v=>{if(active)setCatalog(v.items)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[revision,refresh]);
+  useEffect(() => {
+    let active = true;
+    api<{items: Supplier[]}>('/suppliers')
+      .then(v => {
+        if (active) {
+          setCatalog(v.items);
+          setCatalogError('');
+        }
+      })
+      .catch(e => { if (active) setCatalogError(e.message); });
+    return () => { active = false; };
+  }, [revision, refresh]);
   useEffect(()=>{let active=true;api<{items:Registration[]}>('/supplier-registrations').then(v=>{if(active)setRegistrations(v.items)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[revision,refresh]);
   const changed = (item: Review, message: string) => {
     setSelected(item);
@@ -102,7 +114,7 @@ export function SuppliersPage({
     notify(message);
   };
   const cases = data?.items;
-  const suppliers = catalog.filter((s) =>
+  const suppliers = catalog?.filter((s) =>
     `${s.name} ${s.verified_contact}`
       .toLowerCase()
       .includes(query.toLowerCase()),
@@ -152,7 +164,7 @@ export function SuppliersPage({
             </div>
             <div>
               <Building2 size={19} />
-              <strong>{data.suppliers.length}</strong>
+              <strong>{catalog?.length ?? '—'}</strong>
               <span>furnizori în registru</span>
             </div>
           </div>
@@ -168,7 +180,7 @@ export function SuppliersPage({
                 className={tab === "registry" ? "active" : ""}
                 onClick={() => setTab("registry")}
               >
-                Registru furnizori<span>{data.suppliers.length}</span>
+                Registru furnizori<span>{catalog?.length ?? '—'}</span>
               </button>
             </div>
             <button className="button secondary" onClick={()=>setTab("registrations")}>Înregistrări inițiale · {registrations.length}</button>
@@ -183,7 +195,7 @@ export function SuppliersPage({
                 />
               </label>
               <span className="result-count">
-                {tab === "reviews" ? cases?.length : suppliers?.length}{" "}
+                {tab === "reviews" ? cases?.length : suppliers?.length ?? '—'}{" "}
                 rezultate
               </span>
             </div>
@@ -242,7 +254,7 @@ export function SuppliersPage({
                   </button>
                 </Empty>
               )
-            ) : suppliers?.length ? (
+            ) : <SupplierContent error={catalogError} loading={!catalog} retry={()=>setRefresh(n=>n+1)}>{suppliers?.length ? (
               <div className="supplier-registry">
                 {suppliers.map((s) => (
                   <article className="supplier-registry-card" key={s.id}>
@@ -294,7 +306,7 @@ export function SuppliersPage({
               </div>
             ) : (
               <Empty title="Niciun furnizor găsit" />
-            )}
+            )}</SupplierContent>}
           </div>
           {tab==='reviews'&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
           <p className="supplier-disclaimer">

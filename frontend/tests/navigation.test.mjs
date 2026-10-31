@@ -40,7 +40,7 @@ const supplier={id:'supplier-demo',name:'Demo SRL',document_id:documentRecord.id
   address:'Demo address',category:'Services',state:'active',contracts:[{id:documentRecord.id,title:documentRecord.title,
     version:1,eligible_for_review:true}]};
 
-async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false,uploadResponse}={}) {
+async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse}={}) {
   const dom=new JSDOM('<div id="root"></div>',{url:`http://aerodesk.test/${hash}`,pretendToBeVisual:true});
   installDOM(dom.window);
   let currentUser={...user,roles};
@@ -50,8 +50,8 @@ async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,w
     if(path==='/api/session')body={current_user:currentUser,users:[user,technician],airport:'Demo airport',reference_date:'2026-10-30',demo:true};
     else if(path==='/api/auth/login'){currentUser=technician;body={};}
     else if(path==='/api/assistant')body={answer:'Demo answer',sources:[{id:related.id,title:related.title,number:'DEMO-2',page:1,excerpt:'Demo source'}],mode:'local',reference_date:'2026-10-30'};
-    else if(path==='/api/supplier-reviews')body={items:[],total:0,suppliers:[supplier],counters:{needs_review:0,verified:0,approved:0,clear:0}};
-    else if(path==='/api/suppliers')body={items:[supplier]};
+    else if(path==='/api/supplier-reviews')return reviewResponse?await reviewResponse():Response.json({items:[],total:0,limit:25,offset:0,suppliers:[supplier],counters:{needs_review:0,verified:0,approved:0,clear:0}});
+    else if(path==='/api/suppliers')return catalogResponse?await catalogResponse():Response.json({items:[supplier],total:1});
     else if(path==='/api/supplier-registrations')body={items:[]};
     else if(path==='/api/documents'&&options.method==='POST')return uploadResponse?await uploadResponse():Response.json(documentRecord);
     else if(path==='/api/documents')body={items:[documentRecord],total:1,categories:['Contract']};
@@ -88,6 +88,41 @@ async function setInput(input,value){assert.ok(input);await act(async()=>{
   input.dispatchEvent(new window.Event('input',{bubbles:true}));
 });await settle(280);}
 const heading=()=>[...document.querySelectorAll('main h1')].find(visible)?.textContent;
+
+test('catalog failure stays visible after reviews load and can be retried',async t=>{
+  let finishReviews;
+  const reviews=new Promise(resolve=>{finishReviews=resolve;});
+  let failCatalog=true;
+  await setup(t,'#suppliers',{
+    catalogResponse:()=>Response.json(failCatalog?{detail:'Catalog unavailable'}:{items:[supplier],total:1},{status:failCatalog?404:200}),
+    reviewResponse:async()=>{await reviews;return Response.json({items:[],total:0,limit:25,offset:0,suppliers:[supplier],counters:{needs_review:0,verified:0,approved:0,clear:0}});},
+  });
+  await act(async()=>finishReviews());
+  await settle();
+  await click(find('button','Registru furnizori'));
+  assert.ok(find('[role="alert"]','Catalog unavailable'));
+  assert.equal(find('main h3','Niciun furnizor găsit'),undefined);
+  failCatalog=false;
+  await click(find('[role="alert"] button','Încearcă din nou'));
+  assert.ok(find('.supplier-registry-card h3','Demo SRL'));
+  assert.equal(find('[role="alert"]','Catalog unavailable'),undefined);
+});
+
+test('registry waits for its catalog and counts catalog records instead of review choices',async t=>{
+  let finishCatalog;
+  const catalog=new Promise(resolve=>{finishCatalog=resolve;});
+  await setup(t,'#suppliers',{catalogResponse:()=>catalog});
+  await click(find('button','Registru furnizori'));
+  const emptyWhileLoading=find('main h3','Niciun furnizor găsit');
+  const pendingCount=find('.library-tabs button','Registru furnizori').querySelector('span').textContent;
+  await act(async()=>finishCatalog(Response.json({items:[supplier,{...supplier,id:'supplier-suspended',name:'Suspended Demo SRL',state:'suspended'}],total:2})));
+  await settle();
+  assert.equal(emptyWhileLoading,undefined);
+  assert.equal(pendingCount,'—');
+  assert.equal(document.querySelectorAll('.supplier-registry-card').length,2);
+  assert.equal(find('.library-tabs button','Registru furnizori').querySelector('span').textContent,'2');
+  assert.equal(find('.supplier-summary div','furnizori în registru').querySelector('strong').textContent,'2');
+});
 
 test('supplier contract returns to the registry with its query and scroll position',async t=>{
   const browser=await setup(t);
