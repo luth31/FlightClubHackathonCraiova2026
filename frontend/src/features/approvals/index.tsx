@@ -16,6 +16,7 @@ import type { Task } from "@/types";
 import "./approvals.css";
 import {AppointmentPanel} from '@/features/people/AppointmentPanel';
 import type {User} from '@/types';
+import {personalTasks} from '@/services/access';
 interface AssignedTask extends Task {
   document_version?: number;
   assigned_to?: string;
@@ -110,7 +111,7 @@ export function ApprovalsPage({
       <div className="page-heading">
         <div>
           <div className="eyebrow">URMĂTORUL PAS ÎNCEPE CU TINE</div>
-          <h1>Aprobări</h1>
+          <h1>{personalTasks(user)?'Sarcinile mele':'Aprobări'}</h1>
           <p>Responsabili clari. Documentele merg înainte, pas cu pas.</p>
         </div>
         <span className="heading-pill">

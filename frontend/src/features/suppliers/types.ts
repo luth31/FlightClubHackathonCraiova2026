@@ -11,6 +11,7 @@ export interface Supplier {
   state: 'active'|'suspended';
   registry_revision: number;
   can_manage: boolean;
+  can_review_bank?: boolean;
   contracts: Array<{id:string;title:string;version:number;eligible_for_review:boolean;unavailable_reason?:string}>;
   bank_history: Array<{
     iban: string;

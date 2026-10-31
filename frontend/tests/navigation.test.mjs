@@ -44,10 +44,10 @@ const supplier={id:'supplier-demo',name:'Demo SRL',document_id:documentRecord.id
   address:'Demo address',category:'Services',state:'active',contracts:[{id:documentRecord.id,title:documentRecord.title,
     version:1,eligible_for_review:true}]};
 
-async function setup(t,hash='#suppliers',{roles=user.roles,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse}={}) {
+async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse}={}) {
   const dom=new JSDOM('<div id="root"></div>',{url:`http://flyleaf.test/${hash}`,pretendToBeVisual:true});
   installDOM(dom.window);
-  let currentUser={...user,roles};
+  let currentUser=startUser||{...user,roles};
   globalThis.fetch=async (input,options={})=>{
     const path=new URL(String(input),dom.window.location.origin).pathname;
     let body;
@@ -101,6 +101,46 @@ async function setInput(input,value){assert.ok(input);await act(async()=>{
   input.dispatchEvent(new window.Event('input',{bubbles:true}));
 });await settle(280);}
 const heading=()=>[...document.querySelectorAll('main h1')].find(visible)?.textContent;
+
+test('technician sidebar contains only personal work and forbidden hashes do not fetch sections',async t=>{
+  const paths=[];
+  await setup(t,'#audit',{startUser:technician,sessionResponse:response=>{
+    const original=globalThis.fetch;
+    globalThis.fetch=(input,options)=>{paths.push(new URL(String(input),location.origin).pathname);return original(input,options)};
+    return response;
+  }});
+  assert.deepEqual([...document.querySelectorAll('aside nav button')].map(e=>e.textContent),
+    ['Acasă','Documente','Sarcinile mele','Echipă']);
+  assert.equal(heading(),'Documente');
+  assert.ok(!paths.includes('/api/audit'));
+  await click(find('aside button','Sarcinile mele'));
+  assert.equal(heading(),'Sarcinile mele');
+});
+
+test('server capabilities override role shortcuts and guard document origins',async t=>{
+  const restricted={...user,permissions:{pages:{home:true,documents:true,approvals:true,people:true,
+    contracts:false,suppliers:false,sharing:false,audit:false}}};
+  await setup(t,'#document/doc-contract?from=sharing',{startUser:restricted});
+  assert.ok(!find('aside button','Partajate'));
+  assert.equal(find('.breadcrumb-parent','Documente')?.textContent,'Documente');
+  await click(find('.back-button','Documente'));
+  assert.equal(heading(),'Documente');
+});
+
+test('procurement supplier view shows business profiles without banking workflow requests',async t=>{
+  const paths=[];
+  await setup(t,'#suppliers',{startUser:{id:'manager',name:'Mihai Demo',role:'reviewer',
+    roles:['reviewer','department_head'],department:'Achiziții'},sessionResponse:response=>{
+    const original=globalThis.fetch;
+    globalThis.fetch=(input,options)=>{paths.push(new URL(String(input),location.origin).pathname);return original(input,options)};
+    return response;
+  }});
+  assert.equal(heading(),'Furnizori');
+  assert.match(document.querySelector('main').textContent,/Demo SRL/);
+  assert.doesNotMatch(document.querySelector('main').textContent,/Verifică o solicitare|RO49|Înregistrează furnizor/);
+  assert.ok(!paths.includes('/api/supplier-reviews'));
+  assert.ok(!paths.includes('/api/supplier-registrations'));
+});
 
 test('logout is available without opening the account menu and clears the workspace',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
