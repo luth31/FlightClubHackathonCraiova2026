@@ -1,5 +1,6 @@
 from pydantic import BaseModel,Field,field_validator,model_validator
 from datetime import date
+from app.suppliers.validation import normalize_email
 class ReviewCreate(BaseModel):
     document_id: str | None=Field(default=None,max_length=100)
     supplier_name: str=Field(default='',max_length=200)
@@ -9,6 +10,11 @@ class ReviewCreate(BaseModel):
     invoice_currency: str | None=Field(default=None,pattern='^[A-Z]{3}$')
     service_date: date | None=None
     message: str=Field(default='',max_length=10000)
+
+    @field_validator('sender_email')
+    @classmethod
+    def sender(cls,value):
+        return normalize_email(value)
 
     @field_validator('invoice_currency',mode='before')
     @classmethod
