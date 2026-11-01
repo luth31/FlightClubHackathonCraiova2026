@@ -102,6 +102,33 @@ test('ordinary employees can request leave but cannot manage accounts or authori
   assert.doesNotMatch(document.body.textContent,/Numire în aprobare/);
 });
 
+test('leave requests expose their generated document with the people return origin',async t=>{
+  await setup(t,{current_user_id:'employee',leaves:[{id:'leave-demo',user_id:'employee',name:'Mara Demo',
+    department:'Tehnic',starts_at:'2026-11-09',ends_at:'2026-11-13',reason:'Concediu de odihnă',
+    status:'approved',can_decide:false,document_id:'doc-leave-demo',document_version:2}]});
+  await click('Concedii');
+  const link=document.querySelector('a[href="#document/doc-leave-demo?from=people"]');
+  assert.ok(link);
+  assert.equal(link.textContent,'Document · v2');
+});
+
+test('submitting leave opens the leave list and shows the newly generated document',async t=>{
+  const capabilities={current_user_id:'employee',leaves:[]};
+  const {calls}=await setup(t,capabilities,()=>{
+    capabilities.leaves=[{id:'leave-new',user_id:'employee',name:'Mara Demo',department:'Tehnic',
+      starts_at:'2026-11-09',ends_at:'2026-11-13',reason:'Concediu de odihnă',status:'pending',
+      can_decide:false,document_id:'doc-leave-new',document_version:1}];
+    return Response.json({id:'leave-new',document_id:'doc-leave-new',status:'pending'});
+  });
+  await click('Cerere de concediu');
+  assert.match(document.querySelector('[role="dialog"]').textContent,/Cererea PDF se generează automat/);
+  await submit();
+  assert.equal(calls[0].path,'/api/people/leave');
+  assert.equal(document.querySelector('[role="tab"][aria-selected="true"]').textContent,'Concedii1');
+  assert.ok(document.querySelector('a[href="#document/doc-leave-new?from=people"]'));
+  assert.equal(document.querySelector('[role="dialog"]'),null);
+});
+
 test('HR onboarding sends an ordinary profile and shows credentials once',async t=>{
   const {calls}=await setup(t,{can_create_users:true,can_manage_accounts:true,can_propose_heads:true});
   await click('Adaugă angajat');

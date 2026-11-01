@@ -1,7 +1,8 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
-import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,ShieldCheck,Plane} from 'lucide-react';
+import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
+import {rememberNfcLink,pendingNfcCard,cardFromHash} from '@/features/operations/nfc-links';
 import {api,setIdentity,clearIdentity} from '@/services/api-client';
 import {Loading,ErrorMessage,Toast,ViewActiveContext} from '@/components/ui';
 import {DashboardPage} from '@/features/dashboard';
@@ -44,6 +45,8 @@ export function App() {
   const mainRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<{element: HTMLElement; page: Page; userId: string} | undefined>(undefined);
   const userId = session?.current_user?.id;
+  useEffect(()=>{rememberNfcLink();window.addEventListener('hashchange',rememberNfcLink);return()=>window.removeEventListener('hashchange',rememberNfcLink)},[]);
+  useEffect(()=>{if(!userId)return;const card=pendingNfcCard();if(card&&!cardFromHash(window.location.hash))window.location.hash=`#operations?view=station&card=${encodeURIComponent(card)}`},[userId]);
   useEffect(()=>{
     if(doc){mainRef.current?.querySelector<HTMLElement>('.back-button')?.focus({preventScroll:true});return}
     const previous = returnFocus.current;
@@ -131,14 +134,14 @@ export function App() {
         <span className="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 25 16 5l11 20h-7l-4-8-4 8z" fill="currentColor"/><path d="M8 21h18" stroke="#91b6a3" strokeWidth="2"/></svg></span>
         FlyLeaf<span className="brand-period">.</span>
       </a>
-      <div className="airport-switch"><span className="airport-symbol"><Plane size={18}/></span><div><strong>{airport}</strong><small>Spațiu de lucru</small></div><ShieldCheck size={15}/></div>
-      <div className="nav-label">SPAȚIUL MEU</div>
+      <div className="airport-switch"><span className="airport-symbol"><Plane size={18}/></span><div><strong>{airport}</strong></div></div>
+      <div className="nav-label">SPAȚIU DE LUCRU</div>
       <nav aria-label="Navigare principală">
         {nav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
           <n.icon size={19}/><span>{labels[n.id as Page]}</span>{page===n.id&&<span className="active-dot"/>}
         </button>)}
       </nav>
-      {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">ÎMPREUNĂ</div>}
+      {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">COLABORARE</div>}
       <nav aria-label="Colaborare și istoric">
         {secondNav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
           <n.icon size={18}/><span>{n.label}</span>
@@ -161,12 +164,12 @@ export function App() {
       <header className="topbar">
         <div className="breadcrumb">
           <button className="icon-button mobile-menu" onClick={()=>setMobileOpen(true)} aria-label="Deschide meniul"><Menu size={21}/></button>
-          <span>Spațiul de lucru</span><ChevronRight size={13}/>
+
           {doc?<><button className="breadcrumb-parent" onClick={returnToOrigin}>{labels[page]}</button><ChevronRight size={13}/><strong>Document</strong></>:<strong>{labels[page]}</strong>}
         </div>
         <div className="topbar-actions">
           <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
-          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button><span className="avatar top-avatar">{initials(user.name)}</span>
+          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button>
           <button className="logout-button topbar-logout" disabled={loggingOut||switching} onClick={()=>void logout()} aria-label="Ieși din cont" title="Ieși din cont" aria-busy={loggingOut}>
             <LogOut size={17}/><span>{loggingOut?'Se deconectează…':'Ieși din cont'}</span>
           </button>
@@ -193,7 +196,7 @@ export function App() {
         <RetainedOperations visible={page==='operations'&&!doc} notify={notify}/>
         {doc&&<DocumentDetail key={doc} id={doc} origin={page} onOpen={openDoc} onClose={returnToOrigin} onChanged={changed} notify={notify} user={user}/>}
       </main>
-      <footer className="workspace-footer"><span>FlyLeaf <span>·</span> Mai multă ordine. Mai mult timp pentru echipă.</span></footer>
+
     </div>
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
     {assistant&&<AssistantDialog onClose={closeAssistant} onOpen={openDoc}/>}

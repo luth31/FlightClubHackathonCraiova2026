@@ -54,7 +54,7 @@ export function Loading() {
   return (
     <div className="loading">
       <LoaderCircle className="spin" size={22} />
-      <span>Se încarcă spațiul de lucru…</span>
+      <span>Se încarcă…</span>
     </div>
   );
 }

@@ -34,7 +34,7 @@ STAFF = [
 FLIGHTS = [
     {'id': 'flight-101', 'callsign': 'FL101', 'aircraft_type': 'A320', 'destination': 'Londra', 'gate_id': 'G1', 'scheduled_departure_seconds': 1200, 'turnaround_seconds': 960, 'direction': 'departure'},
     {'id': 'flight-202', 'callsign': 'FL202', 'aircraft_type': 'B738', 'destination': 'Milano', 'gate_id': 'G2', 'scheduled_departure_seconds': 1080, 'turnaround_seconds': 960, 'direction': 'departure'},
-    {'id': 'flight-303', 'callsign': 'FL303', 'aircraft_type': 'A319', 'destination': 'München', 'gate_id': 'G3', 'scheduled_departure_seconds': 900, 'turnaround_seconds': 960, 'direction': 'departure'},
+    {'id': 'flight-303', 'callsign': 'FL303', 'aircraft_type': 'A319', 'destination': 'München', 'gate_id': 'G3', 'scheduled_departure_seconds': 1440, 'turnaround_seconds': 960, 'direction': 'departure'},
     {'id': 'flight-404', 'callsign': 'FL404', 'aircraft_type': 'A320', 'origin': 'București', 'gate_id': 'G4', 'scheduled_arrival_seconds': 960, 'direction': 'arrival'},
     {'id': 'flight-505', 'callsign': 'FL505', 'aircraft_type': 'E190', 'origin': 'Viena', 'gate_id': 'G5', 'scheduled_arrival_seconds': 2100, 'direction': 'arrival'},
 ]
@@ -46,7 +46,7 @@ TIMELINE = [
     (60, 'nfc_check_in', {'staff_id': 'staff-agent-b'}, 'Card NFC · Vlad Popescu', 'Agentul porții G2 a sosit.'),
     (120, 'gate_open', {'gate_id': 'G2', 'staff_id': 'staff-agent-b', 'flight_id': 'flight-202'}, 'Poarta G2 deschisă', 'Agentul alocat începe îmbarcarea.'),
     (240, 'staff_absent', {'gate_id': 'G1', 'staff_id': 'staff-agent-a', 'flight_id': 'flight-101'}, 'G1 · agentul alocat lipsește', 'Ora planificată de deschidere a sosit, dar cardul agentului nu a fost citit.'),
-    (360, 'gate_open', {'gate_id': 'G3', 'staff_id': 'staff-supervisor', 'flight_id': 'flight-303'}, 'Poarta G3 deschisă', 'Îmbarcare întârziată în scenariul de demonstrație.'),
+    (900, 'gate_open', {'gate_id': 'G3', 'staff_id': 'staff-supervisor', 'flight_id': 'flight-303'}, 'Poarta G3 deschisă', 'Îmbarcare întârziată în scenariul de demonstrație.'),
     (720, 'emergency_declared', {'flight_id': 'flight-404'}, 'FL404 · urgență simulată', 'Exercițiu demonstrativ: echipajul transmite o urgență. Nu este trafic real.'),
     (960, 'arrival', {'flight_id': 'flight-404', 'gate_id': 'G4'}, 'FL404 a aterizat', 'Aeronava a aterizat în scenariul simulat; intervenția rămâne activă.'),
     (1200, 'nfc_check_in', {'staff_id': 'staff-relief'}, 'Card NFC · Alexandru Marin', 'Agentul de rezervă este disponibil.'),
@@ -63,7 +63,7 @@ def gates(airport):
     assigned = {'G1': 'staff-agent-a', 'G2': 'staff-agent-b', 'G3': 'staff-supervisor'}
     return [{'id': f'G{i+1}', 'name': f'Poarta demo {i+1}', 'assigned_staff_id': assigned.get(f'G{i+1}'),
              'position': {'lat': point[1], 'lon': point[0], 'altitude_m': airport['elevation_m'], 'heading': airport['stand_heading']},
-             'planned_open_seconds': 240 if i == 0 else (120 if i == 1 else 0)} for i, point in enumerate(airport['stand_positions'])]
+             'planned_open_seconds': 240 if i == 0 else (120 if i == 1 else (480 if i == 2 else 0))} for i, point in enumerate(airport['stand_positions'])]
 
 
 def interpolate(points, progress):
@@ -103,13 +103,13 @@ def position(airport, gate, flight, elapsed, departed_at=None):
     west = [*airport['runway_west'], elevation]
     east = [*airport['runway_east'], elevation]
     if flight['direction'] == 'departure':
-        if departed_at is None or elapsed < departed_at - 180:
+        if departed_at is None or elapsed < departed_at:
             return dict(gate['position']), 'boarding' if elapsed > 0 else 'at_gate'
-        if elapsed < departed_at:
-            return interpolate([*route, west], (elapsed-(departed_at-180))/180), 'taxiing'
-        if elapsed < departed_at + 45:
-            return interpolate([west, east], (elapsed-departed_at)/45), 'takeoff'
-        return interpolate([east, [east[0]+0.07, east[1], elevation+1400]], (elapsed-departed_at-45)/150), 'airborne'
+        if elapsed < departed_at + 180:
+            return interpolate([*route, west], (elapsed-departed_at)/180), 'taxiing'
+        if elapsed < departed_at + 225:
+            return interpolate([west, east], (elapsed-departed_at-180)/45), 'takeoff'
+        return interpolate([east, [east[0]+0.07, east[1], elevation+1400]], (elapsed-departed_at-225)/150), 'airborne'
     arrival = flight['scheduled_arrival_seconds']
     if elapsed < arrival:
         approach = [[east[0]+0.07, east[1], elevation+1200], east]

@@ -32,6 +32,14 @@ The director separately uses **Autoritate de semnare**, with a reason, to grant/
 
 HR/admin can edit profiles and deactivate/reactivate accounts. A head must be replaced before transfer. Deactivation blocks FlyLeaf immediately, removes sessions, revokes delegations and flags outstanding tasks. Failed Keycloak synchronization can be retried. No one can deactivate themselves or the final active director/admin.
 
+## Leave documents
+
+**Echipă → Cerere de concediu** generates a restricted PDF in the document library in the same transaction as the request. After submission, **Concedii → Document** opens the request with a return path to the leave list. The owner and the request's authorized reviewers can read it; this does not grant access to unrelated HR records.
+
+Approval or rejection creates a second immutable PDF version containing the decision, reviewer, time and comments. The original request remains downloadable in version history. Decisions are entered only in **Concedii**; generic document editing, signing and approval actions cannot bypass that workflow. These are recorded application decisions, not qualified electronic signatures. Calendar duration is shown without inventing an employee's work schedule or leave balance.
+
+Generated PDFs include embedded DejaVu fonts, bundled with their license, so Romanian text renders consistently in native development and Docker. A failed request or database commit removes newly written PDF files. Repeated overlapping requests are rejected and repeated decisions do not generate extra versions. Older requests receive a linked document when first decided; existing historical requests are not silently rewritten.
+
 ## Keycloak configuration
 
 Each realm includes a confidential `flyleaf-provisioner` client with `realm-management/manage-users` only. The browser client remains public and receives no service credentials. Compose passes a separate provisioning secret to each airport's backend and realm import. Defaults are fictional local-demo secrets; configure unique secrets in `.env` for a real installation.

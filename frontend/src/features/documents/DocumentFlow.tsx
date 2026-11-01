@@ -28,6 +28,16 @@ const ROW_GAP = 32;
 const CANVAS_PADDING = 18;
 const CARD_INSET = 12;
 
+function FlowCaseFolder({graph,onOpen,onSelectCase,initiallyOpen=false}:{
+  graph:FlowGraphGroup;onOpen:(id:string)=>void;onSelectCase:(id:string)=>void;initiallyOpen?:boolean;
+}){
+  const [open,setOpen]=useState(initiallyOpen);
+  return <details className="flow-case-folder" open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
+    <summary><FolderOpen size={17}/><strong>{graph.label}</strong><span>{graph.nodes.length} documente</span></summary>
+    {open&&<FlowCaseChart graph={graph} onOpen={onOpen} onSelectCase={onSelectCase}/>}
+  </details>;
+}
+
 function connectorPath(edge: FlowGraphEdge, nodes: Map<string, FlowGraphNode>, width: number) {
   const source = nodes.get(edge.source);
   const target = nodes.get(edge.target);
@@ -214,9 +224,7 @@ export function DocumentFlow({
     <section className="document-flow" aria-label="Fluxul documentelor de achiziție">
       <div className="flow-toolbar">
         <div>
-          <div className="flow-kicker">FLUX ÎN 4 ETAPE</div>
-          <h2>De la achiziție la factură</h2>
-          <p>Urmărește săgețile dintre documentele unui dosar, de la achiziție la verificarea facturii</p>
+          <h2>Dosare de achiziție</h2>
         </div>
         <label className="flow-case-filter">
           <span><FolderOpen size={15} /> Dosar de achiziție</span>
@@ -233,8 +241,8 @@ export function DocumentFlow({
       </div>
       <div className="flow-summary" role="status">
         <span>
-          <strong>{data.classified_total}</strong> documente în flux
-          <span className="meta-dot">·</span>{data.total} documente în selecție
+          <strong>{graphs.length}</strong> dosare
+          <span className="meta-dot">·</span>{data.classified_total} documente
         </span>
         {caseId && <button className="text-button" onClick={() => onSelectCase("")}>Vezi toate dosarele</button>}
       </div>
@@ -269,8 +277,8 @@ export function DocumentFlow({
               );
             })}
           </div>
-          {graphs.map((graph) => (
-            <FlowCaseChart key={graph.id} graph={graph} onOpen={onOpen} onSelectCase={onSelectCase} />
+          {graphs.map((graph,index) => (
+            graphs.length===1?<FlowCaseChart key={graph.id} graph={graph} onOpen={onOpen} onSelectCase={onSelectCase}/>:<FlowCaseFolder key={graph.id} graph={graph} onOpen={onOpen} onSelectCase={onSelectCase} initiallyOpen={index===0}/>
           ))}
           {!graphs.length && (
             <div className="flow-empty-diagram">Niciun document în această selecție</div>
@@ -278,7 +286,6 @@ export function DocumentFlow({
         </div>
       </div>
       <div className="flow-note">
-        <span>Săgețile arată fluxul documentelor asociate, iar etichetele arată statusul aprobării</span>
         {data.unclassified_total > 0 && (
           <span className="flow-other-documents">
             {data.unclassified_total} documente în afara fluxului

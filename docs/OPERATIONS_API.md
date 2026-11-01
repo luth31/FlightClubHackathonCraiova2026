@@ -1,47 +1,73 @@
-# Airport operations simulation API
+# Airport operations API
 
-FlyLeaf provides a persistent, tenant-scoped demonstration on the Craiova and Sibiu airport layouts. Flight numbers, workers, NFC cards, gate labels and timings are fictional. Airport geometry is anchored to public geographic data; this is not an air traffic control system or a source of operational clearances.
+All routes are under `/api/operations` and require a signed-in user in the configured airport. Each airport has its own clock, cards, ledger and history. Director, technician, and Technical/Operations/Compliance reviewers can control the demonstration. HR and finance can read it. SOP proposals require director or Compliance authority. Requests never grant real airside access or ATC clearance.
 
-## Endpoints
+## Interactive scenario
 
-All routes require the existing authenticated workspace session. Read access follows the current airport. Only `director`, `reviewer` and `technician` roles may control the scenario or submit events.
+`GET /operations` returns `airport`, `simulation`, `flights`, `gates`, `staff`, `events`, `kpis`, `thresholds`, `model` and `permissions`.
 
-| Route | Request | Result |
-| --- | --- | --- |
-| `GET /api/operations` | — | Current scenario snapshot; advances the server clock if running |
-| `POST /api/operations/control` | `{ "action": "start\|pause\|step\|advance\|reset", "speed": 30, "seconds": 300, "expected_revision": 4 }` | Updated snapshot |
-| `POST /api/operations/events` | `{ "kind": "nfc_check_in", "staff_id": "staff-agent-a", "request_id": "UUID" }` | Updated snapshot |
-| `GET /api/operations/events` | Optional `run_id`, `offset`, `limit` (1–1000) | Paginated immutable history, including previous runs |
-| `GET /api/operations/traffic` | — | Separate live ADS-B snapshot with freshness and attribution |
+`simulation` includes `scenario_mode: interactive|replay`, `run_id`, `revision`, `running`, `speed`, `elapsed_seconds`, `duration_seconds`, `clock_time`, and recorded UTC creation/update times. Interactive runs start paused at 1×; replay resets to 30×. The demonstration starts at 08:00 on the application's reference date. Interactive mode never creates personnel card scans or gate openings automatically. Arrivals and due-time checks are automatic; departures require enough recorded boarding time with an open gate.
 
-`speed`, `seconds` and `expected_revision` are optional. Speed is 1–120; advance is 1–3600 seconds. `step` pauses and moves to the next semantic event. `reset` begins a new run without deleting old events. A stale supplied revision returns HTTP 409. Without a supplied revision, semantic commands retry a rolled-back database conflict up to three total attempts, reloading and revalidating current state each time; domain validation failures are never retried. Event submission accepts optional `request_id` for deduplication within a run.
+`POST /control` accepts:
 
-Event kinds are `nfc_check_in`, `nfc_check_out`, `gate_open`, `gate_close`, `emergency_declared` and `emergency_cleared`. Gate actions require a valid gate and a worker who is currently checked in. Emergency actions require a flight. An optional note is limited to 500 characters. The NFC controls simulate a timecard reader; no physical NFC hardware integration is claimed.
+```json
+{"action":"reset","scenario_mode":"interactive"}
+{"action":"start","speed":30}
+{"action":"pause"}
+{"action":"step"}
+{"action":"advance","seconds":300}
+{"action":"advance_to","target_seconds":1320}
+```
 
-## Scenario and snapshot
+`advance_to` must not move backwards; reset creates a fresh run while preserving earlier events. `step` stops at the next scheduled check or causal milestone. `scenario_mode` is accepted only with reset; replay is an explicit prerecorded alternative. Existing sessions use interactive controls after upgrading; reset before a new pitch to start from a clean run.
 
-The snapshot contains `airport`, `simulation`, `flights`, `gates`, `staff`, `events`, `kpis`, `thresholds`, `permissions` and an explicit simulation notice. The server owns elapsed time and speed; polling does not multiply elapsed time. Optimistic database revision checks and unique event keys prevent duplicate events during concurrent requests. Only semantic events are persisted, not animation frames.
+`GET /timeline?run_id=<current-run>&at_seconds=1320` returns the same snapshot reconstructed at any second from 0 to 3600, plus `timeline: {current_seconds, at_seconds, projected, events}`. Earlier moments include only events that had occurred; future moments apply the existing scenario rules to recorded interventions in memory. Timeline event markers include a `projected` flag. Interactive projections do not invent NFC scans or gate actions. This endpoint never updates the stored clock, events or audit log, and its snapshot has `permissions.can_control=false`. A stale run ID returns 409. The UI pauses a running shift before an authorized operator scrubs, labels historical/projected views, and requires an explicit `advance_to` with a revision precondition to apply a future time.
 
-The baseline scenario starts at 08:00 on the configured demonstration reference date. G1 should open at 08:04, but its assigned worker is absent. A reserve worker checks in at 08:20 and opens G1 at 08:22. After the configured turnaround, FL101 departs at 08:38 instead of 08:20: 18 minutes late. FL202 departs on time, FL303 has a seven-minute delay, and FL404 demonstrates a declared and cleared emergency. An operator can check in a worker and open G1 earlier; that intervention changes the projected and actual departure outcome. This bounded model uses the first gate opening plus its turnaround duration. A subsequent close or reopen remains visible and audited, but does not recalculate the turnaround. The snapshot exposes this limitation in `model.gate_reclosures_affect_departure: false` and `model.notice`.
+`POST /events` accepts `kind: nfc_check_in|nfc_check_out|gate_open|gate_close|emergency_declared|emergency_cleared`, optional `staff_id`, `gate_id`, `flight_id`, `note`, `request_id` UUID and `expected_revision`. Gate actions require a checked-in worker and the correct departing flight. Duplicate state changes and reopening after departure are rejected; an operator can close the gate after the flight leaves. A substitute is permitted and explicitly recorded alongside the originally assigned agent. Optional request UUIDs deduplicate within a run.
 
-Each event has a stable ID, run ID, chronological sequence, simulated timestamp, actual recording timestamp, actor, source, event kind and related staff/gate/flight IDs. Derived flight events retain the gate-opening event as `payload.cause_event_id`. Every semantic event also creates an entry in the existing audit log, without a document attachment.
+`POST /nfc` accepts `{card_id, action: check_in|check_out, request_id?}` and returns the same snapshot. Cards are matched exactly against configured demo card labels. This authenticated endpoint can receive an NFC Tools URL confirmation or a keyboard reader. Opening an NFC URL alone must never mutate attendance. `recorded_at` is the real UTC scan recording time; `simulated_at` is the presentation clock. These times remain distinct.
 
-The default classification policy is exposed in `thresholds`: neutral below one complete minute of delay, yellow from 1 to less than 15 minutes, red from 15 minutes or any declared emergency. The constants live in `app/operations/scenario.py`; these are demonstration policy defaults, not a legal punctuality standard. Flight `delay_basis` distinguishes scenario projections from recorded simulated departures. The on-time KPI uses only departed flights and is `null` before the first departure.
+## Causal departure model
 
-Aircraft positions use WGS84 latitude/longitude, altitude in metres and heading in degrees. Simulated altitudes are referenced to the airport elevation. Stand and taxiway paths use the researched public geometry with explicitly simulated short connectors. Gate labels G1–G5 are demonstration labels, not asserted real airport gate numbers.
+The planned and actual `*_departure_seconds` fields mean **off-block: leaving the parking stand**, not take-off. `scheduled_offblock_seconds` and `actual_offblock_seconds` are explicit aliases. Boarding requires 16 minutes of accumulated open-gate time; gate closure pauses incomplete boarding. Off-block is the later of readiness and scheduled off-block. Aircraft remain at the stand until that event, then taxi for a modeled three minutes before a separate `takeoff` event. Arrival routes are independently simulated.
 
-## Live ADS-B separation
+A flight exposes `status`, `phase`, `boarding_remaining_seconds`, projected/actual delay basis, estimated off-block/takeoff time, and the opening event that initiated the chain. Missing prerequisites never produce an actual departure. A projected risk can be red before departure while the actual punctuality KPI remains unchanged until completion. Severity is yellow from one complete minute and red from 15 minutes, or for an active emergency. These are demonstration thresholds, not regulatory limits.
 
-The live endpoint uses the [official ADSB.lol API](https://www.adsb.lol/docs/open-data/api) and its fixed HTTPS circle endpoint. Only public airport coordinates and a 25 NM radius are sent. User identities, documents and simulation events are never sent to the provider.
+Snapshot KPIs separate `actual_delay_minutes` and `projected_delay_minutes`; `on_time_percent` includes completed departures only and is null before the first departure. `blocked_flights`, gate and attendance counts are computed from recorded state.
 
-Requests are cached for 30 seconds per airport and serialized to avoid simultaneous upstream requests. A request uses a three-second connection timeout, six-second network operation timeout, ten-second streaming budget, a 2 MB response ceiling and a 200-aircraft display limit. Failed requests back off from 30 seconds to a maximum of five minutes. A previous successful snapshot can remain visible for up to five minutes with `status: stale`, per-aircraft stale markers and position age. After that the endpoint reports `unavailable`. An unavailable feed does not mean empty airspace.
+`GET /events?run_id=&offset=0&limit=200` exposes persisted run history (limit 1–1000). Every semantic event is also mirrored to the audit log. Concurrent polls cannot multiply the clock or duplicate events; semantic writes retry transaction conflicts up to three attempts unless an explicit revision precondition was supplied.
 
-The source provides positions, not a gate plan, flight schedule, employee attendance or punctuality record. Therefore live aircraft always have `delay_minutes: null` and `delay_basis: unavailable`. Emergency squawks 7500/7600/7700 and recognized provider emergency flags set red status. An alert bit alone does not imply a declared emergency. The API preserves altitude reference metadata because pressure altitude and geometric ellipsoid altitude are not exact height above the airport.
+`GET /runs?offset=0&limit=100` lists run summaries newest first: `run_id,event_count,started_at,ended_at,last_event_at,scenario_mode,is_current`, plus pagination. Use its run ID with `/events` to browse earlier rehearsals.
 
-Live data remains separate from the simulation event log. The response contains [ADSB.lol](https://www.adsb.lol/) and [ODbL attribution](https://opendatacommons.org/licenses/odbl/1-0/). Production use should follow the provider's current terms and contact guidance.
+## Grouped airport ledger
 
-## Validation
+`GET /ledger?date=2026-10-30&status=all|attention&search=G1` returns:
 
-`backend/.venv/bin/pytest backend/tests/test_operations.py backend/tests/test_operations_traffic.py -q`
+- `days[]`: `date`, worst `severity`, `event_count`, daily `metrics`, and `flights[]` (the common group collection).
+- Each group: `id`, `category: flight|airport`, `callsign` or operational group title, `route`, `gate_id`, `scheduled_at`, `actual_at`, `status`, `severity`, `delay_minutes`, `cause`, `event_count`, `source`, `synthetic` and `events[]`.
+- Each event: `id`, `kind`, `title`, `planned_at`, nullable `actual_at`, `actor`, `detail`, `severity`, `delay_minutes`, `source`.
+- `metrics`: whole displayed period; `filtered_metrics`: only filtered groups; `period`, `reference_date`, `seeded_events`, `total_groups`, `filtered_groups`, `event_count`, `current_run_id` and an explicit scope notice.
 
-Coverage includes the causal replay, colour thresholds, persistent server clock, concurrent polling, event deduplication, reset history, tenant isolation, mutation permissions, earlier gate intervention, real authenticated API routes, malformed or stale provider data, emergency normalization, cache/backoff, stale expiration and recovery.
+The persistent fixture contains seven completed days with eight departures and four airport activity groups per day, plus three days of upcoming schedules. Flight chains include scheduling three days ahead, assignment, briefing, attendance, aircraft arrival at stand, cleaning, fuel readiness, equipment checks, gate opening, boarding, load-sheet confirmation, off-block, takeoff and closure. Airport groups include runway/FOD inspection, shift handover, preventive maintenance and SOP/safety review. Stable tenant/date IDs make seeding idempotent. Versioned fixture corrections update only records explicitly marked synthetic and source=seed; manual operation events are never rewritten. Every substitute differs from the assigned agent and is checked in before opening the gate.
+
+The current run is projected into the same tree, with pending expected milestones. Severity propagates to its flight/activity and day. Aggregate metrics are arithmetic, not the worst event color. Completed off-block outcomes affect punctuality and actual delay totals; outstanding issues affect `open_risks` and `projected_delay_minutes` separately. Reset removes the prior run from the active KPI comparison but retains its events in history.
+
+This is the modeled operational ledger, not a claim to integrate every airport system. Document and personnel audit entries remain in their permission-filtered modules; HR details are not copied into a public operations ledger. Public ADS-B is never used to invent attendance, gate timing or schedule delay.
+
+`GET /summary` returns only `{metrics,reference_date,period}` for dashboard KPIs, using the same calculations and authentication as the ledger.
+
+## SOP improvement proposals
+
+`GET /strategies` returns `items`, `can_draft`, `current_run_id`, `notice`. Each item has `id`, `title`, `sop_code`, `problem`, `current_rule`, `proposed_rule`, `changes`, `evidence_count`, `evidence[]` (`group_id`, `callsign`, `date`, `delay_minutes`), `baseline`, `estimate`, `assumptions`, nullable `document_id`.
+
+The initial rules address reserve-staff confirmation and earlier equipment readiness checks. Estimates are deterministic counterfactual arithmetic on completed synthetic flights. They explicitly assume the relevant resource is available and the labeled cause can be removed; no measured improvement or AI optimization claim is made.
+
+`POST /strategies/{id}/draft` creates a real PDF procedure draft with evidence, proposed changes, assumptions and normal document validation tasks. Returns `{document_id,file_url,title,status}`. Identical evidence produces the same document; changed evidence produces a new proposal rather than silently rewriting the previous PDF. It does not approve, activate or share the procedure. Those steps use the existing independent document workflows and reviewed airport-sharing controls.
+
+## Live traffic and maps
+
+`GET /traffic` remains a read-only ADSB.lol position feed: source, fresh/stale/unavailable status, timestamps, bounded polling/cache, aircraft and attribution. It has no airline schedule information; real aircraft delay remains null. Map placement uses reported coordinates and reported altitude references; unknown altitude remains a list item rather than being invented at ground level.
+
+`GET /map-config` returns the optional browser Maps key and map availability. Restrict the key to the deployment's browser referrers and Map Tiles API. The bundled model works without a key. All Google tile attributions must remain visible.
+
+Milestone terminology is informed by [EUROCONTROL's A-CDM specification](https://www.eurocontrol.int/publication/eurocontrol-specification-airport-collaborative-decision-making-cdm), which distinguishes off-block from take-off. FlyLeaf's timing/resource model is deliberately simplified and is not an A-CDM or ATC integration.

@@ -4,8 +4,8 @@ import {Empty,ErrorMessage,Loading,Modal,Status} from '@/components/ui';
 import {date} from '@/utils/format';
 import type {Appointment} from './types';
 
-export function AppointmentPanel({revision,notify,onChanged}: {
-  revision:number;notify:(message:string)=>void;onChanged?:()=>void;
+export function AppointmentPanel({revision,notify,onChanged,hideEmpty=false}: {
+  revision:number;notify:(message:string)=>void;onChanged?:()=>void;hideEmpty?:boolean;
 }) {
   const [items,setItems]=useState<Appointment[]>(),[error,setError]=useState('');
   const [selected,setSelected]=useState<Appointment>(),[comment,setComment]=useState('');
@@ -20,8 +20,9 @@ export function AppointmentPanel({revision,notify,onChanged}: {
       setSelected(undefined);setRefresh(n=>n+1);onChanged?.();
     } catch(e) {setFormError((e as Error).message)} finally {setBusy(false)}
   }
+  if(hideEmpty&&items?.length===0&&!error)return null;
   return <section className="panel appointment-panel" aria-label="Numiri în departamente">
-    <div className="people-panel-intro"><div><h2>Numiri în departamente</h2><p>Propuneri HR și decizii ale conducerii. Autoritatea de semnare se acordă separat.</p></div></div>
+    <div className="people-panel-intro"><div><h2>Numiri în departamente</h2>{!!items?.length&&<p>Autoritatea de semnare se acordă separat.</p>}</div></div>
     {error?<ErrorMessage message={error} retry={()=>setRefresh(n=>n+1)}/>:!items?<Loading/>:!items.length?<Empty title="Nicio propunere de numire" message="Propunerile HR și deciziile directorului vor apărea aici."/>:
       <div className="delegation-list">{items.map(item=><article className="delegation-card" key={item.id}><div><strong>{item.name}</strong><p>{item.department} · din {date(item.effective_date)}</p><small>{item.reason} · Propus de {item.proposer_name}</small>{item.decider_name&&<p className="quiet-note">Decizie: {item.decider_name}{item.decision_comment?` · ${item.decision_comment}`:''}</p>}</div><div className="delegation-actions"><Status value={item.status}/>{item.can_decide&&<button className="button secondary small" onClick={()=>{setSelected(item);setComment('');setFormError('')}}>Revizuiește numirea</button>}</div></article>)}</div>}
     {selected&&<Modal title={`Numirea lui ${selected.name}`} subtitle={`${selected.department} · ${date(selected.effective_date)}`} onClose={()=>setSelected(undefined)}>
