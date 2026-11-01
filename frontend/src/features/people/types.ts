@@ -1,3 +1,11 @@
+export type Presence = 'automatic'|'available'|'busy'|'do_not_disturb'|'be_right_back'|'away'|'offline';
+export interface PersonProfile {
+  presence: Presence;
+  presence_expires_at: string | null;
+  status_message: string;
+  message_expires_at: string | null;
+  photo_url: string | null;
+}
 export interface Person {
   id:string; name:string; email:string; department:string; department_id?:string|null; role:string;
   first_name?:string; middle_name?:string; last_name?:string;
@@ -5,6 +13,7 @@ export interface Person {
   manager_name?:string; is_department_head?:boolean; is_area_head?:boolean; business_area?:string; provisioning_status?:string;
   can_propose_head?:boolean; head_appointment?:{status:'pending'|'approved';effective_date:string}|null;
   identity_sync_pending?:boolean; login_username?:string; sign_in_url?:string|null;
+  profile?: PersonProfile;
 }
 export interface Department {id:string;name:string;label?:string;areas?:string[];head_user_id?:string|null;head_name?:string|null;revision?:number;job_titles?:string[]}
 export interface Delegation {id:string;from_user:string;to_user:string;from_name:string;to_name:string;starts_at:string;ends_at:string;reason:string;status:string;scope:string;active:boolean}

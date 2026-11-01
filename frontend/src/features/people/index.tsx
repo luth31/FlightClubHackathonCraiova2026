@@ -2,7 +2,9 @@ import {useEffect, useRef, useState, type FormEvent} from 'react';
 import {ArrowRight, CalendarDays, Check, Plus, Search, ShieldCheck, UserRound, UserRoundPlus, Users, X} from 'lucide-react';
 import {api} from '@/services/api-client';
 import {Empty, ErrorMessage, Loading, Modal, Status} from '@/components/ui';
-import {date, initials} from '@/utils/format';
+import {date} from '@/utils/format';
+import {PersonAvatar, PersonStatus} from '@/components/people/PersonAvatar';
+import {usePersonDirectory} from '@/components/people/PersonDirectory';
 import {DepartmentFilter} from './DepartmentFilter';
 import './people.css';
 import {EmployeeDialog} from './EmployeeDialog';
@@ -14,6 +16,7 @@ import type {Person, Directory, Leave} from './types';
 type Dialog = 'leave'|'delegation'|'employee'|null;
 
 export function PeoplePage({revision,notify}:{revision:number;notify:(message:string)=>void}) {
+  const {refresh:refreshProfiles}=usePersonDirectory();
   const [data,setData]=useState<Directory>();
   const [error,setError]=useState('');
   const [refresh,setRefresh]=useState(0);
@@ -29,7 +32,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   const [busy,setBusy]=useState(false);
   const [formError,setFormError]=useState('');
   useEffect(()=>{let live=true;api<Directory>('/people').then(v=>{if(live){setData(v);setError('')}}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[revision,refresh]);
-  const reload=(message:string)=>{notify(message);setRefresh(v=>v+1);setDialog(null);setDecision(undefined);setAccount(undefined);setFormError('');setBusy(false)};
+  const reload=(message:string)=>{refreshProfiles();notify(message);setRefresh(v=>v+1);setDialog(null);setDecision(undefined);setAccount(undefined);setFormError('');setBusy(false)};
   async function mutate(path:string,body:unknown,message:string,method='POST') {
     setBusy(true);setFormError('');
     try{await api(path,{method,body:JSON.stringify(body)});reload(message)}catch(e){setFormError((e as Error).message);setBusy(false)}
@@ -42,7 +45,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   const departmentIds=new Set(data.department_records?.map(department=>department.id));
   const canProposeHead=(person:Person)=>data.can_propose_heads&&person.active&&!person.is_department_head&&
     person.can_propose_head!==false&&departmentIds.has(person.department_id||'');
-  const managementChanged=(message:string)=>{notify(message);setRefresh(v=>v+1)};
+  const managementChanged=(message:string)=>{refreshProfiles();notify(message);setRefresh(v=>v+1)};
   const pending=data.leaves.filter(l=>l.status==='pending');
   function submitLeave(event:FormEvent<HTMLFormElement>){event.preventDefault();const f=new FormData(event.currentTarget);void mutate('/people/leave',Object.fromEntries(f),'Cererea de concediu a fost trimisă.');}
   function submitDelegation(event:FormEvent<HTMLFormElement>){event.preventDefault();const f=new FormData(event.currentTarget);void mutate('/people/delegations',Object.fromEntries(f),'Delegarea a fost înregistrată.');}
@@ -53,7 +56,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
     {error&&<ErrorMessage message={error}/>}
     {tab==='organization'&&<OrganizationChart directory={data}/>}
     {tab==='directory'&&<div className="panel"><div className="filters"><div className="search-input people-search"><Search size={18} aria-hidden="true"/><input ref={searchInput} aria-label="Caută un coleg" placeholder="Caută un coleg…" value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button type="button" className="people-search-clear" aria-label="Șterge căutarea" title="Șterge căutarea" onClick={()=>{setQuery('');searchInput.current?.focus()}}><X size={16} aria-hidden="true"/></button>}</div><DepartmentFilter departments={data.departments} value={department} onChange={setDepartment}/><span className="result-count">{people.length} persoane</span></div><div className="people-grid">{people.map(p=><article className="person-card" key={p.id}>
-      <div className="person-card-top"><span className="person-avatar">{initials(p.name)}</span><span className={`availability availability-${p.availability}`}><i/>{p.availability==='away'?'În concediu':p.availability==='inactive'?'Cont inactiv':'Disponibil'}</span></div>
+      <div className="person-card-top"><PersonAvatar name={p.name} person={p} referenceDate={data.reference_date} className="person-avatar"/><PersonStatus person={p}/></div>
       <h2>{p.name}</h2><p className="person-job">{p.job_title}</p><span className="person-department">{p.department}</span>
       <div className="person-authority">{p.is_department_head&&<span>Șef de departament</span>}{data.can_view_appointments&&p.head_appointment&&<span>{p.head_appointment.status==='approved'?`Numire aprobată · din ${date(p.head_appointment.effective_date)}`:'Numire în aprobare'}</span>}{p.roles?.includes('signer')&&<span>Semnatar autorizat</span>}{p.provisioning_status==='failed'&&<span>Activare de reîncercat</span>}{p.identity_sync_pending&&<span>Sincronizare în așteptare</span>}</div>
       <div className="person-details"><a href={`mailto:${p.email}`}>{p.email}</a>{p.manager_name&&<span><UserRound size={14}/>Coordonator: {p.manager_name}</span>}</div>
@@ -66,7 +69,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
         </div>}
       </div>
     </article>)}</div>{!people.length&&<Empty title="Niciun coleg găsit"/>}</div>}
-    {tab==='appointments'&&data.can_view_appointments&&<AppointmentPanel revision={revision+refresh} notify={notify} onChanged={()=>setRefresh(v=>v+1)}/>}
+    {tab==='appointments'&&data.can_view_appointments&&<AppointmentPanel revision={revision+refresh} notify={notify} onChanged={()=>{refreshProfiles();setRefresh(v=>v+1)}}/>}
     {tab==='delegations'&&<div className="panel"><div className="people-panel-intro"><ShieldCheck size={22}/><p>Delegatul aprobă în nume propriu, în perioada stabilită. Dreptul de semnătură rămâne personal.</p></div>{data.delegations.length?<div className="delegation-list">{data.delegations.map(d=><article className="delegation-card" key={d.id}><div><div className="delegation-people"><strong>{d.from_name}</strong><ArrowRight size={17}/><strong>{d.to_name}</strong></div><p>{d.scope}</p><small>{date(d.starts_at)} – {date(d.ends_at)} · {d.reason}</small></div><div className="delegation-actions"><Status value={d.status}/>{d.active&&(d.from_user===data.current_user_id||data.can_admin_delegations)&&<button className="text-button" disabled={busy} onClick={()=>void mutate(`/people/delegations/${d.id}/revoke`,{},'Delegarea a fost revocată.')}>Revocă</button>}</div></article>)}</div>:<Empty title="Nicio delegare" message="Înainte de o absență, numește un coleg pentru aprobările tale."/>}{formError&&!dialog&&<ErrorMessage message={formError}/>}</div>}
     {tab==='leave'&&<div className="panel"><div className="people-panel-intro"><CalendarDays size={22}/><p>Cererile tale și cele care au nevoie de decizia ta, într-un singur loc.</p></div>{data.leaves.length?<div className="delegation-list">{data.leaves.map(l=><article className="delegation-card" key={l.id}><div><strong>{l.name}</strong><p>{date(l.starts_at)} – {date(l.ends_at)}</p><small>{l.reason} · {l.department}</small></div><div className="delegation-actions"><Status value={l.status}/>{l.can_decide&&<button className="button secondary small" onClick={()=>{setDecision(l);setComment('');setFormError('')}}>Revizuiește<ArrowRight size={15}/></button>}</div></article>)}</div>:<Empty title="Nicio cerere de concediu" message="Cererile trimise și deciziile vor apărea aici."/>}</div>}
     {dialog==='leave'&&<Modal title="O pauză planificată" subtitle="Cererea ajunge la o persoană autorizată pentru aprobare." onClose={()=>setDialog(null)}><form className="modal-body" onSubmit={submitLeave}><div className="form-grid"><label className="field">Din data<input name="starts_at" type="date" defaultValue="2026-11-09" min={data.reference_date} required/></label><label className="field">Până la<input name="ends_at" type="date" defaultValue="2026-11-13" min={data.reference_date} required/></label></div><label className="field">Tip / motiv<select name="reason"><option>Concediu de odihnă</option><option>Zi liberă pentru eveniment personal</option><option>Concediu fără plată</option></select></label>{formError&&<ErrorMessage message={formError}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={()=>setDialog(null)}>Renunță</button><button className="button primary" disabled={busy}>{busy?'Se trimite…':'Trimite cererea'}<ArrowRight size={16}/></button></div></form></Modal>}

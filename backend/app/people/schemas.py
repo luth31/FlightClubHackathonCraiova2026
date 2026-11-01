@@ -35,6 +35,18 @@ class AccountUpdate(BaseModel):
     active: bool
 
 
+class PresenceUpdate(BaseModel):
+    model_config = {'extra': 'forbid'}
+    status: Literal['automatic', 'available', 'busy', 'do_not_disturb', 'be_right_back', 'away', 'offline']
+    duration_minutes: int | None = Field(default=None, ge=1, le=10080, strict=True)
+
+
+class StatusMessageUpdate(BaseModel):
+    model_config = {'extra': 'forbid', 'str_strip_whitespace': True}
+    message: str = Field(max_length=280)
+    duration_minutes: int | None = Field(default=None, ge=1, le=10080, strict=True)
+
+
 class EmployeeCreate(BaseModel):
     model_config = {'extra': 'forbid', 'str_strip_whitespace': True}
     first_name: str = Field(min_length=1, max_length=75)

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, String, Text, JSON, Integer, UniqueConstraint
+from sqlalchemy import Boolean, String, Text, JSON, Integer, UniqueConstraint, ForeignKey, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -27,6 +27,17 @@ class User(Base):
     identity_sync_pending: Mapped[bool] = mapped_column(Boolean, default=False)
     identity_sync_revision: Mapped[int] = mapped_column(Integer, default=0)
     __table_args__ = (UniqueConstraint('identity_issuer', 'identity_subject', name='uq_user_identity'),)
+
+
+class UserProfile(Base):
+    __tablename__ = 'user_profiles'
+    user_id: Mapped[str] = mapped_column(String, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    presence: Mapped[str] = mapped_column(String, default='automatic')
+    presence_expires_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    status_message: Mapped[str] = mapped_column(String(280), default='')
+    message_expires_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    photo: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    photo_revision: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class Department(Base):
