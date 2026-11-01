@@ -153,6 +153,9 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .loading { color: var(--muted); font-size: 13px; }
 .login-story { background: var(--primary); }
 .login-story .brand, .login-story-content h1 { color: #fff; }
+.login-story .brand-period, .login-benefits svg { color: #a4e5db; }
+.login-story .brand-mark svg { color: #fff; }
+.login-story .runway-art { color: #a4e5db; opacity: .15; }
 .login-story-content h1 { font-size: clamp(38px,4vw,56px); line-height: 1.12; letter-spacing: -2px; }
 .login-story-content h1 em { color: #a4e5db; }
 .login-story-content p { color: #d4e3e9; font-size: 16px; max-width: 360px; line-height: 1.6; }
