@@ -119,13 +119,14 @@ export function SuppliersPage({
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
+  const matchingRegistrations=registrations.filter(item=>`${item.payload.name} ${item.payload.tax_id}`.toLocaleLowerCase('ro').includes(query.toLocaleLowerCase('ro')));
   return (
     <>
       <div className="page-heading supplier-page-heading">
         <div>
-          <div className="eyebrow">DETALII CONFIRMATE. DECIZII SEPARATE.</div>
+
           <h1>Furnizori</h1>
-          <p>Verifică solicitările primite înainte să modifici registrul.</p>
+
         </div>
         <div className="heading-actions supplier-heading-actions">
           <button className="button secondary" onClick={()=>setRegistrationOpen(true)}>
@@ -142,36 +143,28 @@ export function SuppliersPage({
           </button>
         </div>
       </div>
-      <div className="supplier-intro">
-        <ShieldCheck size={24} />
-        <div>
-          <strong>Un cont nou merită o a doua verificare.</strong>
-          <p>
-            Compară detaliile cu registrul, confirmă prin contactul cunoscut și
-            cere decizia unui alt coleg.
-          </p>
-        </div>
-        <span>Fără acces la e-mail sau plăți</span>
-      </div>
+      <ol className="supplier-process" aria-label="Pașii verificării">
+        <li><span>1</span>Compară datele</li><li><span>2</span>Confirmă independent</li><li><span>3</span>Aprobă cu un coleg</li>
+      </ol>
       <SupplierContent error={error} loading={!data} retry={() => setRefresh((n) => n + 1)}>
       {data && (
         <>
           <div className="supplier-summary">
-            <div>
+            <button onClick={()=>{setTab("reviews");setStatus("needs_review");setOffset(0)}}>
               <ShieldAlert size={19} />
               <strong>{data.counters.needs_review}</strong>
               <span>de verificat</span>
-            </div>
-            <div>
+            </button>
+            <button onClick={()=>{setTab("reviews");setStatus("verified");setOffset(0)}}>
               <UserRound size={19} />
               <strong>{data.counters.verified}</strong>
-              <span>așteaptă a doua persoană</span>
-            </div>
-            <div>
+              <span>de aprobat</span>
+            </button>
+            <button onClick={()=>setTab("registry")}>
               <Building2 size={19} />
               <strong>{catalog?.length ?? '—'}</strong>
               <span>furnizori în registru</span>
-            </div>
+            </button>
           </div>
           <div className="panel">
             <div className="library-tabs">
@@ -187,8 +180,8 @@ export function SuppliersPage({
               >
                 Registru furnizori<span>{catalog?.length ?? '—'}</span>
               </button>
+              <button className={tab === "registrations" ? "active" : ""} onClick={()=>setTab("registrations")}>Înregistrări inițiale<span>{registrations.length}</span></button>
             </div>
-            <button className="button secondary" onClick={()=>setTab("registrations")}>Înregistrări inițiale · {registrations.length}</button>
             <div className="filters">
               <label className="search-input">
                 <Search size={17} />
@@ -200,7 +193,7 @@ export function SuppliersPage({
                 />
               </label>
               <span className="result-count">
-                {tab === "reviews" ? cases?.length : suppliers?.length ?? '—'}{" "}
+                {tab === "reviews" ? cases?.length : tab === "registrations" ? matchingRegistrations.length : suppliers?.length ?? '—'}{" "}
                 rezultate
               </span>
             </div>
@@ -211,11 +204,13 @@ export function SuppliersPage({
                 <span>Ale mele</span>
               </button>
               <label>Stare<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="">Toate</option>{Object.entries(labels).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
-              <label>Risc orientativ<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">Toate</option><option value="high">Ridicat</option><option value="medium">Mediu</option><option value="low">Scăzut</option></select></label>
-              <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
+              <details className="supplier-extra-filters"><summary>Alte filtre{(risk||from||to)&&<span>{[risk,from,to].filter(Boolean).length}</span>}</summary><div>
+                <label>Risc orientativ<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">Toate</option><option value="high">Ridicat</option><option value="medium">Mediu</option><option value="low">Scăzut</option></select></label>
+                <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
+              </div></details>
               <button className="button secondary" onClick={()=>download(`/supplier-reviews/export.csv?${request}`,'verificari-furnizori.csv').catch(e=>notify(e.message))}>Export CSV</button>
             </div>}
-            {tab==='registrations' ? <div className="supplier-reviews-list">{registrations.length?registrations.map(r=><button className="supplier-review-row" key={r.id} onClick={()=>setRegistrationId(r.id)}><span className="review-row-copy"><strong>{r.payload.name} · CUI {r.payload.tax_id}</strong><small>{date(r.created_at)}</small></span><ReviewStatus status={r.status}/></button>):<Empty title="Niciun dosar de înregistrare"/>}</div> : tab === "reviews" ? (
+            {tab==='registrations' ? <div className="supplier-reviews-list">{matchingRegistrations.length?matchingRegistrations.map(r=><button className="supplier-review-row" key={r.id} onClick={()=>setRegistrationId(r.id)}><span className="review-row-copy"><strong>{r.payload.name} · CUI {r.payload.tax_id}</strong><small>{date(r.created_at)}</small></span><ReviewStatus status={r.status}/></button>):<Empty title="Niciun dosar de înregistrare"/>}</div> : tab === "reviews" ? (
               cases?.length ? (
                 <div className="supplier-reviews-list">
                   {cases.map((c) => (
@@ -251,14 +246,14 @@ export function SuppliersPage({
                 </div>
               ) : (
                 <Empty
-                  title="Încă nu sunt solicitări de verificat"
-                  message="Introdu detaliile unei solicitări pentru a începe verificarea."
+                  title="Nicio solicitare găsită"
+                  message="Schimbă filtrele sau începe o verificare."
                 >
                   <button
                     className="button secondary"
                     onClick={() => {setRecheck(undefined);setCreate(true)}}
                   >
-                    Prima verificare
+                    Verifică o solicitare
                     <ArrowRight size={16} />
                   </button>
                 </Empty>
@@ -275,8 +270,8 @@ export function SuppliersPage({
                         <h3>{s.name}</h3>
                         <small>
                           {s.trust_status === "demo_verified"
-                            ? "Date din registrul furnizorilor"
-                            : "Modificare aprobată de două persoane"}
+                            ? "Date de referință"
+                            : "Verificat și aprobat"}
                         </small>
                       </div>
                     </div>
@@ -317,7 +312,7 @@ export function SuppliersPage({
               <Empty title="Niciun furnizor găsit" />
             )}</SupplierContent>}
           </div>
-          {tab==='reviews'&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
+          {tab==='reviews'&&(data.total>25||offset>0)&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
           <p className="supplier-disclaimer">
             Un rezultat fără diferențe nu
             confirmă legitimitatea mesajului sau proprietarul contului. FlyLeaf

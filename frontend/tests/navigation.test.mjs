@@ -292,7 +292,7 @@ test('registry waits for its catalog and counts catalog records instead of revie
   assert.equal(pendingCount,'—');
   assert.equal(document.querySelectorAll('.supplier-registry-card').length,2);
   assert.equal(find('.library-tabs button','Registru furnizori').querySelector('span').textContent,'2');
-  assert.equal(find('.supplier-summary div','furnizori în registru').querySelector('strong').textContent,'2');
+  assert.equal(find('.supplier-summary button','furnizori în registru').querySelector('strong').textContent,'2');
 });
 
 test('supplier contract returns to the registry with its query and scroll position',async t=>{

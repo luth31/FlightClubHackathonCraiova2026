@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   Clock3,
-  CheckCheck,
   UserRound,
   UserRoundPen,
   CalendarClock,
@@ -110,49 +109,30 @@ export function ApprovalsPage({
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">URMĂTORUL PAS ÎNCEPE CU TINE</div>
           <h1>{personalTasks(user)?'Sarcinile mele':'Aprobări'}</h1>
-          <p>Responsabili clari. Documentele merg înainte, pas cu pas.</p>
         </div>
         <span className="heading-pill">
           <Clock3 size={16} />
           {data?.length ?? "—"} în așteptare
         </span>
       </div>
-      {user?.roles.some(role=>['hr','director','admin'].includes(role))&&<AppointmentPanel revision={revision} notify={notify}/>}
-      <div className="approval-intro">
-        <CheckCheck size={20} />
-        <p>
-          Aprobarea este legată de versiunea exactă a documentului. Orice
-          modificare pornește o nouă verificare.
-        </p>
-      </div>
+      {user?.roles.some(role=>['hr','director','admin'].includes(role))&&<AppointmentPanel revision={revision} notify={notify} hideEmpty/>}
       {data && (
         <div className="task-filters" aria-label="Filtre sarcini">
           {[
-            ["all", "Toate sarcinile"],
-            ["mine", "În responsabilitatea mea"],
+            ["all", "Toate"],
+            ["mine", "De rezolvat de mine"],
             ["overdue", "Termen depășit"],
             ["unassigned", "De reatribuit"],
           ].map(([id, label]) => (
             <button
               key={id}
               className={filter === id ? "active" : ""}
+              aria-pressed={filter === id}
               onClick={() => setFilter(id)}
             >
               {label}
-              {id === "unassigned" &&
-                data.some(
-                  (t) => t.assignment_state === "needs_reassignment",
-                ) && (
-                  <span>
-                    {
-                      data.filter(
-                        (t) => t.assignment_state === "needs_reassignment",
-                      ).length
-                    }
-                  </span>
-                )}
+              <span>{data.filter(t => id === "all" || (id === "mine" && t.can_act) || (id === "overdue" && t.overdue) || (id === "unassigned" && t.assignment_state === "needs_reassignment")).length}</span>
             </button>
           ))}
         </div>
@@ -254,7 +234,7 @@ export function ApprovalsPage({
       )}
       {selected && (
         <Modal
-          title="Responsabilul potrivit, la momentul potrivit"
+          title="Reatribuie sarcina"
           subtitle={selected.title}
           onClose={() => setSelected(undefined)}
         >
@@ -300,8 +280,7 @@ export function ApprovalsPage({
               />
             </label>
             <p className="quiet-note">
-              Reatribuirea se înregistrează în istoric. Documentul rămâne în
-              așteptarea unei decizii explicite.
+              Schimbarea se păstrează în istoric și nu aprobă documentul.
             </p>
             {selected.history && selected.history.length > 0 && (
               <details className="assignment-history">

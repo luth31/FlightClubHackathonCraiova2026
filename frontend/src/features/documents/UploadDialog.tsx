@@ -78,8 +78,8 @@ export function UploadDialog({
   }
   return (
     <Modal
-      title="Un document nou, în locul potrivit"
-      subtitle="Încarcă PDF-ul. Verifici informațiile înainte să îl trimiți mai departe."
+      title="Adaugă document"
+      subtitle="PDF · maximum 25 MB"
       onClose={onClose}
     >
       <form onSubmit={submit} className="modal-body">
@@ -120,7 +120,7 @@ export function UploadDialog({
             <>
               <UploadCloud size={32} />
               <strong>Trage un PDF aici sau alege fișierul</strong>
-              <span>Document PDF · maximum 25 MB</span>
+              <span>Alege fișierul de pe dispozitiv</span>
             </>
           )}
         </button>
@@ -191,8 +191,7 @@ export function UploadDialog({
           </label>
         </div>
         <p className="quiet-note">
-          Documentul se salvează ca ciornă. După verificarea informațiilor,
-          ajunge la responsabilul desemnat pentru aprobare.
+          Se salvează ca ciornă. Verifici informațiile înainte de aprobare.
         </p>
         {error && <ErrorMessage message={error} />}
         <div className="modal-footer">

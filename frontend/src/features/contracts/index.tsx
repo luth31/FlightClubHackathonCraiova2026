@@ -58,9 +58,7 @@ export function ContractsPage({
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">TERMENE VIZIBILE. DECIZII LA TIMP.</div>
           <h1>Contracte</h1>
-          <p>Relațiile cu furnizorii, de la semnare până la reînnoire.</p>
         </div>
         <button
           className="button secondary"
@@ -77,7 +75,7 @@ export function ContractsPage({
           }}
         >
           <Download size={17} />
-          Exportă registrul
+          Exportă CSV
         </button>
       </div>
       <div className="contract-summary">
@@ -150,7 +148,7 @@ export function ContractsPage({
         ) : !data ? (
           <Loading />
         ) : !filtered.length ? (
-          <Empty />
+          <Empty title="Niciun contract găsit" message="Încearcă altă căutare sau schimbă filtrul." />
         ) : (
           <div className="table-scroll">
             <table className="document-table contracts-table">

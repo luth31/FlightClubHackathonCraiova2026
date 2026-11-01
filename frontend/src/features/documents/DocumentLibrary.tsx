@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
-import { Search, SlidersHorizontal, Download, X, List, Workflow } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, SlidersHorizontal, Download, X, List, Workflow, ChevronLeft, ChevronRight } from "lucide-react";
 import { api, download, getIdentity } from "@/services/api-client";
 import { Loading, ErrorMessage } from "@/components/ui";
 import { DocumentTable } from "./DocumentTable";
 import { DocumentFlow } from "./DocumentFlow";
 import type { DocumentRecord, DocumentFlowData } from "@/types";
+import "./documents.css";
 
 type LibraryView = "list" | "flow";
+const PAGE_SIZE = 20;
 export function DocumentLibrary({
   onOpen,
   onUpload,
@@ -21,10 +23,12 @@ export function DocumentLibrary({
   revision: number;
 }) {
   const caseStorageKey = `flyleaf-document-case:${getIdentity()}`;
+  const panelRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<LibraryView>(
     () => sessionStorage.getItem("flyleaf-document-view") === "flow" ? "flow" : "list",
   ),
     [query, setQuery] = useState(""),
+    [page, setPage] = useState(1),
     [status, setStatus] = useState(initialFilter),
     [category, setCategory] = useState(""),
     [caseId, setCaseId] = useState(() => sessionStorage.getItem(caseStorageKey) || ""),
@@ -48,7 +52,16 @@ export function DocumentLibrary({
   };
   useEffect(() => {
     setStatus(initialFilter);
+    setPage(1);
   }, [initialFilter]);
+  const pageCount = Math.max(1, Math.ceil((data?.items.length || 0) / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const firstIndex = (currentPage - 1) * PAGE_SIZE;
+  const visibleDocuments = data?.items.slice(firstIndex, firstIndex + PAGE_SIZE) || [];
+  const changePage = (next: number) => {
+    setPage(next);
+    panelRef.current?.scrollIntoView?.({block: "start"});
+  };
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -93,9 +106,7 @@ export function DocumentLibrary({
     <>
       <div className="page-heading">
         <div>
-          <div className="eyebrow">UN SINGUR LOC. TOTUL LA ÎNDEMÂNĂ.</div>
           <h1>Documente</h1>
-          <p>Găsește rapid documentul de care ai nevoie.</p>
         </div>
         <div className="heading-actions">
           <button className="button secondary" onClick={exportCsv}>
@@ -107,6 +118,8 @@ export function DocumentLibrary({
           </button>
         </div>
       </div>
+      <div className="panel library-panel" ref={panelRef}>
+      <div className="library-navigation">
       <div className="library-view-switch" role="group" aria-label="Vizualizare documente">
         <button aria-pressed={view === "list"} onClick={() => changeView("list")}>
           <List size={16} /> Registru
@@ -115,7 +128,6 @@ export function DocumentLibrary({
           <Workflow size={16} /> Flux achiziții
         </button>
       </div>
-      <div className="panel library-panel">
         <div className="library-tabs">
           {[
             ["", "Toate documentele"],
@@ -127,7 +139,8 @@ export function DocumentLibrary({
             <button
               key={id}
               className={status === id ? "active" : ""}
-              onClick={() => setStatus(id)}
+              aria-pressed={status === id}
+              onClick={() => {setStatus(id);setPage(1)}}
             >
               {label}
               {id === "" && !loading && !status && !query && !category && (
@@ -136,6 +149,7 @@ export function DocumentLibrary({
             </button>
           ))}
         </div>
+      </div>
         <div className="filters">
           <label className="search-input">
             <Search size={18} />
@@ -143,10 +157,10 @@ export function DocumentLibrary({
               aria-label="Caută documente"
               placeholder="Caută după titlu, număr, furnizor…"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {setQuery(e.target.value);setPage(1)}}
             />
             {query && (
-              <button onClick={() => setQuery("")} aria-label="Șterge căutarea">
+              <button onClick={() => {setQuery("");setPage(1)}} aria-label="Șterge căutarea">
                 <X size={15} />
               </button>
             )}
@@ -156,7 +170,7 @@ export function DocumentLibrary({
             <select
               aria-label="Tip document"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {setCategory(e.target.value);setPage(1)}}
             >
               <option value="">Toate tipurile</option>
               {((view === "flow" ? flowData?.categories : data?.categories) || []).map((c) => (
@@ -179,12 +193,16 @@ export function DocumentLibrary({
           />
         ) : data ? (
           <>
-            <DocumentTable documents={data.items} onOpen={onOpen} />
-            <div className="table-footer">
-              <span>
-                {data.items.length} din {data.total} documente
+            <DocumentTable documents={visibleDocuments} onOpen={onOpen} />
+            <div className="table-footer library-pagination">
+              <span role="status">
+                {data.items.length ? `${firstIndex + 1}–${firstIndex + visibleDocuments.length}` : "0"} din {data.total} documente
               </span>
-              <span>Acces conform rolului tău</span>
+              {pageCount > 1 && <nav aria-label="Paginare documente">
+                <button className="button secondary small" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}><ChevronLeft size={16}/>Anterior</button>
+                <span>{currentPage} / {pageCount}</span>
+                <button className="button secondary small" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)}>Următor<ChevronRight size={16}/></button>
+              </nav>}
             </div>
           </>
         ) : null}

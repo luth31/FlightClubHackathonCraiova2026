@@ -121,7 +121,7 @@ test('submitting leave opens the leave list and shows the newly generated docume
     return Response.json({id:'leave-new',document_id:'doc-leave-new',status:'pending'});
   });
   await click('Cerere de concediu');
-  assert.match(document.querySelector('[role="dialog"]').textContent,/Generăm cererea PDF/);
+  assert.match(document.querySelector('[role="dialog"]').textContent,/Cererea PDF se generează automat/);
   await submit();
   assert.equal(calls[0].path,'/api/people/leave');
   assert.equal(document.querySelector('[role="tab"][aria-selected="true"]').textContent,'Concedii1');

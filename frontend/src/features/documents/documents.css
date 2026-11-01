@@ -1,0 +1,40 @@
+/* Documents keep the file and its next decision together. */
+.library-navigation{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #d7dfe6}
+.library-navigation .library-view-switch{margin:0;background:#edf1f5;padding:4px;border-color:#d7dfe6;flex-shrink:0}
+.library-navigation .library-tabs{margin:0;padding:0;border:0;min-height:0}
+.library-navigation .library-tabs button{padding:12px 10px}
+.library-panel .table-footer{padding:12px 18px;color:#526575}
+.library-panel{scroll-margin-top:16px}
+.library-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.library-pagination nav{display:flex;align-items:center;gap:12px}
+.library-pagination nav>span{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.library-pagination .button{min-height:36px}
+.detail-page .detail-heading{margin-bottom:14px}
+.detail-page .detail-kicker{color:#526575;font-size:12px}
+.detail-page .detail-toolbar{padding:12px 0;margin-bottom:18px}
+.detail-page .document-side{display:flex;flex-direction:column;gap:14px}
+.detail-page .document-actions{margin:0;padding:18px;border-color:#b6d3d3;background:#f0f8f7}
+.detail-page .document-actions h2{font-size:16px;color:#142432;margin-bottom:7px}
+.detail-page .document-actions p{font-size:13px;color:#33475b;line-height:1.5;margin-bottom:12px}
+.detail-page .document-task-owner{padding:0 0 12px;margin-bottom:12px;border-color:#c6dddd;font-size:13px;color:#33475b}
+.detail-page .document-task-owner a{font-size:12px;color:#0f6e68}
+.detail-page .detail-tabs button{font-size:13px;color:#526575;padding:14px 12px}
+.detail-page .detail-tabs button.active{color:#153c52;border-color:#0f6e68;font-weight:700}
+.detail-page .detail-tab-content{padding:18px}
+.detail-page .metadata-list>div{display:grid;grid-template-columns:minmax(90px,.85fr) minmax(0,1.15fr);align-items:baseline;gap:10px;padding:10px 0;margin:0;border-bottom:1px solid #edf1f5}
+.detail-page .metadata-list dt{font-size:12px;color:#526575}
+.detail-page .metadata-list dd{font-size:13px;color:#142432}
+.detail-page .verified-line{color:#086357;background:#e6f3f1;font-size:12px}
+.detail-page .unverified-line{color:#94520c;background:#fff4dd;font-size:12px}
+.detail-page .doc-summary{padding-top:12px;border-top:1px solid #d7dfe6;margin-top:12px}
+.detail-page .doc-summary summary{font-size:13px;font-weight:650;cursor:pointer;color:#33475b}
+.detail-page .doc-summary p{font-size:13px;line-height:1.6;color:#33475b;margin-top:10px}
+.detail-page .related-panel{padding:18px;margin:0}
+.detail-page .related-panel h2{font-size:14px;display:flex;align-items:center;gap:8px}
+.detail-page .related-documents a{padding:12px 0}
+.detail-page .related-documents strong{font-size:13px;color:#142432}
+.detail-page .related-documents small,.detail-page .quiet-note,.detail-page .note-box{color:#526575;font-size:12px}
+.detail-page .tags span{color:#33475b;background:#edf1f5;font-size:11px}
+.detail-page .workflow-step strong{font-size:13px;color:#142432}
+.detail-page .workflow-step small,.detail-page .detail-history small{font-size:12px;color:#526575}
+@media(max-width:700px){.library-navigation{padding:12px;gap:8px}.library-navigation .library-tabs{width:100%;overflow:auto}.library-navigation .library-tabs button{padding:10px 8px}.detail-page .detail-tab-content,.detail-page .document-actions,.detail-page .related-panel{padding:15px}.detail-page .detail-tabs button{padding:12px 9px;font-size:12px}}

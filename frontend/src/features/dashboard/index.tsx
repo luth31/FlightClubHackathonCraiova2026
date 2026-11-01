@@ -6,8 +6,6 @@ import {
   Clock3,
   FileStack,
   CalendarDays,
-  FolderOpen,
-  ShieldCheck,
   FileCheck2,
 } from "lucide-react";
 import { api } from "@/services/api-client";
@@ -16,6 +14,7 @@ import { OperationsPulse } from "@/features/operations/OperationsPulse";
 import { DocumentTable } from "@/features/documents";
 import { date, time, actionLabel } from "@/utils/format";
 import type { Dashboard, Page } from "@/types";
+import './dashboard.css';
 export function DashboardPage({
   name,
   onOpen,
@@ -48,60 +47,42 @@ export function DashboardPage({
   if (!data) return <Loading />;
   const stats = [
     {
-      label: "Documente în registru",
+      label: "Documente",
       value: data.stats.documents,
-      sub: "La care ai acces în acest spațiu",
       icon: FileStack,
       to: "documents",
       filter: "",
     },
     {
-      label: "Așteaptă o decizie",
+      label: "De aprobat",
       value: data.stats.pending,
-      sub: "Documente în curs de aprobare",
       icon: Clock3,
       to: "approvals",
       filter: "in_review",
     },
     {
-      label: "Termene în următoarele 60 zile",
+      label: "Expiră în 60 zile",
       value: data.stats.expiring,
-      sub: "Pregătește următorul pas",
       icon: CalendarDays,
       to: "contracts",
       filter: "soon",
     },
     {
-      label: "Documente aprobate",
+      label: "Aprobate",
       value: data.stats.approved,
-      sub: "Gata să fie folosite",
       icon: CheckCheck,
       to: "documents",
       filter: "approved",
     },
   ];
   return (
-    <>
+    <div className="dashboard-home">
       <div className="page-heading home-heading">
         <div>
-          <div className="eyebrow">SPAȚIUL TĂU DE LUCRU</div>
           <h1>
             Bine ai venit, {name.split(" ")[0]}
             <span className="greeting-dot">.</span>
           </h1>
-          <p>O privire de ansamblu. Un început de zi mai clar.</p>
-        </div>
-      </div>
-      <div className="welcome-strip">
-        <div className="welcome-symbol">
-          <FolderOpen size={27} />
-        </div>
-        <div>
-          <strong>Fiecare document, la locul lui.</strong>
-          <p>
-            De la prima versiune la ultima aprobare, păstrează lucrurile în
-            mișcare.
-          </p>
         </div>
         <button className="button primary" onClick={onUpload}>
           <span className="plus">+</span>Adaugă document
@@ -122,7 +103,6 @@ export function DashboardPage({
               {s.value}
               <ArrowUpRight size={19} />
             </div>
-            <small>{s.sub}</small>
           </button>
         ))}
       </div>
@@ -131,9 +111,9 @@ export function DashboardPage({
         <div className="dashboard-primary">
           <div className="panel attention-panel">
             <SectionHead
-              title="În atenția ta"
+              title="De rezolvat"
               onClick={() => onNavigate("approvals")}
-              action="Deschide aprobările"
+              action="Toate aprobările"
             >
               <span className="count-badge">{data.stats.pending}</span>
             </SectionHead>
@@ -232,19 +212,8 @@ export function DashboardPage({
               )}
             </div>
           </div>
-          <div className="trust-card">
-            <ShieldCheck size={24} />
-            <h3>Un fir clar al deciziilor.</h3>
-            <p>
-              Versiuni păstrate. Aprobări înregistrate. Acces doar pentru
-              persoanele potrivite.
-            </p>
-            <button onClick={() => onNavigate("audit")}>
-              Deschide jurnalul <ArrowRight size={16} />
-            </button>
-          </div>
         </aside>
       </div>
-    </>
+    </div>
   );
 }

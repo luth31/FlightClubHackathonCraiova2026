@@ -17,7 +17,7 @@ export function SupplierCatalogPage({revision,onOpen}:{revision:number;onOpen:(i
   },[revision,refresh]);
   const filtered=items?.filter(item=>`${item.name} ${item.tax_id||''} ${item.verified_contact}`.toLocaleLowerCase('ro').includes(query.toLocaleLowerCase('ro')));
   return <>
-    <div className="page-heading"><div><div className="eyebrow">ACHIZIȚII ȘI FINANCIAR</div><h1>Furnizori</h1><p>Fișele comerciale și contractele din departamentul tău.</p></div></div>
+    <div className="page-heading"><div><h1>Furnizori</h1></div></div>
     {error&&<ErrorMessage message={error} retry={()=>setRefresh(value=>value+1)}/>}
     {!items&&!error&&<Loading/>}
     {items&&<div className="panel"><div className="filters"><label className="search-input"><Search size={17}/><input aria-label="Caută un furnizor" placeholder="Caută un furnizor…" value={query} onChange={event=>setQuery(event.target.value)}/></label><span className="result-count">{filtered?.length} furnizori</span></div>
