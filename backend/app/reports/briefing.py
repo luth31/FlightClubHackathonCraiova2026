@@ -107,4 +107,4 @@ def build(db, user, department='', today=None):
             events=[dict(document_id=event.document_id, created_at=event.created_at) for event in events]),
         coverage=dict(dated_contracts=sum(bool(r.get('date')) for r in contracts),
             valued_contracts=sum(r.get('value') is not None for r in contracts),
-            scope='Date administrative din AeroDesk. Indicatorii de trafic aerian nu au o sursă conectată.'))
+            scope='Date administrative din FlyLeaf. Indicatorii de trafic aerian nu au o sursă conectată.'))

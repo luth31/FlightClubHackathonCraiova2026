@@ -408,20 +408,6 @@ button {
   border-top: 1px solid var(--border);
   margin-top: 7px;
 }
-.logout-error {
-  margin: 12px 39px 0;
-}
-@media (max-width: 1200px) {
-  .topbar-logout span {
-    display: none;
-  }
-}
-@media (max-width: 1050px) {
-  .logout-error {
-    margin-left: 22px;
-    margin-right: 22px;
-  }
-}
 .app-main {
   margin-left: 244px;
   min-height: 100vh;

@@ -1,0 +1,124 @@
+/* Reports inherit the workspace theme; navigating here never changes the app palette. */
+.px-dashboard, .px-source-dialog {
+  --px-navy: var(--primary);
+  --px-matrix-ink: var(--text);
+  --px-canvas: var(--background);
+  --px-surface: var(--surface);
+  --px-subtle: var(--surface-subtle);
+  --px-hover: var(--surface-subtle);
+  --px-line: var(--border);
+  --px-ink: var(--ink);
+  --px-muted: var(--muted);
+  --px-accent: var(--primary);
+  --px-teal: var(--accent);
+  --px-red: var(--danger);
+  --px-gold: var(--warning);
+  --px-chart-grid: var(--border);
+  --px-chart-selection: var(--surface-subtle);
+  --px-chart-danger: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  --px-chart-warning: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  background: var(--px-canvas);
+  border-color: var(--px-line);
+  border-radius: 10px;
+}
+.px-dashboard button, .px-source-dialog button { transition: background .18s, border-color .18s, color .18s; }
+.px-dashboard button:focus-visible, .px-dashboard input:focus-visible, .px-dashboard select:focus-visible { outline-color: var(--px-accent); }
+.px-masthead { border-radius: 9px 9px 0 0; padding: 16px 18px; }
+.px-tabs { padding: 10px; gap: 12px; }
+.px-tabs>div:first-child>button { min-height: 40px; background: var(--px-surface); color: var(--px-muted); border-color: var(--px-line); font-size: 11px; }
+.px-tabs>div:first-child>button[aria-current=page] { background: var(--px-navy); color: #fff; border-color: var(--px-navy); }
+.px-tabs>div:first-child>button:hover { background: var(--px-hover); color: var(--px-ink); }
+.px-tabs>div:first-child>button[aria-current=page]:hover { background: var(--primary-hover); color: #fff; }
+.px-dashboard-actions>button { width: 44px; height: 44px; color: var(--px-muted); }
+.px-dashboard-actions>button:hover, .px-panel>header>button:hover { background: var(--px-hover); color: var(--px-accent); }
+.px-dashboard-actions>span { background: var(--px-line); }
+.px-slicers { background: var(--px-subtle); border: 1px solid var(--px-line); padding: 12px; }
+.px-slicers>header { color: var(--px-ink); font-size: 12px; }
+.px-slicers>header>span, .px-slicers>footer { color: var(--px-muted); font-size: 10px; }
+.px-slicer-grid fieldset { background: var(--px-surface); border-color: var(--px-line); padding: 12px 10px; }
+.px-slicer-grid legend { color: var(--px-ink); font-size: 11px; }
+.px-checkbox-list label, .px-month-options label { color: var(--px-ink); font-size: 11px; min-height: 24px; cursor: pointer; }
+.px-checkbox-list { max-height: 140px; gap: 4px; scrollbar-color: var(--px-line) transparent; }
+.px-category-slicer .px-checkbox-list { max-height: 84px; }
+.px-month-options { max-height: 132px; scrollbar-width: thin; scrollbar-color: var(--px-line) transparent; }
+.px-checkbox-list b, .px-year-label, .px-period-slicer>p { color: var(--px-muted); font-size: 10px; }
+.px-slicers input[type=checkbox] { accent-color: var(--px-accent); width: 14px; height: 14px; }
+.px-period-buttons>button { min-height: 32px; color: var(--px-muted); background: var(--px-surface); border-color: var(--px-line); font-size: 10px; }
+.px-period-buttons>button[aria-pressed=true] { background: var(--px-navy); border-color: var(--px-navy); color: #fff; }
+.px-period-buttons>button:hover { background: var(--px-hover); color: var(--px-ink); }
+.px-kpi, .px-panel { background: var(--px-surface); border: 1px solid var(--px-line); border-radius: 7px; }
+.px-kpi:hover { background: var(--px-hover); border-color: var(--px-accent); }
+.px-kpi>div>span { color: var(--px-ink); font-size: 11px; }
+.px-kpi p, .px-panel>header p { color: var(--px-muted); font-size: 10px; }
+.px-kpi strong, .px-kpi small, .px-kpi-icon { color: var(--px-accent); }
+.px-kpi small { font-size: 10px; }
+.px-kpi-icon { background: var(--px-subtle); border-color: var(--px-line); }
+.px-kpi-teal strong, .px-kpi-teal small, .px-kpi-teal .px-kpi-icon { color: var(--px-teal); }
+.px-kpi-red strong, .px-kpi-red small, .px-kpi-red .px-kpi-icon { color: var(--px-red); }
+.px-kpi-gold strong, .px-kpi-gold small, .px-kpi-gold .px-kpi-icon { color: var(--px-gold); }
+.px-kpi-teal .px-kpi-icon, .px-kpi-red .px-kpi-icon, .px-kpi-gold .px-kpi-icon { background: var(--px-subtle); border-color: var(--px-line); }
+.px-panel>header h2 { color: var(--px-ink); font-size: 14px; }
+.px-panel>header>button { color: var(--px-muted); min-width: 32px; min-height: 32px; border-radius: 5px; }
+.px-chart-legend, .px-chart-legend>b { color: var(--px-muted); font-size: 10px; }
+.px-panel svg text, .px-panel svg .px-point-label, .px-panel svg .px-axis-caption { fill: var(--px-muted); }
+.px-trend>footer, .px-department-chart>footer, .px-exposure>footer, .px-matrix-wrap>footer { color: var(--px-muted); font-size: 10px; }
+.px-selection-strip, .px-selection-strip b, .px-dashboard-footer, .px-data-note { color: var(--px-muted); font-size: 10px; }
+.px-selection-strip button { color: var(--px-ink); background: var(--px-subtle); border-color: var(--px-line); font-size: 10px; }
+.px-matrix th, .px-status-ring span, .px-status-legend small { color: var(--px-muted); font-size: 10px; }
+.px-status-ring>div { background: var(--px-surface); }
+.px-status-ring strong, .px-status-legend strong { color: var(--px-ink); }
+.px-status-legend>button, .px-ranking>button>div, .px-ranking b, .px-priority-list strong { color: var(--px-ink); }
+.px-ranking span>small, .px-priority-list small { color: var(--px-muted); font-size: 10px; }
+.px-ranking>button>i { background: var(--px-subtle); }
+.px-priority-list>button { border-color: var(--px-line); }
+.px-priority-list span { color: var(--px-gold); font-size: 10px; }
+.px-chart-empty, .px-chart-empty strong { color: var(--px-muted); }
+.px-currency, .px-dashboard-footer>button, .px-priority-more { color: var(--px-accent); }
+.px-currency select { background: var(--px-surface); color: var(--px-ink); border-color: var(--px-line); }
+.px-library-section, .px-data-note { background: var(--px-canvas); border-color: var(--px-line); }
+.px-library-toggle, .px-library-toggle>span:last-child { color: var(--px-ink); }
+.px-library-toggle small { color: var(--px-muted); }
+
+.rp-page { --rp-accent: var(--primary); --rp-soft: var(--surface-subtle); --rp-line: var(--border); --rp-muted: var(--muted); }
+.px-masthead { border-top-color: var(--accent); }
+.px-source-dialog { color: var(--ink); }
+.px-source-content>header { background: var(--primary); border-color: var(--border); }
+.rp-page .bi-report { --bi-accent: var(--primary); --bi-grid: var(--border); --bi-muted: var(--muted); --bi-background: var(--background); --forest: var(--primary); border-color: var(--border); }
+.rp-page .bi-report-header { background: var(--primary); }
+.rp-page .bi-panel, .rp-page .bi-filter-pane { border-color: var(--border); }
+.rp-page .bi-filter-pane { background: var(--surface-subtle); }
+.rp-page .bi-toolbar button { background: var(--primary-hover); }
+.rp-page .bi-toolbar .bi-export-button { background: var(--surface); color: var(--primary); }
+.bi-view-nav, .bi-report-footer, .bi-filter-pane select { background: var(--surface); border-color: var(--border); }
+.rp-register, .rp-secondary-button, .rp-table-search, .rp-table-controls select { background: var(--surface); color: var(--ink); border-color: var(--border); }
+.rp-register th, .rp-register tbody tr:hover { background: var(--surface-subtle); }
+.rp-register td, .rp-register th, .rp-panel-title, .rp-table-controls { border-color: var(--border); }
+.rp-row-title, .rp-panel-title h3 { color: var(--ink); }
+.rp-register th, .rp-register th button, .rp-register td, .rp-row-title small { color: var(--text); }
+.rp-register td.rp-overdue { color: var(--danger); }
+.px-library .db-library { --db-ink: var(--ink); --db-muted: var(--muted); --db-line: var(--border); }
+.px-library .db-report-card, .px-library .db-library-tools>label, .px-library .db-favorites { background: var(--surface); border-color: var(--border); }
+.px-library .db-mini-chart, .px-library .db-report-icon { background: var(--surface-subtle); }
+.px-library .db-library h2, .px-library .db-card-main h3, .px-library .db-card-metric strong { color: var(--ink); }
+.px-library .db-card-main p, .px-library .db-card-metric span, .px-library .db-eyebrow { color: var(--muted); }
+.px-library .db-library-tools input, .px-library .db-category-tabs button, .px-library .db-category-tabs>span, .px-library .db-report-card>footer, .px-library .db-favorites { color: var(--text); }
+.px-library .db-category-tabs>button[aria-pressed=true] { background: var(--primary); color: var(--surface); }
+.px-library .db-favorites[aria-pressed=true], .px-library .db-category-tabs button:hover { background: var(--surface-subtle); color: var(--ink); }
+.px-library .db-category-tabs, .px-library .db-card-metric { border-color: var(--border); }
+.px-library .db-report-card:hover { transform: none; border-color: var(--primary); }
+.rp-skeleton>span { background: var(--border); }
+.rp-skeleton i { background-image: linear-gradient(90deg, var(--surface-subtle), var(--surface), var(--surface-subtle)); }
+
+@media (max-width: 600px) {
+  .px-dashboard-actions>button { width: 40px; height: 44px; }
+  .px-tabs>div:first-child>button { min-height: 44px; font-size: 10px; white-space: normal; }
+  .px-checkbox-list label, .px-month-options label { min-height: 36px; }
+  .px-kpi { align-items: flex-start; gap: 7px; }
+  .px-kpi p, .px-kpi small { font-size: 10px; }
+  .px-kpi-icon { width: 25px; height: 32px; }
+  .px-panel>header h2 { font-size: 13px; }
+  .px-chart-legend, .px-trend>footer { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .px-dashboard button, .px-source-dialog button { transition: none; }
+}

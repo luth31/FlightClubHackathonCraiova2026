@@ -17,9 +17,10 @@ const {App}=module.exports;
 initialDOM.window.close();
 
 function installDOM(window) {
-  for (const key of ['window','document','navigator','location','localStorage','sessionStorage','HTMLElement','HTMLInputElement','Event','MouseEvent','FormData','File'])
+  for (const key of ['window','document','navigator','location','localStorage','sessionStorage','HTMLElement','HTMLInputElement','Event','MouseEvent','CustomEvent','FormData','File'])
     Object.defineProperty(globalThis,key,{value:key==='window'?window:window[key],configurable:true,writable:true});
   globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+  globalThis.ResizeObserver=class {observe() {} disconnect() {}};
   window.scrollTo=(x,y)=>{
     Object.defineProperty(window,'scrollX',{value:x,configurable:true});
     Object.defineProperty(window,'scrollY',{value:y,configurable:true});
@@ -212,7 +213,44 @@ test('procurement supplier view shows business profiles without banking workflow
   assert.ok(!paths.includes('/api/supplier-registrations'));
 });
 
-test('logout is available without opening the account menu and clears the workspace',async t=>{
+test('logout is in the top-right profile popup and cancel preserves the document and session',async t=>{
+  let requests=0;
+  await setup(t,'#document/doc-contract?from=suppliers',{authMode:'oidc',logoutResponse:()=>{requests++;return Response.json({ok:true});}});
+  assert.equal(!!find('.topbar button','Ieși din cont'),false);
+  const avatar=document.querySelector('.topbar .person-avatar-trigger');
+  await click(avatar);
+  await click(find('.person-profile button','Ieși din cont'));
+  assert.ok(document.querySelector('.logout-confirmation'));
+  assert.equal(document.querySelector('.person-profile'),null);
+  assert.equal(requests,0,'Opening confirmation must not end the session');
+  const cancel=find('.logout-confirmation button','Rămâi conectat');
+  assert.equal(document.activeElement,cancel,'The safe action receives initial focus');
+  await click(cancel);
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+  assert.equal(document.activeElement,avatar);
+  assert.equal(document.querySelector('.person-profile'),null,'Restoring focus should not reopen the popup');
+  assert.equal(location.hash,'#document/doc-contract?from=suppliers');
+  assert.equal(localStorage.getItem('flyleaf-user'),'admin');
+  assert.match(document.querySelector('main').textContent,/Contract Demo Navigation/);
+  assert.equal(requests,0);
+});
+
+test('Escape and backdrop dismiss logout confirmation without ending the session',async t=>{
+  let requests=0;
+  await setup(t,'#home',{logoutResponse:()=>{requests++;return Response.json({ok:true});}});
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.ok(document.querySelector('.logout-confirmation'));
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await act(async()=>document.querySelector('.modal-backdrop').dispatchEvent(new MouseEvent('mousedown',{bubbles:true})));
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+  assert.equal(requests,0);
+  assert.equal(localStorage.getItem('flyleaf-user'),'admin');
+  assert.ok(document.querySelector('.app-shell'));
+});
+
+test('confirmed logout clears the workspace without another session request',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
   assert.equal(localStorage.getItem('flyleaf-user'),'admin');
   const originalFetch=globalThis.fetch;
@@ -220,7 +258,8 @@ test('logout is available without opening the account menu and clears the worksp
     if(String(input)==='/api/session')throw new Error('Session refresh unavailable');
     return originalFetch(input,options);
   };
-  await click(find('.topbar button','Ieși din cont'));
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(document.querySelector('.login-page'),'Successful logout should show login without another session request');
   assert.equal(document.querySelector('.app-shell'),null);
   assert.equal(localStorage.getItem('flyleaf-user'),null);
@@ -238,10 +277,16 @@ test('logout prevents repeated requests while the session is being revoked',asyn
   await setup(t,'#home',{logoutResponse:()=>{requests++;return response;}});
   const button=find('.sidebar-bottom button','Ieși din cont');
   await click(button);
+  assert.equal(requests,0);
+  const confirm=find('.logout-confirmation button','Ieși din cont');
+  await click(confirm);
   assert.equal(button.disabled,true);
-  assert.equal(document.querySelector('.topbar [aria-label="Ieși din cont"]').disabled,true);
+  assert.equal(confirm.disabled,true);
+  assert.equal(find('.logout-confirmation button','Rămâi conectat').disabled,true);
   assert.equal(document.querySelector('.user-button').disabled,true);
-  await click(button);
+  await click(confirm);
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+  assert.ok(document.querySelector('.logout-confirmation'),'A pending logout cannot be canceled');
   assert.equal(requests,1);
   await act(async()=>finish(Response.json({ok:true,redirect_url:null})));
   await settle();
@@ -252,12 +297,13 @@ test('failed logout keeps the account active and offers a retry',async t=>{
   let fail=true;
   await setup(t,'#home',{logoutResponse:()=>Response.json(fail?{detail:'Logout temporarily unavailable'}:{ok:true,redirect_url:null},{status:fail?503:200})});
   await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(find('[role="alert"]','Logout temporarily unavailable'));
   assert.ok(find('.user-button',user.name));
   assert.equal(localStorage.getItem('flyleaf-user'),'admin');
-  assert.equal(find('.sidebar-bottom button','Ieși din cont').disabled,false);
+  assert.equal(find('.logout-confirmation button','Ieși din cont').disabled,false);
   fail=false;
-  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(document.querySelector('.login-page'));
 });
 
@@ -267,6 +313,8 @@ test('OIDC logout clears local content before navigating to the provider',async 
   const destinations=[];
   globalThis.location={search:'',assign:url=>destinations.push(url)};
   await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.deepEqual(destinations,[]);
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.deepEqual(destinations,[redirect]);
   assert.equal(document.querySelector('.app-shell'),null);
   assert.ok(document.querySelector('.login-page a.login-button'));
@@ -286,7 +334,8 @@ for (const lateResult of ['success','error'])
       return response;
     }});
     assert.equal(requests,2);
-    await click(find('.topbar button','Ieși din cont'));
+    await click(find('.sidebar-bottom button','Ieși din cont'));
+    await click(find('.logout-confirmation button','Ieși din cont'));
     assert.ok(document.querySelector('.login-page'));
     await act(async()=>finish());
     await settle();
@@ -304,7 +353,8 @@ test('successful logout clears a startup error received while logout was pending
     if(++requests===2){await pendingSession;throw new Error('Startup session failed');}
     return response;
   },logoutResponse:()=>pendingLogout});
-  await click(find('.topbar button','Ieși din cont'));
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   await act(async()=>finishSession());
   await settle();
   await act(async()=>finishLogout(Response.json({ok:true,redirect_url:null})));

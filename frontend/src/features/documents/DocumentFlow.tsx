@@ -29,6 +29,14 @@ const geometry = {
   '--flow-inset': `${CARD_INSET}px`,
 } as CSSProperties;
 
+function FlowLegendArrow({ kind = 'flow' }: { kind?: 'flow' | 'reference' | 'correction' }) {
+  return <svg className={`flow-legend-arrow flow-legend-arrow-${kind}`} viewBox="0 0 32 20"
+    fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M 3 10 H 28" strokeDasharray={kind === 'reference' ? '4 4' : kind === 'correction' ? '6 3' : undefined} />
+    <path d="m 23 5 5 5 -5 5" />
+  </svg>;
+}
+
 function statusAppearance(status: string) {
   if (['approved', 'signed', 'active', 'completed'].includes(status)) return { tone: 'positive', Icon: CircleCheck };
   if (['in_review', 'pending'].includes(status)) return { tone: 'waiting', Icon: Clock3 };
@@ -114,8 +122,8 @@ function FlowCaseChart({ graph, onOpen }: { graph: FlowGraphGroup; onOpen: (id: 
   return <div className={`flow-case-body${active ? ' flow-has-focus' : ''}`} ref={bodyRef}
     style={{ height }}>
     <svg className="flow-connectors" width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-      <defs><marker id={arrowId} markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-        <path d="M 0 0 L 6 3 L 0 6 z" fill="context-stroke" />
+      <defs><marker id={arrowId} markerWidth="12" markerHeight="12" viewBox="0 0 12 12" refX="10" refY="6" markerUnits="userSpaceOnUse" orient="auto">
+        <path d="M 5 1 L 10 6 L 5 11" fill="none" stroke="context-stroke" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </marker></defs>
       {graph.edges.map((edge) => <path key={edge.id}
         className={`flow-connector flow-connector-${edge.kind}${edge.source === active || edge.target === active ? ' flow-connector-active' : ''}`}
@@ -204,8 +212,8 @@ export function DocumentFlow({ data, caseId, onSelectCase, onOpen, onShowRegiste
           <div className="flow-case-intro"><div><h3>{info.name}</h3>{info.summary && <p>{info.summary}</p>}</div>
             {info.demo && <span className="flow-demo-label">Demonstrație</span>}
           </div>
-          <div className="flow-legend"><span><ArrowRight size={22} />Documente legate</span><span><i />Referință</span>
-            {active.edges.some((edge) => edge.kind === 'correction') && <span><i className="flow-correction-key" />Retur / corecție</span>}
+          <div className="flow-legend"><span><FlowLegendArrow />Documente legate</span><span><FlowLegendArrow kind="reference" />Referință</span>
+            {active.edges.some((edge) => edge.kind === 'correction') && <span><FlowLegendArrow kind="correction" />Retur / corecție</span>}
             <span className="flow-scroll-hint">Derulează pentru toate coloanele</span>
           </div>
           <div className="flow-chart-scroll" role="region" aria-label="Diagrama fluxului de achiziții" tabIndex={0}>
