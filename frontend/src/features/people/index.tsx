@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState, type FormEvent} from 'react';
-import {ArrowRight, CalendarDays, Check, FileText, Plus, Search, ShieldCheck, UserRound, UserRoundPlus, Users, X} from 'lucide-react';
+import {ArrowRight, CalendarDays, Check, CreditCard, Ellipsis, FileText, Plus, Search, ShieldCheck, UserRound, UserRoundPlus, Users, X} from 'lucide-react';
 import {api} from '@/services/api-client';
 import {documentHref} from '@/services/navigation';
 import {Empty, ErrorMessage, Loading, Modal, Status} from '@/components/ui';
@@ -7,12 +7,16 @@ import {date} from '@/utils/format';
 import {PersonAvatar, PersonStatus} from '@/components/people/PersonAvatar';
 import {usePersonDirectory} from '@/components/people/PersonDirectory';
 import {DepartmentFilter} from './DepartmentFilter';
+import {Attendance} from './Attendance';
+import {clearNfcLink,nfcHash} from '@/features/operations/nfc-links';
 import './people.css';
 import {EmployeeDialog} from './EmployeeDialog';
 import {AuthorityDialog} from './AuthorityDialog';
 import {AppointmentPanel} from './AppointmentPanel';
 import {OrganizationChart} from './OrganizationChart';
 import type {Person, Directory, Leave} from './types';
+
+function tabFromHash(){const params=new URLSearchParams(window.location.hash.split('?')[1]||'');return params.get('tab')==='attendance'||params.get('view')==='station'?'attendance':params.get('tab')==='leave'?'leave':'directory'}
 
 type Dialog = 'leave'|'delegation'|'employee'|null;
 
@@ -21,7 +25,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   const [data,setData]=useState<Directory>();
   const [error,setError]=useState('');
   const [refresh,setRefresh]=useState(0);
-  const [tab,setTab]=useState(()=>new URLSearchParams(window.location.hash.split('?')[1]||'').get('tab')==='leave'?'leave':'directory');
+  const [tab,setTab]=useState(tabFromHash);
   const [query,setQuery]=useState('');
   const searchInput=useRef<HTMLInputElement>(null);
   const [department,setDepartment]=useState('');
@@ -33,6 +37,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   const [busy,setBusy]=useState(false);
   const [formError,setFormError]=useState('');
   useEffect(()=>{let live=true;api<Directory>('/people').then(v=>{if(live){setData(v);setError('')}}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[revision,refresh]);
+  useEffect(()=>{const route=()=>{if(window.location.hash.startsWith('#people')||window.location.hash.startsWith('#operations?view=station'))setTab(tabFromHash())};window.addEventListener('hashchange',route);return()=>window.removeEventListener('hashchange',route)},[]);
   const reload=(message:string)=>{refreshProfiles();notify(message);setRefresh(v=>v+1);setDialog(null);setDecision(undefined);setAccount(undefined);setFormError('');setBusy(false)};
   async function mutate(path:string,body:unknown,message:string,method='POST') {
     setBusy(true);setFormError('');
@@ -40,6 +45,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   }
   if(error&&!data)return <ErrorMessage message={error} retry={()=>setRefresh(v=>v+1)}/>;
   if(!data)return <Loading/>;
+  if(tab==='attendance')return data.can_record_attendance?<Attendance onBack={()=>{clearNfcLink();setTab('directory');window.location.hash='#people'}}/>:<div><button className="text-button" onClick={()=>{clearNfcLink();setTab('directory');window.location.hash='#people'}}>Înapoi la echipă</button><ErrorMessage message="Pontajul este disponibil echipei operaționale și directorului."/></div>;
   const selectedData=data;
   const people=data.items.filter(p=>(!department||p.department===department)&&`${p.name} ${p.job_title}`.toLocaleLowerCase('ro').includes(query.toLocaleLowerCase('ro')));
   const reviewers=data.items.filter(p=>p.active&&(p.is_department_head||p.roles?.some(r=>['reviewer','director'].includes(r))));
@@ -51,7 +57,7 @@ export function PeoplePage({revision,notify}:{revision:number;notify:(message:st
   function submitLeave(event:FormEvent<HTMLFormElement>){event.preventDefault();const f=new FormData(event.currentTarget);void mutate('/people/leave',Object.fromEntries(f),'Cererea a fost trimisă și documentul PDF a fost generat.');}
   function submitDelegation(event:FormEvent<HTMLFormElement>){event.preventDefault();const f=new FormData(event.currentTarget);void mutate('/people/delegations',Object.fromEntries(f),'Delegarea a fost înregistrată.');}
   return <>
-    <div className="page-heading"><div><h1>Echipa ta</h1></div><div className="people-heading-actions"><button className="button secondary" onClick={()=>{setDialog('leave');setFormError('')}}><CalendarDays size={17}/>Cerere de concediu</button>{data.can_manage_delegations&&<button className="button secondary" onClick={()=>{setDialog('delegation');setFormError('')}}><Plus size={17}/>Delegare</button>}{data.can_create_users&&<button className="button primary" onClick={()=>setDialog('employee')}><Plus size={17}/>Adaugă angajat</button>}</div></div>
+    <div className="page-heading"><div><h1>Echipa ta</h1></div><div className="people-heading-actions"><button className="button secondary" onClick={()=>{setDialog('leave');setFormError('')}}><CalendarDays size={17}/>Cerere de concediu</button>{data.can_manage_delegations&&<button className="button secondary" onClick={()=>{setDialog('delegation');setFormError('')}}><Plus size={17}/>Delegare</button>}{data.can_create_users&&<button className="button primary" onClick={()=>setDialog('employee')}><Plus size={17}/>Adaugă angajat</button>}{data.can_record_attendance&&<details className="people-more-actions" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))event.currentTarget.open=false}} onKeyDown={event=>{if(event.key==='Escape'){event.currentTarget.open=false;event.currentTarget.querySelector('summary')?.focus()}}}><summary aria-label="Mai multe opțiuni" title="Mai multe opțiuni"><Ellipsis size={20}/></summary><div><button onClick={()=>{setTab('attendance');window.location.hash=nfcHash()}}><CreditCard size={17}/>Pontaj NFC</button></div></details>}</div></div>
     <div className="people-overview"><div><Users size={20}/><span><strong>{data.items.filter(p=>p.active).length}</strong> colegi activi</span></div><div><CalendarDays size={20}/><span><strong>{data.items.filter(p=>p.availability==='away').length}</strong> în concediu</span></div><div><ShieldCheck size={20}/><span><strong>{data.delegations.filter(d=>d.status==='active').length}</strong> delegări active</span></div></div>
     <div className="people-tabs" role="tablist" aria-label="Informații echipă">{[['directory','Colegi'],['organization','Organigramă'],['delegations','Delegări'],['leave','Concedii'],...(data.can_view_appointments?[['appointments','Numiri']]:[])].map(([key,label])=><button key={key} role="tab" aria-selected={tab===key} onClick={()=>setTab(key)}>{label}{key==='leave'&&pending.length>0&&<span>{pending.length}</span>}</button>)}</div>
     {error&&<ErrorMessage message={error}/>}

@@ -18,6 +18,7 @@ import {PersonDirectoryProvider} from '@/components/people/PersonDirectory';
 import {ReportsPage} from '@/features/reports';
 import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
+import {rememberNfcLink,pendingNfcCard,nfcHash} from '@/features/operations/nfc-links';
 import {initials,roleLabel} from '@/utils/format';
 import type {Page,Session} from '@/types';
 const OperationsPage = lazy(()=>import('@/features/operations').then(module=>({default:module.OperationsPage})));
@@ -73,6 +74,12 @@ export function App() {
     setUserMenu(false);setMobileOpen(false);setLogoutError('');setConfirmingLogout(false);
     setSession(current=>current?{...current,current_user:null,users:current.auth?.mode==='oidc'?[]:current.users}:current);
   }),[]);
+  useEffect(()=>{rememberNfcLink();window.addEventListener('hashchange',rememberNfcLink);return()=>window.removeEventListener('hashchange',rememberNfcLink)},[]);
+  useEffect(()=>{
+    if(!userId||!allowedPages.people||window.location.hash&&window.location.hash!=='#')return;
+    const card=pendingNfcCard();
+    if(card)window.location.hash=nfcHash(card);
+  },[userId,allowedPages.people]);
   useEffect(()=>{refresh()},[]);
   useEffect(()=>{
     setMobileOpen(false);

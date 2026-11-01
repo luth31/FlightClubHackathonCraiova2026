@@ -58,6 +58,12 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
     if(pending.current)return false;pending.current=true;setBusy(true);
     try{const next=await api<OperationsData>('/operations/control',{method:'POST',body:JSON.stringify({action,...extra})});accept(next);return true}catch(e){notify((e as Error).message);return false}finally{pending.current=false;setBusy(false)}
   }
+  async function recordEvent(kind:string,extra:Record<string,unknown>){
+    if(pending.current||previewing||liveData?.simulation.scenario_mode!=='interactive'||!liveData.permissions.can_control)return;
+    pending.current=true;setBusy(true);
+    try{accept(await api<OperationsData>('/operations/events',{method:'POST',body:JSON.stringify({kind,...extra,request_id:crypto.randomUUID(),expected_revision:liveData.simulation.revision})}))}
+    catch(e){notify((e as Error).message)}finally{pending.current=false;setBusy(false)}
+  }
   async function chooseScenario(id:string){if(await control('reset',{scenario_mode:id,expected_revision:liveData?.simulation.revision})){setMode('simulation');setSelected('flight-101');setFocusLedger(null);setEvidence(undefined);setAlert(undefined)}}
   function investigate(id:string){setEvidence(undefined);setFocusLedger(id);navigate('ledger')}
   function openEvidence(target:LedgerEvidenceTarget){setEvidence(target);setFocusLedger(target.groupId);navigate('ledger')}
@@ -65,7 +71,9 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   function togglePlayback(){if(timeline.previewing||!liveData?.permissions.can_control||liveData.simulation.elapsed_seconds>=liveData.simulation.duration_seconds)timeline.togglePlayback();else void control(liveData.simulation.running?'pause':'start',{speed:liveData.simulation.speed||30})}
   async function applyTime(){if(await control('advance_to',{target_seconds:timeline.seconds,expected_revision:liveData?.simulation.revision}))timeline.reset()}
   if(!data||!liveData)return error?<ErrorMessage message={error}/>:<Loading/>;
-  const scenarios=data.scenarios||presets,scenario=scenarios.find(item=>item.id===liveData.simulation.scenario_mode);
+  const manual=liveData.simulation.scenario_mode==='interactive';
+  const scenarios=manual?[...(data.scenarios||presets),{id:'interactive',name:'Tură cu pontaj',description:'Prezența și deschiderea porții sunt înregistrate de echipă.'}]:data.scenarios||presets;
+  const scenario=scenarios.find(item=>item.id===liveData.simulation.scenario_mode);
   const playbackMode=previewing||!liveData.permissions.can_control||liveData.simulation.elapsed_seconds>=liveData.simulation.duration_seconds;
   const playing=playbackMode?timeline.playing:liveData.simulation.running;
   const atEnd=timeline.seconds>=liveData.simulation.duration_seconds;
@@ -88,7 +96,7 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
         <label className="ops-speed">Viteză<select aria-label="Viteza redării" value={playbackMode?timeline.speed:liveData.simulation.speed} disabled={busy} onChange={event=>playbackMode?timeline.setSpeed(Number(event.target.value)):void control(liveData.simulation.running?'start':'pause',{speed:Number(event.target.value)})}>{[1,10,30,60,120].map(speed=><option value={speed} key={speed}>{speed}×</option>)}</select></label>
         <button className="ops-restart" title="Reia scenariul de la zero" aria-label="Reia scenariul" disabled={busy||!scenario||!liveData.permissions.can_control} onClick={()=>scenario&&void chooseScenario(scenario.id)}><RotateCcw size={15}/></button>
       </div><SimulationTimeline live={liveData} frame={timeline.frame} seconds={timeline.seconds} previewing={previewing} loading={timeline.loading} error={timeline.error} selected={selected} onSeek={seek} onReturn={timeline.reset} onApply={()=>void applyTime()} busy={busy}/></section>}
-      <FlightMap simulationSpeed={previewing?timeline.speed:data.simulation.speed} animateFlights={mode==='live'||timeline.playing||(!previewing&&!!liveData.simulation.running)} data={{...data,permissions:{can_control:false}}} mode={mode} onMode={next=>{setMode(next);setSelected(next==='simulation'?'flight-101':null)}} mapConfig={mapConfig} mapMode={mapMode} onMapMode={setMapMode} traffic={traffic} trafficError={trafficError} selected={selected} onSelect={setSelected} active={active&&view==='shift'} busy={busy} onEvent={()=>{}} onInvestigate={investigate} notify={notify}/>
+      <FlightMap simulationSpeed={previewing?timeline.speed:data.simulation.speed} animateFlights={mode==='live'||timeline.playing||(!previewing&&!!liveData.simulation.running)} data={{...data,permissions:{can_control:manual&&!previewing&&liveData.permissions.can_control}}} mode={mode} onMode={next=>{setMode(next);setSelected(next==='simulation'?'flight-101':null)}} mapConfig={mapConfig} mapMode={mapMode} onMapMode={setMapMode} traffic={traffic} trafficError={trafficError} selected={selected} onSelect={setSelected} active={active&&view==='shift'} busy={busy} onEvent={(kind,extra)=>void recordEvent(kind,extra)} onInvestigate={investigate} notify={notify}/>
     </div>
   </section>;
 }

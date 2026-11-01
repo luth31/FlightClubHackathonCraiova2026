@@ -63,7 +63,7 @@ test('generated card URLs preserve the current deployment origin and base path, 
   browser(t,'/flyleaf/?utm_source=demo#documents');
   const url=new URL(nfcLink('reader:101_A'));
   assert.equal(url.origin,origin);assert.equal(url.pathname,'/flyleaf/');assert.equal(url.search,'');
-  assert.equal(url.hash,'#operations?view=station&card=reader%3A101_A');assert.equal(cardFromHash(url.hash),'reader:101_A');
+  assert.equal(url.hash,'#people?tab=attendance&card=reader%3A101_A');assert.equal(cardFromHash(url.hash),'reader:101_A');
   const hostile=new URL(nfcLink('https://evil.test/#operations?card=101'));
   assert.equal(hostile.origin,origin);assert.equal(cardFromHash(hostile.hash),null);
 });
@@ -72,4 +72,11 @@ test('unavailable session storage leaves card-URL parsing usable and fails close
   browser(t);Object.defineProperty(globalThis,'sessionStorage',{get(){throw new Error('Storage unavailable');},configurable:true});
   assert.doesNotThrow(rememberNfcLink);assert.equal(pendingNfcCard(),null);assert.doesNotThrow(clearNfcLink);
   assert.equal(cardFromHash(window.location.hash),'DEMO-NFC-101');
+});
+
+
+test('team attendance card links are captured and retain the existing card identifiers',t=>{
+  browser(t,'/#people?tab=attendance&card=DEMO-NFC-104');
+  rememberNfcLink();assert.equal(pendingNfcCard(),'DEMO-NFC-104');
+  assert.equal(cardFromHash('#people?tab=leave&card=DEMO-NFC-104'),null);
 });

@@ -13,6 +13,7 @@ const isPage = (value: string): value is Page => Object.hasOwn(pageLabels, value
 
 export function parseRoute(hash: string): Route {
   const [path, query = ''] = hash.replace(/^#/, '').split('?');
+  if (path === 'operations' && new URLSearchParams(query).get('view') === 'station') return {page: 'people'};
   if (path.startsWith('reports/')) return {page: 'reports'};
   if (path === 'document') return {page: 'documents'};
   if (!path.startsWith('document/')) return {page: isPage(path) ? currentPage(path) : 'home'};

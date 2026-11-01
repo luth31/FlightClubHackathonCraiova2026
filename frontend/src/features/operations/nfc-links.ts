@@ -2,8 +2,10 @@ const storageKey='flyleaf.pendingNfc';
 const pattern=/^[a-zA-Z0-9:_-]{1,80}$/;
 export function cardFromHash(hash:string):string|null {
   const [page,query='']=hash.replace(/^#/,'').split('?');
-  const value=new URLSearchParams(query).get('card');
-  return page==='operations'&&value&&pattern.test(value)?value:null;
+  const params=new URLSearchParams(query);
+  const value=params.get('card');
+  const station=page==='operations'||(page==='people'&&params.get('tab')==='attendance');
+  return station&&value&&pattern.test(value)?value:null;
 }
 export function rememberNfcLink(){
   const card=cardFromHash(window.location.hash);
@@ -20,4 +22,5 @@ export function pendingNfcCard():string|null {
   }catch{return null}
 }
 export function clearNfcLink(){try{sessionStorage.removeItem(storageKey)}catch{/* No persistent state required. */}}
-export function nfcLink(card:string){return `${window.location.origin}${window.location.pathname}#operations?view=station&card=${encodeURIComponent(card)}`}
+export function nfcHash(card?:string){return `#people?tab=attendance${card?`&card=${encodeURIComponent(card)}`:''}`}
+export function nfcLink(card:string){return `${window.location.origin}${window.location.pathname}${nfcHash(card)}`}

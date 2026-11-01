@@ -100,7 +100,7 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/audit')body={items:[{id:'audit-demo',document_id:documentRecord.id,document_title:documentRecord.title,
       actor:user.name,action:'Demo action',created_at:'2026-10-01'}]};
     else if(path==='/api/people')body={items:[],total:0,departments:[],delegations:[],leaves:[],current_user_id:currentUser.id,
-      can_manage_accounts:false,can_manage_delegations:false,reference_date:'2026-10-30'};
+      can_manage_accounts:false,can_manage_delegations:false,can_record_attendance:true,reference_date:'2026-10-30'};
     else if(path.startsWith('/api/documents/')) {
       if(documentError)return Response.json({detail:'Document unavailable'},{status:404});
       body=path.endsWith('/doc-related')?related:{...documentRecord,related_documents:[related],
@@ -686,4 +686,22 @@ test('the home expiry metric opens its filtered documents without a Contracts se
   assert.equal(location.hash,'#documents');
   assert.ok(find('.library-tabs .active','Expiră în 60 zile'));
   assert.equal(find('nav button','Contracte'),undefined);
+});
+
+
+test('NFC card survives login callback at the root and opens attendance under Team',async t=>{
+  await setup(t,'',{sessionResponse:response=>{
+    sessionStorage.setItem('flyleaf.pendingNfc',JSON.stringify({card:'DEMO-NFC-101',at:Date.now()}));
+    return response;
+  }});
+  assert.equal(location.hash,'#people?tab=attendance&card=DEMO-NFC-101');
+  assert.equal(heading(),'Pontajul echipei');
+  assert.equal(document.querySelector('#nfc-card').value,'DEMO-NFC-101');
+});
+
+test('previously written station cards open the restored attendance page',async t=>{
+  await setup(t,'#operations?view=station&card=DEMO-NFC-104');
+  assert.equal(heading(),'Pontajul echipei');
+  assert.equal(document.querySelector('#nfc-card').value,'DEMO-NFC-104');
+  assert.equal(document.querySelector('.operations-page'),null);
 });
