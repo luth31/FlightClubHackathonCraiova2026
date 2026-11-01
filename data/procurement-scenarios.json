@@ -1,0 +1,876 @@
+{
+  "schema_version": 1,
+  "demo_label": "Date fictive pentru demonstrație",
+  "documents": [
+    {
+      "id": "flow-01-contract",
+      "title": "Contract - Piese pentru balizaj",
+      "number": "FL-01-001",
+      "category": "Contract",
+      "department": "Achiziții",
+      "status": "approved",
+      "created_at": "2026-10-11T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-01-contract.pdf",
+      "summary": "Contract fictiv pentru 32 de repere, livrate în două loturi: 24 în lotul A și 8 în lotul B.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Contract",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Piese pentru balizaj",
+        "flow_demo": true,
+        "flow_links": []
+      },
+      "related_ids": [],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "68f8029d10ab11bd3eb97dae628600613f58a8f6b9ecd73b561bd093ac94968c"
+    },
+    {
+      "id": "flow-01-delivery-a",
+      "title": "Livrare de intrare - Lot A · 24 repere",
+      "number": "FL-01-002",
+      "category": "Livrare de intrare",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-12T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-01-delivery-a.pdf",
+      "summary": "Aviz pentru cele 24 de repere din lotul A. Documentul însoțește prima livrare.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Livrare de intrare",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Lot A · 24 repere",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-contract",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "e9914eba1ec137dd1a4770ebc1f940a180d55e5ff32fc3e89e48d72e16fa2b91"
+    },
+    {
+      "id": "flow-01-delivery-b",
+      "title": "Livrare de intrare - Lot B · 8 repere",
+      "number": "FL-01-003",
+      "category": "Livrare de intrare",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-13T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-01-delivery-b.pdf",
+      "summary": "Aviz pentru 8 repere din lotul B. Conformitatea este stabilită separat la recepție.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Livrare de intrare",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Lot B · 8 repere",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-contract",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "242d384fc76e5ed60f79fac3685c3023a75adc64236cf43dd142f069bfe3aabe"
+    },
+    {
+      "id": "flow-01-receipt-a",
+      "title": "Proces-verbal de recepție - Lot A · acceptat",
+      "number": "FL-01-004",
+      "category": "Proces-verbal de recepție",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-14T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-01-receipt-a.pdf",
+      "summary": "Toate cele 24 de repere din lotul A sunt acceptate în scenariu; cantitățile și anexele sunt complete.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Proces-verbal de recepție",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Lot A · acceptat",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-delivery-a",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-delivery-a"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "2e2dfc3c7e33da22feb363461b25c7b2ed5e74efa49695c8c012c57e72c18cf6"
+    },
+    {
+      "id": "flow-01-receipt-b",
+      "title": "Proces-verbal de recepție - Lot B · neconform",
+      "number": "FL-01-005",
+      "category": "Proces-verbal de recepție",
+      "department": "Tehnic",
+      "status": "rejected",
+      "created_at": "2026-10-15T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-01-receipt-b.pdf",
+      "summary": "Recepția lotului B este returnată: etichetele celor 8 repere nu corespund anexelor. Documentarea returului este în curs.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Proces-verbal de recepție",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Lot B · neconform",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-delivery-b",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-delivery-b"
+      ],
+      "source_refs": [],
+      "validated": false,
+      "sha256": "033a0c09477efd209f784682aeb8ac3da43547f12c953109b283138d8342ac9d"
+    },
+    {
+      "id": "flow-01-return-order",
+      "title": "Comandă de retur - Retur lot B",
+      "number": "FL-01-006",
+      "category": "Comandă de retur",
+      "department": "Achiziții",
+      "status": "in_review",
+      "created_at": "2026-10-16T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-01-return-order.pdf",
+      "summary": "Propunere de retur pentru cele 8 repere neacceptate. Comanda este în aprobare; expedierea nu este confirmată.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Comandă de retur",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Retur lot B",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-receipt-b",
+            "kind": "correction",
+            "label": "Retur lot B"
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-receipt-b"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "c592ad8093a6bf33acc2bddf96b2d73cfee11c2d52fc1e35f3eb2c82e3967bbb"
+    },
+    {
+      "id": "flow-01-return-delivery",
+      "title": "Livrare de ieșire - Expediere retur · propusă",
+      "number": "FL-01-007",
+      "category": "Livrare de ieșire",
+      "department": "Tehnic",
+      "status": "draft",
+      "created_at": "2026-10-17T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-01-return-delivery.pdf",
+      "summary": "Aviz de retur în ciornă pentru lotul B. Nu reprezintă dovada unei expedieri deja efectuate.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Livrare de ieșire",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Expediere retur · propusă",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-return-order",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-return-order"
+      ],
+      "source_refs": [],
+      "validated": false,
+      "sha256": "0dbb3fd7b28349b6bf0c78f75c197ee6a12e316acfcc3802a8dc50d26d1df538"
+    },
+    {
+      "id": "flow-01-invoice",
+      "title": "Factură - Loturile A + B · de reconciliat",
+      "number": "FL-01-008",
+      "category": "Factură",
+      "department": "Financiar",
+      "status": "in_review",
+      "created_at": "2026-10-18T09:00:00Z",
+      "owner": "Radu Marinescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "restricted",
+      "filename": "flow-01-invoice.pdf",
+      "summary": "Factura cuprinde ambele loturi. Recepția neacceptată a lotului B trebuie reconciliată înaintea unei decizii; aplicația nu execută plăți.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Factură",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Loturile A + B · de reconciliat",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-receipt-a",
+            "kind": "flow",
+            "label": ""
+          },
+          {
+            "source_id": "flow-01-receipt-b",
+            "kind": "flow",
+            "label": ""
+          },
+          {
+            "source_id": "flow-01-contract",
+            "kind": "reference",
+            "label": "Contract"
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-receipt-a",
+        "flow-01-receipt-b",
+        "flow-01-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "79ddf0c3bca3bdeab6877820bb9b126f3b84ffa0281ffe5f1cae6845135edd19"
+    },
+    {
+      "id": "flow-01-credit",
+      "title": "Notă de credit - Corecție lot B · propusă",
+      "number": "FL-01-009",
+      "category": "Notă de credit",
+      "department": "Financiar",
+      "status": "draft",
+      "created_at": "2026-10-19T09:00:00Z",
+      "owner": "Radu Marinescu",
+      "supplier": "Furnizor Scenariu 01 Demo SRL",
+      "confidentiality": "restricted",
+      "filename": "flow-01-credit.pdf",
+      "summary": "Notă de credit în ciornă, propusă pentru pozițiile lotului B din factură. Documentul inițial rămâne în dosar.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00001",
+        "document_type": "Notă de credit",
+        "flow_case_name": "Balizaj · livrare parțială și retur",
+        "flow_case_summary": "Două loturi, o recepție returnată și o corecție de factură.",
+        "flow_caption": "Corecție lot B · propusă",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-01-invoice",
+            "kind": "correction",
+            "label": "Corecție factură"
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-01-invoice"
+      ],
+      "source_refs": [],
+      "validated": false,
+      "sha256": "6dca2ba7c24b4f02f4831588f9f364baadb82742916e25f5508f4ec93ea38b44"
+    },
+    {
+      "id": "flow-02-contract",
+      "title": "Contract - UPS și restaurare arhivă",
+      "number": "FL-02-001",
+      "category": "Contract",
+      "department": "Achiziții",
+      "status": "approved",
+      "created_at": "2026-10-11T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 02 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-02-contract.pdf",
+      "summary": "Contract fictiv cu două livrabile: revizia UPS și verificarea restaurării arhivei de test.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00002",
+        "document_type": "Contract",
+        "flow_case_name": "Arhivă digitală · recepție comună",
+        "flow_case_summary": "Două livrabile independente reunite într-o singură recepție.",
+        "flow_caption": "UPS și restaurare arhivă",
+        "flow_demo": true,
+        "flow_links": []
+      },
+      "related_ids": [],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "09cf1bfedb3258756bafda51028e91fb65ab3533e658d01d36e44480aa7d4924"
+    },
+    {
+      "id": "flow-02-amendment",
+      "title": "Act adițional - Anexe de trasabilitate",
+      "number": "FL-02-002",
+      "category": "Act adițional",
+      "department": "Achiziții",
+      "status": "in_review",
+      "created_at": "2026-10-12T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 02 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-02-amendment.pdf",
+      "summary": "Propunere privind identificarea anexelor. Nu modifică automat contractul aprobat.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00002",
+        "document_type": "Act adițional",
+        "flow_case_name": "Arhivă digitală · recepție comună",
+        "flow_case_summary": "Două livrabile independente reunite într-o singură recepție.",
+        "flow_caption": "Anexe de trasabilitate",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-02-contract",
+            "kind": "related",
+            "label": "Act adițional"
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-02-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "7c4d55b12da49ae06866d42ea3438c1bdd2c33091ced2d1447c424fd37ed9a12"
+    },
+    {
+      "id": "flow-02-ups",
+      "title": "Raport de prestare - Revizie UPS",
+      "number": "FL-02-003",
+      "category": "Raport de prestare",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-13T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 02 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-02-ups.pdf",
+      "summary": "Raport separat pentru revizia UPS; identifică echipamentul și documentele predate.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00002",
+        "document_type": "Raport de prestare",
+        "flow_case_name": "Arhivă digitală · recepție comună",
+        "flow_case_summary": "Două livrabile independente reunite într-o singură recepție.",
+        "flow_caption": "Revizie UPS",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-02-contract",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-02-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "8aff0cd765eb8fcc8f767337fcfd149255c38fdbe853b8d22cea9ac96ad89687"
+    },
+    {
+      "id": "flow-02-restore",
+      "title": "Raport de prestare - Restaurare · 40 fișiere",
+      "number": "FL-02-004",
+      "category": "Raport de prestare",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-14T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 02 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-02-restore.pdf",
+      "summary": "Raport separat: toate cele 40 de fișiere fictive din setul de test au fost restaurate.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00002",
+        "document_type": "Raport de prestare",
+        "flow_case_name": "Arhivă digitală · recepție comună",
+        "flow_case_summary": "Două livrabile independente reunite într-o singură recepție.",
+        "flow_caption": "Restaurare · 40 fișiere",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-02-contract",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-02-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "327af676ac78c688ed1a28d66854e999ddced6ad5a182e0f2a2f5c998209c92c"
+    },
+    {
+      "id": "flow-02-receipt",
+      "title": "Proces-verbal de recepție - UPS + arhivă · acceptate",
+      "number": "FL-02-005",
+      "category": "Proces-verbal de recepție",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-15T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 02 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-02-receipt.pdf",
+      "summary": "Recepție comună, bazată pe ambele rapoarte: UPS și restaurare. Niciun raport nu este omis din justificare.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00002",
+        "document_type": "Proces-verbal de recepție",
+        "flow_case_name": "Arhivă digitală · recepție comună",
+        "flow_case_summary": "Două livrabile independente reunite într-o singură recepție.",
+        "flow_caption": "UPS + arhivă · acceptate",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-02-ups",
+            "kind": "flow",
+            "label": ""
+          },
+          {
+            "source_id": "flow-02-restore",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-02-ups",
+        "flow-02-restore"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "e5b2979195e83c5ce94076f362876e55bb36bb7373ca7bf12df358a9b00640ba"
+    },
+    {
+      "id": "flow-02-invoice",
+      "title": "Factură - Servicii recepționate",
+      "number": "FL-02-006",
+      "category": "Factură",
+      "department": "Financiar",
+      "status": "approved",
+      "created_at": "2026-10-16T09:00:00Z",
+      "owner": "Radu Marinescu",
+      "supplier": "Furnizor Scenariu 02 Demo SRL",
+      "confidentiality": "restricted",
+      "filename": "flow-02-invoice.pdf",
+      "summary": "Factura fictivă reunește cele două servicii recepționate. Aprobarea documentară nu reprezintă o plată.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00002",
+        "document_type": "Factură",
+        "flow_case_name": "Arhivă digitală · recepție comună",
+        "flow_case_summary": "Două livrabile independente reunite într-o singură recepție.",
+        "flow_caption": "Servicii recepționate",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-02-receipt",
+            "kind": "flow",
+            "label": ""
+          },
+          {
+            "source_id": "flow-02-contract",
+            "kind": "reference",
+            "label": "Contract"
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-02-receipt",
+        "flow-02-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "09bd26a3217e473c5507e0fc4fd967549d0162eb89b0fde9a1313c4aa23fe664"
+    },
+    {
+      "id": "flow-03-contract",
+      "title": "Contract - Echipamente pentru terminal",
+      "number": "FL-03-001",
+      "category": "Contract",
+      "department": "Achiziții",
+      "status": "approved",
+      "created_at": "2026-10-11T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 03 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-03-contract.pdf",
+      "summary": "Contract fictiv cu două livrări și o factură de avans, urmată de un decont final.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00003",
+        "document_type": "Contract",
+        "flow_case_name": "Terminal · avans și factură finală",
+        "flow_case_summary": "Avans contractual separat de decontul celor două livrări.",
+        "flow_caption": "Echipamente pentru terminal",
+        "flow_demo": true,
+        "flow_links": []
+      },
+      "related_ids": [],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "19bb87035b190d75dee564543d54c2258f5aedd753510a2f13bb3300839c56d0"
+    },
+    {
+      "id": "flow-03-advance",
+      "title": "Factură - Avans contractual · 20%",
+      "number": "FL-03-002",
+      "category": "Factură",
+      "department": "Financiar",
+      "status": "approved",
+      "created_at": "2026-10-12T09:00:00Z",
+      "owner": "Radu Marinescu",
+      "supplier": "Furnizor Scenariu 03 Demo SRL",
+      "confidentiality": "restricted",
+      "filename": "flow-03-advance.pdf",
+      "summary": "Factură de avans pentru 20% din valoarea scenariului, emisă în baza contractului, înainte de recepții.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00003",
+        "document_type": "Factură",
+        "flow_case_name": "Terminal · avans și factură finală",
+        "flow_case_summary": "Avans contractual separat de decontul celor două livrări.",
+        "flow_caption": "Avans contractual · 20%",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-03-contract",
+            "kind": "reference",
+            "label": "Avans contractual"
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-03-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "4fc90e73b70e96744456c2deb257e6c82266e60a2eda6f28527282d1c4b16fa1"
+    },
+    {
+      "id": "flow-03-delivery-a",
+      "title": "Livrare de intrare - Mobilier · prima livrare",
+      "number": "FL-03-003",
+      "category": "Livrare de intrare",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-13T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 03 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-03-delivery-a.pdf",
+      "summary": "Prima livrare cuprinde mobilierul zonei publice. Se recepționează separat de echipamente.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00003",
+        "document_type": "Livrare de intrare",
+        "flow_case_name": "Terminal · avans și factură finală",
+        "flow_case_summary": "Avans contractual separat de decontul celor două livrări.",
+        "flow_caption": "Mobilier · prima livrare",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-03-contract",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-03-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "201337575ea8c6634d21a7778bf633a93360a165e0f1c16bbd8b5e3d1e0350b0"
+    },
+    {
+      "id": "flow-03-delivery-b",
+      "title": "Livrare de intrare - Echipamente · a doua livrare",
+      "number": "FL-03-004",
+      "category": "Livrare de intrare",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-14T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 03 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-03-delivery-b.pdf",
+      "summary": "A doua livrare cuprinde echipamentele zonei publice și anexele de identificare.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00003",
+        "document_type": "Livrare de intrare",
+        "flow_case_name": "Terminal · avans și factură finală",
+        "flow_case_summary": "Avans contractual separat de decontul celor două livrări.",
+        "flow_caption": "Echipamente · a doua livrare",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-03-contract",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-03-contract"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "fb0ac33d3ceae39af71a0f7ed70b36b64ec587dcb1df7e1a0dc617eb1a2a6316"
+    },
+    {
+      "id": "flow-03-receipt-a",
+      "title": "Proces-verbal de recepție - Mobilier · acceptat",
+      "number": "FL-03-005",
+      "category": "Proces-verbal de recepție",
+      "department": "Tehnic",
+      "status": "approved",
+      "created_at": "2026-10-15T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 03 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-03-receipt-a.pdf",
+      "summary": "Recepția mobilierului este acceptată în scenariu.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00003",
+        "document_type": "Proces-verbal de recepție",
+        "flow_case_name": "Terminal · avans și factură finală",
+        "flow_case_summary": "Avans contractual separat de decontul celor două livrări.",
+        "flow_caption": "Mobilier · acceptat",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-03-delivery-a",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-03-delivery-a"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "995a0d706586e89f133f3d645fb97b5de306e2207365333fe644b1f661efda48"
+    },
+    {
+      "id": "flow-03-receipt-b",
+      "title": "Proces-verbal de recepție - Echipamente · în verificare",
+      "number": "FL-03-006",
+      "category": "Proces-verbal de recepție",
+      "department": "Tehnic",
+      "status": "in_review",
+      "created_at": "2026-10-16T09:00:00Z",
+      "owner": "Mihai Dumitrescu",
+      "supplier": "Furnizor Scenariu 03 Demo SRL",
+      "confidentiality": "internal",
+      "filename": "flow-03-receipt-b.pdf",
+      "summary": "Documentele echipamentelor sunt în verificare. Recepția mobilierului rămâne distinctă.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00003",
+        "document_type": "Proces-verbal de recepție",
+        "flow_case_name": "Terminal · avans și factură finală",
+        "flow_case_summary": "Avans contractual separat de decontul celor două livrări.",
+        "flow_caption": "Echipamente · în verificare",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-03-delivery-b",
+            "kind": "flow",
+            "label": ""
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-03-delivery-b"
+      ],
+      "source_refs": [],
+      "validated": true,
+      "sha256": "9a133a3cbac1665390ab0e26b0b3ba7ac8d71a6d83d107827d29723cde32f4f6"
+    },
+    {
+      "id": "flow-03-balance",
+      "title": "Factură - Decont final · avans dedus",
+      "number": "FL-03-007",
+      "category": "Factură",
+      "department": "Financiar",
+      "status": "draft",
+      "created_at": "2026-10-17T09:00:00Z",
+      "owner": "Radu Marinescu",
+      "supplier": "Furnizor Scenariu 03 Demo SRL",
+      "confidentiality": "restricted",
+      "filename": "flow-03-balance.pdf",
+      "summary": "Decont final în ciornă, cu referință la cele două recepții și la factura de avans. Nu declară recepția finală sau plata realizată.",
+      "tags": [
+        "demonstrație",
+        "flux achiziții"
+      ],
+      "metadata": {
+        "case_id": "ACH-2026-00003",
+        "document_type": "Factură",
+        "flow_case_name": "Terminal · avans și factură finală",
+        "flow_case_summary": "Avans contractual separat de decontul celor două livrări.",
+        "flow_caption": "Decont final · avans dedus",
+        "flow_demo": true,
+        "flow_links": [
+          {
+            "source_id": "flow-03-receipt-a",
+            "kind": "flow",
+            "label": ""
+          },
+          {
+            "source_id": "flow-03-receipt-b",
+            "kind": "flow",
+            "label": ""
+          },
+          {
+            "source_id": "flow-03-advance",
+            "kind": "reference",
+            "label": "Avans de dedus"
+          }
+        ]
+      },
+      "related_ids": [
+        "flow-03-receipt-a",
+        "flow-03-receipt-b",
+        "flow-03-advance"
+      ],
+      "source_refs": [],
+      "validated": false,
+      "sha256": "b769d11d54367e79837cd0745df71fcaafecc26d3ca3cdf82e1d6bbc72fa88eb"
+    }
+  ]
+}

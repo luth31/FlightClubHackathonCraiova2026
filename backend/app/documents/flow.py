@@ -32,6 +32,11 @@ def document_flow(db, user, q='', category='', status='', department='', selecte
         item = service.serialize(document, user=user)
         item['related_ids'] = [related_id for related_id in item.get('related_ids', [])
             if related_id in permitted_ids]
+        metadata = item.get('metadata', {})
+        if isinstance(metadata.get('flow_links'), list):
+            item['metadata'] = {**metadata, 'flow_links': [link for link in metadata['flow_links']
+                if isinstance(link, dict) and isinstance(link.get('source_id'), str)
+                and link['source_id'] in permitted_ids]}
         by_stage[classification['stage']]['items'].append(item)
     for stage in stages:
         stage['count'] = len(stage['items'])

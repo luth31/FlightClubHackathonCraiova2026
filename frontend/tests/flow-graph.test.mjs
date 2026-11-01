@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import { buildFlowGraphs } from '../src/features/documents/flow-graph.ts';
 
 const stageIds = ['purchasing', 'shipping', 'inventory_management', 'invoice_verification'];
@@ -25,7 +26,7 @@ function paths(group) {
   return group.edges.map((edge) => `${edge.source}->${edge.target}:${edge.kind}`);
 }
 
-test('dense procurement relations produce a clear chain with an amendment branch', () => {
+test('dense associations retain the procurement flow and amendment without empty leading rows', () => {
   const records = [
     document('need', 'purchasing', 'Referat de necesitate'),
     document('spec', 'purchasing', 'Caiet de sarcini'),
@@ -33,7 +34,7 @@ test('dense procurement relations produce a clear chain with an amendment branch
     document('amendment', 'purchasing', 'Act adițional', [], 'CASE-1', { contract_id: 'contract' }),
     document('delivery', 'shipping', 'Raport de prestare'),
     document('receipt', 'inventory_management', 'Proces-verbal de recepție'),
-    document('invoice', 'invoice_verification', 'Factură'),
+    document('invoice', 'invoice_verification', 'Factură', [], 'CASE-1', { contract_id: 'contract' }),
   ];
   for (const item of records) item.related_ids = records.filter((other) => other !== item).map((other) => other.id);
   const input = stages(records);
@@ -41,10 +42,10 @@ test('dense procurement relations produce a clear chain with an amendment branch
   const [group] = buildFlowGraphs(input);
   assert.deepEqual(paths(group), [
     'need->spec:flow', 'spec->contract:flow', 'contract->amendment:related',
-    'contract->delivery:flow', 'delivery->receipt:flow', 'receipt->invoice:flow',
+    'contract->delivery:flow', 'delivery->receipt:flow', 'receipt->invoice:flow', 'contract->invoice:reference',
   ]);
   const rows = Object.fromEntries(group.nodes.map((node) => [node.id, node.row]));
-  assert.deepEqual(rows, { need: 0, spec: 1, contract: 2, amendment: 3, delivery: 2, receipt: 2, invoice: 2 });
+  assert.deepEqual(rows, { need: 0, spec: 1, contract: 2, amendment: 3, delivery: 0, receipt: 0, invoice: 0 });
   assert.equal(group.rowCount, 4);
   assert.equal(JSON.stringify(input), original);
   assert.deepEqual(buildFlowGraphs([...input].reverse().map((stage) => ({ ...stage, items: [...stage.items].reverse() }))), [group]);
@@ -115,8 +116,8 @@ test('return and replacement orders feed their corresponding delivery directions
   assert.ok(paths(group).includes('order->return:flow'));
   assert.ok(paths(group).includes('return->replace:flow'));
   const rows = Object.fromEntries(group.nodes.map((node) => [node.id, node.row]));
-  assert.equal(rows.outbound, rows.return);
-  assert.equal(rows.inbound, rows.replace);
+  assert.equal(rows.outbound, 0);
+  assert.equal(rows.inbound, 1);
 });
 
 test('multiple documents in one stage never occupy the same grid cell', () => {
@@ -136,4 +137,91 @@ test('multiple documents in one stage never occupy the same grid cell', () => {
 
 test('an empty result produces no graphs', () => {
   assert.deepEqual(buildFlowGraphs(stages([])), []);
+});
+
+test('split deliveries and a consolidated invoice retain every linked input with compact columns', () => {
+  const records = [
+    document('need', 'purchasing', 'Referat de necesitate', ['spec']),
+    document('spec', 'purchasing', 'Caiet de sarcini', ['contract']),
+    document('contract', 'purchasing', 'Contract', ['delivery-a', 'delivery-b']),
+    document('delivery-a', 'shipping', 'Livrare de intrare', ['receipt-a']),
+    document('delivery-b', 'shipping', 'Livrare de intrare', ['receipt-b']),
+    document('receipt-a', 'inventory_management', 'Proces-verbal de recepție', ['invoice']),
+    document('receipt-b', 'inventory_management', 'Proces-verbal de recepție', ['invoice']),
+    document('invoice', 'invoice_verification', 'Factură', [], 'CASE-1', { contract_id: 'contract' }),
+  ];
+  const [group] = buildFlowGraphs(stages(records));
+  assert.deepEqual(paths(group), [
+    'need->spec:flow', 'spec->contract:flow', 'contract->delivery-a:flow', 'contract->delivery-b:flow',
+    'delivery-a->receipt-a:flow', 'delivery-b->receipt-b:flow',
+    'receipt-a->invoice:flow', 'receipt-b->invoice:flow', 'contract->invoice:reference',
+  ]);
+  assert.equal(group.rowCount, 3);
+  for (const stage of stageIds) {
+    const rows = group.nodes.filter((node) => node.stage === stage).map((node) => node.row).sort();
+    assert.deepEqual(rows, rows.map((_, index) => index), 'No empty cells before or between documents');
+  }
+  assert.deepEqual(buildFlowGraphs(stages([...records].reverse())), [group]);
+});
+
+test('multiple requisitions can feed a shared specification', () => {
+  const [group] = buildFlowGraphs(stages([
+    document('need-a', 'purchasing', 'Referat de necesitate', ['spec']),
+    document('need-b', 'purchasing', 'Referat de necesitate', ['spec']),
+    document('spec', 'purchasing', 'Caiet de sarcini'),
+  ]));
+  assert.deepEqual(paths(group), ['need-a->spec:flow', 'need-b->spec:flow']);
+});
+
+test('invoice references never expose hidden contracts or connect different cases', () => {
+  const groups = buildFlowGraphs(stages([
+    document('contract', 'purchasing', 'Contract', [], 'CASE-2'),
+    document('receipt', 'inventory_management', 'Proces-verbal de recepție', ['invoice', 'invoice-2']),
+    document('invoice', 'invoice_verification', 'Factură', [], 'CASE-1', { contract_id: 'contract' }),
+    document('invoice-2', 'invoice_verification', 'Factură', [], 'CASE-1', { contract_id: 'hidden' }),
+  ]));
+  assert.deepEqual(groups.flatMap(paths), ['receipt->invoice:flow', 'receipt->invoice-2:flow']);
+});
+
+test('explicit relationships support return loops and invoice corrections without inferred shortcuts', () => {
+  const records = [
+    document('contract', 'purchasing', 'Contract', ['delivery', 'receipt', 'return'], 'CASE-1', {flow_links: []}),
+    document('return', 'purchasing', 'Comandă de retur', [], 'CASE-1', {flow_links: [{source_id: 'receipt', kind: 'correction', label: 'Retur'}]}),
+    document('delivery', 'shipping', 'Livrare de intrare', ['return'], 'CASE-1', {flow_links: [{source_id: 'contract', kind: 'flow'}]}),
+    document('receipt', 'inventory_management', 'Proces-verbal de recepție', [], 'CASE-1', {flow_links: [{source_id: 'delivery', kind: 'flow'}]}),
+    document('invoice', 'invoice_verification', 'Factură', [], 'CASE-1', {flow_links: [{source_id: 'receipt', kind: 'flow'}]}),
+    document('credit', 'invoice_verification', 'Notă de credit', [], 'CASE-1', {flow_links: [{source_id: 'invoice', kind: 'correction'}]}),
+  ];
+  const [group] = buildFlowGraphs(stages(records));
+  assert.deepEqual(new Set(paths(group)), new Set(['receipt->return:correction', 'contract->delivery:flow', 'delivery->receipt:flow', 'receipt->invoice:flow', 'invoice->credit:correction']));
+  assert.deepEqual(buildFlowGraphs(stages([...records].reverse())), [group]);
+});
+
+test('hidden, invalid and cross-case explicit inputs cannot be replaced with invented edges', () => {
+  const [group] = buildFlowGraphs(stages([
+    document('receipt', 'inventory_management', 'Proces-verbal de recepție', ['invoice']),
+    document('invoice', 'invoice_verification', 'Factură', [], 'CASE-1', {flow_links: [
+      {source_id: 'hidden', kind: 'flow'}, {source_id: 'invoice', kind: 'flow'}, null,
+      {source_id: 'receipt', kind: 'invalid'}, {source_id: 'other-contract', kind: 'reference'},
+    ]}),
+    document('other-contract', 'purchasing', 'Contract', [], 'CASE-2'),
+  ]));
+  assert.deepEqual(group.edges, []);
+});
+
+test('the shipped demo dossiers render their exact split, return, consolidation and advance relationships', () => {
+  const fixture = JSON.parse(readFileSync(new URL('../../data/procurement-scenarios.json', import.meta.url), 'utf8'));
+  const typeStage = type => type.includes('Livrare') || type.includes('Raport') ? 'shipping'
+    : type.includes('recepție') ? 'inventory_management' : ['Factură', 'Notă de credit'].includes(type) ? 'invoice_verification' : 'purchasing';
+  const input = fixture.documents.map(item => ({...item, flow_case_id: item.metadata.case_id,
+    flow: {stage: typeStage(item.category), document_type: item.category}}));
+  const groups = buildFlowGraphs(stages(input));
+  assert.equal(groups.length, 3);
+  for (const group of groups) {
+    const expected = group.nodes.flatMap(({document}) => document.metadata.flow_links.map(link => `${link.source_id}->${document.id}:${link.kind}`));
+    assert.deepEqual(new Set(paths(group)), new Set(expected));
+  }
+  assert.ok(paths(groups[0]).includes('flow-01-receipt-b->flow-01-return-order:correction'));
+  assert.equal(groups[1].edges.filter(edge => edge.target === 'flow-02-receipt').length, 2);
+  assert.ok(paths(groups[2]).includes('flow-03-advance->flow-03-balance:reference'));
 });
