@@ -21,7 +21,7 @@ from app.operations.scenario import STAFF
 ROUTES = ['Londra Luton', 'Milano Bergamo', 'Dortmund', 'Roma', 'Bologna', 'Bruxelles', 'Madrid', 'Paris Beauvais']
 PEOPLE = ['Mara Stoica', 'Vlad Popescu', 'Ioana Radu', 'Alexandru Marin', 'Diana Ilie', 'Radu Ene']
 RANK = {'neutral':0, 'yellow':1, 'red':2}
-FIXTURE_VERSION = 2
+FIXTURE_VERSION = 4
 
 
 def worst(items):
@@ -39,7 +39,7 @@ def entry(identifier, kind, title, planned, actual, actor, detail='', *, source=
             'severity':severity or service.severity(delay),'delay_minutes':delay,'source':source}
 
 
-def fixture_flight(airport, day, index, upcoming=False):
+def _flight_template(airport, day, index, upcoming=False):
     identifier = f'ledger-{airport}-{day}-{index}'
     planned = stamp(day,6+index*2,20 if index%2==0 else 45)
     gate = 'G'+str(index%3+1)
@@ -93,21 +93,92 @@ def fixture_flight(airport, day, index, upcoming=False):
             'assigned_staff':assigned,'reserve_staff':reserve}
 
 
+def fixture_flight(airport, day, index, upcoming=False):
+    """Build explicit work streams, keeping old milestone IDs/citations stable."""
+    group = _flight_template(airport,day,index,upcoming)
+    events = group['events']
+    by_kind = {e['kind']:e for e in events}
+    assigned, reserve = group['assigned_staff'],group['reserve_staff']
+    group['schema_version'] = 1
+    gate = by_kind['gate_assigned']
+    gate.update(title='Poartă alocată',detail=group['gate_id'])
+    for event in events:
+        event['actor_key'] = event['actor']
+        if event['kind'].startswith('nfc_') or event['kind'] in ('gate_open','boarding_completed','staff_substitution'):
+            event['person_key'] = event['actor']
+        if event['kind']=='staff_absent': event['person_key']=assigned
+        if event['kind']=='staff_substitution':
+            event['previous_person_key']=assigned
+            event['actor']=event['actor_key']='Dispecer operațiuni'
+        if event['kind']=='aircraft_onblock': event['detail']='Sosire la poziția de staționare.'
+        if event['kind']=='boarding_completed': event['detail']='Îmbarcarea pasagerilor s-a încheiat.'
+        if event['kind']=='briefing': event['detail']='Briefingul operațional a fost confirmat.'
+        if event['kind']=='equipment_check': event['detail']='Verificarea funcțională a echipamentului a fost încheiată.'
+    def add(kind,title,planned,actual,actor,person=None):
+        item=entry(group['id']+'-atomic-'+kind,kind,title,
+            datetime.fromisoformat(planned) if isinstance(planned,str) else planned,
+            datetime.fromisoformat(actual) if isinstance(actual,str) else actual,actor)
+        item.update(actor_key=actor,person_key=person)
+        events.append(item)
+    add('staff_assigned','Agent alocat',gate['planned_at'],gate['actual_at'],'Dispecer operațiuni',assigned)
+    add('reserve_assigned','Agent de rezervă alocat',gate['planned_at'],gate['actual_at'],'Dispecer operațiuni',reserve)
+    base=datetime.fromisoformat(by_kind['aircraft_onblock']['planned_at'])
+    for minutes,kind,title,actor in [(1,'cleaning_started','Curățenie începută','Echipă cabină'),
+            (2,'fuel_started','Alimentare începută','Responsabil handling'),
+            (3,'baggage_loading_started','Încărcare bagaje începută','Echipă bagaje'),
+            (20,'baggage_loaded','Bagaje încărcate','Echipă bagaje')]:
+        at=base+timedelta(minutes=minutes)
+        add(kind,title,at,None if upcoming else at,actor)
+    opening=by_kind['gate_open']
+    add('boarding_started','Îmbarcare începută',opening['planned_at'],opening['actual_at'],opening['actor'],opening['actor'])
+    off=datetime.fromisoformat(group['scheduled_at'])
+    actual=datetime.fromisoformat(group['actual_at']) if group['actual_at'] else None
+    add('aircraft_ready','Pregătire plecare confirmată',off-timedelta(minutes=1),actual-timedelta(minutes=1) if actual else None,'Coordonator handling')
+    add('gate_close','Poartă închisă',off-timedelta(minutes=3),actual-timedelta(minutes=3) if actual else None,opening['actor'],opening['actor'])
+    if 'equipment_check' in by_kind:
+        check=by_kind['equipment_check']; at=datetime.fromisoformat(check['planned_at'])-timedelta(minutes=1)
+        add('equipment_check_started','Verificare echipament începută',at,None if upcoming else at,'Tehnic')
+    # A duty block has an explicit end; later flight assignments must not
+    # imply repeated check-ins while a person is still present.
+    for number,scan in enumerate([e for e in events if e['kind']=='nfc_check_in']):
+        item=entry(group['id']+'-atomic-checkout-'+str(number),'nfc_check_out','Pontaj · încheiere serviciu',
+            off+timedelta(minutes=12),actual+timedelta(minutes=12) if actual else None,scan['actor'])
+        item.update(actor_key=scan['actor'],person_key=scan.get('person_key',scan['actor']))
+        events.append(item)
+    from app.operations.event_rules import RULES
+    priority={kind:n for n,kind in enumerate(RULES)}
+    events.sort(key=lambda e:(e['actual_at'] or e['planned_at'],priority.get(e['kind'],999),e['id']))
+    group['event_count']=len(events)
+    return group
+
+
 def fixture_airport_group(airport,day,index):
     identifier=f'ledger-{airport}-{day}-airport-{index}'
     titles=['Inspecția pistei și balizajului','Predarea turei și resursele','Mentenanță preventivă echipamente','Revizuire SOP și siguranță']
     owners=['Echipă inspecție airside','Ioana Radu','Sorin Pavel','Elena Popa']
-    labels=[['Inspecție planificată','Echipă intrată în perimetru','Control pistă și FOD','Balizaj verificat','Inspecție închisă'],
-            ['Tură planificată','Efectiv verificat','Echipament radio predat','Responsabilități confirmate','Predare încheiată'],
-            ['Lucrare programată','Echipament retras temporar','Verificări funcționale','Echipament repus în serviciu','Raport de mentenanță înregistrat'],
-            ['Revizuire programată','Abateri operaționale analizate','Acțiuni preventive propuse','Responsabil și termen desemnați','Revizuire documentată']]
+    operations=[
+        [(0,'inspection_scheduled','Inspecție pistă programată'),(5,'inspection_started','Inspecție pistă începută'),
+         (5,'lighting_check_scheduled','Verificare balizaj programată'),(6,'lighting_check_started','Verificare balizaj începută'),
+         (10,'fod_check_completed','Control FOD încheiat'),(15,'lighting_check_completed','Verificare balizaj încheiată'),(20,'inspection_completed','Inspecție pistă încheiată')],
+        [(0,'shift_scheduled','Tură programată'),(5,'staffing_checked','Efectiv verificat'),(6,'radio_handover_started','Predare radio începută'),
+         (10,'radio_handover_completed','Radio predat'),(15,'responsibilities_confirmed','Responsabilități confirmate'),(20,'shift_handover_completed','Predare tură încheiată')],
+        [(0,'maintenance_scheduled','Lucrare programată'),(5,'equipment_withdrawn','Echipament retras din serviciu'),
+         (10,'functional_check_completed','Verificare funcțională încheiată'),(15,'equipment_returned','Echipament repus în serviciu'),(20,'maintenance_report_filed','Raport de mentenanță înregistrat')],
+        [(0,'sop_review_scheduled','Revizuire SOP programată'),(5,'deviations_reviewed','Analiză abateri încheiată'),
+         (10,'preventive_action_proposed','Acțiune preventivă propusă'),(15,'action_owner_assigned','Responsabil desemnat'),
+         (16,'action_deadline_set','Termen stabilit'),(20,'sop_review_completed','Revizuire SOP încheiată')]]
     start=stamp(day,5+index*3,30)
     delay=5 if index==2 and day.weekday()==2 else 0
-    events=[entry(identifier+f'-{n}', 'airport_'+str(index)+'_'+str(n),title,start+timedelta(minutes=n*5),start+timedelta(minutes=n*5+(delay if n>=2 else 0)),owners[index],source='seed') for n,title in enumerate(labels[index])]
+    events=[]
+    for n,(minutes,kind,title) in enumerate(operations[index]):
+        item=entry(identifier+'-'+kind,kind,title,start+timedelta(minutes=minutes),
+            start+timedelta(minutes=minutes+(delay if n>=2 else 0)),owners[index])
+        item['actor_key']=owners[index]
+        events.append(item)
     return {'id':identifier,'category':'airport','callsign':titles[index],'route':'Operațiuni aeroportuare',
             'gate_id':None,'scheduled_at':start.isoformat(),'actual_at':events[-1]['actual_at'],
             'status':'completed','severity':worst(events),'delay_minutes':delay,'cause':'equipment' if delay else None,
-            'events':events,'event_count':len(events),'source':'seed','synthetic':True,'fixture_version':FIXTURE_VERSION}
+            'events':events,'event_count':len(events),'source':'seed','synthetic':True,'fixture_version':FIXTURE_VERSION,'schema_version':1}
 
 
 def seed_history(db,user):
@@ -126,6 +197,7 @@ def seed_history(db,user):
                 # Only generated fixtures upgrade. User actions live in the separate
                 # immutable operation_events table and are never rewritten here.
                 if row.data.get('source')=='seed' and row.data.get('synthetic') is True and row.data.get('fixture_version',1)<FIXTURE_VERSION:
+                    group['previous_versions']=[*row.data.get('previous_versions',[]),{k:v for k,v in row.data.items() if k!='previous_versions'}]
                     row.data=group
     try:
         db.commit()
@@ -146,7 +218,13 @@ def active_groups(snapshot):
         identifier=snapshot['simulation']['run_id']+':'+flight['id']
         events=[entry(identifier+'-scheduled','flight_scheduled','Zbor programat',schedule-timedelta(days=3),schedule-timedelta(days=3),'Planificare zboruri',f'Programat pentru {schedule:%d.%m %H:%M}.',source='scenario')]
         assigned=staff.get(gate.get('assigned_staff_id'))
-        events.append(entry(identifier+'-assigned','gate_assigned','Poartă și agent alocate',schedule-timedelta(days=1),schedule-timedelta(days=1),'Coordonare operațională',f"{gate['id']} · {assigned['name'] if assigned else 'echipă sosiri'}",source='scenario'))
+        events.append(entry(identifier+'-assigned','gate_assigned','Poartă alocată',schedule-timedelta(days=1),schedule-timedelta(days=1),'Coordonare operațională',gate['id'],source='scenario'))
+        if assigned:
+            allocation=entry(identifier+'-staff-assigned','staff_assigned','Agent alocat',schedule-timedelta(days=1),schedule-timedelta(days=1),'Coordonare operațională',source='scenario')
+            allocation['person_key']=assigned['id']
+            events.append(allocation)
+        if any(e['kind']=='flight_scheduled' and e['flight_id']==flight['id'] for e in snapshot['events']):
+            events=[]
         for item in snapshot['events']:
             linked=item['flight_id']==flight['id'] or (item['staff_id'] and item['staff_id'] in (gate.get('assigned_staff_id'),gate.get('opened_by')) and item['kind'].startswith('nfc_'))
             if not linked: continue
@@ -162,7 +240,13 @@ def active_groups(snapshot):
             worker_action=item['kind'].startswith('nfc_') or item['kind'] in ('gate_open','gate_close','staff_substitution')
             actor=person if person and worker_action else item['actor']
             detail=(person+' · '+item['detail']) if person and item['kind']=='staff_absent' else item['detail']
-            events.append(entry(item['id'],item['kind'],item['title'],expected,actual,actor,detail,source=item['source'],severity=forced))
+            value=entry(item['id'],item['kind'],item['title'],expected,actual,actor,detail,source=item['source'],severity=forced)
+            value.update({key:item.get(key) for key in ('actor_id','actor','recorded_at','sequence','run_id','flight_id','gate_id','staff_id','payload')})
+            value['actor']=actor
+            value['recorded_by']=item['actor']
+            value['person_key']=item['staff_id']
+            value['projected']=item.get('projected',False) or item['id'].startswith('preview-')
+            events.append(value)
         if flight['direction']=='departure':
             milestone_kinds={'gate_open','boarding_completed','departure','takeoff'}
             seen={e['kind'] for e in events}
@@ -180,7 +264,22 @@ def active_groups(snapshot):
             'status':'completed' if actual_seconds is not None else flight['status'],'severity':worst(events+[flight]),
             'delay_minutes':flight['delay_minutes'],'cause':'late_staff' if gate.get('opened_by') and assigned_late else 'gate_unavailable' if flight['status']=='blocked' else None,
             'events':events,'event_count':len(events),'source':'interactive','synthetic':True,'direction':flight['direction'],
-            'delay_basis':flight['delay_basis'],'emergency':flight['emergency']})
+            'delay_basis':flight['delay_basis'],'emergency':flight['emergency'],
+            'run_id':snapshot['simulation']['run_id'], 'schema_version':1 if any(e['kind']=='flight_scheduled' and e['flight_id']==flight['id'] for e in snapshot['events']) else 0})
+    linked_ids={e['id'] for g in result for e in g['events']}
+    other=[]
+    for item in snapshot['events']:
+        if item['id'] in linked_ids or item['kind'].startswith('simulation_') or item['kind']=='scenario_summary': continue
+        value=entry(item['id'],item['kind'],item['title'],None,datetime.fromisoformat(item['simulated_at']),item['actor'],item['detail'],source=item['source'])
+        value.update({key:item.get(key) for key in ('actor_id','recorded_at','sequence','run_id','flight_id','gate_id','staff_id','payload')})
+        value['person_key']=item['staff_id'];value['recorded_by']=item['actor']
+        if item['kind'].startswith('nfc_') and item['staff_id'] in staff:
+            value['actor']=staff[item['staff_id']]['name']
+        other.append(value)
+    if other:
+        result.append({'id':snapshot['simulation']['run_id']+':shift','category':'airport','callsign':'Activitatea turei','route':'Personal și coordonare',
+            'gate_id':None,'scheduled_at':service.clock_time(0),'actual_at':None,'status':'active','severity':worst(other),
+            'delay_minutes':None,'events':other,'event_count':len(other),'source':'interactive','run_id':snapshot['simulation']['run_id'],'schema_version':1})
     return result
 
 
@@ -210,6 +309,9 @@ def get_ledger(db,user,day=None,status='all',search='',scope='all',run_id=None,a
     if scope == 'current':
         stored=[]
     groups=[present_group(row.data) for row in stored]+active_groups(snapshot)
+    from app.operations.atomic_ledger import prepare
+    groups=prepare(db,user,groups,store=at_seconds is None)
+    db.commit()
     all_metrics=metrics(groups)
     selected=[]
     query=search.strip().casefold()
@@ -257,8 +359,13 @@ def evidence_entry(db, user, event_id, group_id):
                 created_at=initial.recorded_at, updated_at=events[-1].recorded_at)
             groups = active_groups(service.snapshot(db, state, user, events))
             group = next((item for item in groups if item['id'] == group_id), None)
+    if group and not any(item['id']==event_id for item in group['events']):
+        group=next((present_group(version) for version in group.get('previous_versions',[]) if any(item['id']==event_id for item in version['events'])),None)
     if not group or not any(item['id'] == event_id for item in group['events']):
         raise DomainError('Dovada citată nu mai este disponibilă în registrul acestui aeroport.', 404)
+    from app.operations.atomic_ledger import prepare
+    group=prepare(db,user,[group])[0]
+    db.commit()
     day = group['scheduled_at'][:10]
     values = metrics([group])
     return {'scope':'evidence', 'focus_event_id':event_id, 'evidence_run_id':run_id,

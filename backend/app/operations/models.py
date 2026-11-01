@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Float, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, event as orm_event
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -65,3 +65,44 @@ class StrategyAnalysis(Base):
     model: Mapped[str | None] = mapped_column(String, nullable=True)
     snapshot: Mapped[dict] = mapped_column(JSON)
     result: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class OperationEntity(Base):
+    """Airport-scoped operational identity, independent of ledger presentation."""
+    __tablename__ = 'operation_entities'
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    airport_id: Mapped[str] = mapped_column(String, index=True)
+    kind: Mapped[str] = mapped_column(String)
+    code: Mapped[str] = mapped_column(String)
+    label: Mapped[str] = mapped_column(String)
+    attributes: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class OperationFact(Base):
+    """Immutable normalized evidence, including the original provenance."""
+    __tablename__ = 'operation_facts'
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    airport_id: Mapped[str] = mapped_column(String, index=True)
+    group_id: Mapped[str] = mapped_column(String, index=True)
+    occurred_at: Mapped[str] = mapped_column(String, index=True)
+    recorded_at: Mapped[str] = mapped_column(String)
+    data: Mapped[dict] = mapped_column(JSON)
+    digest: Mapped[str] = mapped_column(String)
+
+
+
+class OperationFactEntity(Base):
+    __tablename__ = 'operation_fact_entities'
+    fact_id: Mapped[str] = mapped_column(ForeignKey('operation_facts.id'), primary_key=True)
+    entity_id: Mapped[str] = mapped_column(ForeignKey('operation_entities.id'), primary_key=True, index=True)
+    role: Mapped[str] = mapped_column(String, primary_key=True)
+
+
+# Application-level immutability, backed by database triggers in the migration.
+
+@orm_event.listens_for(OperationFact, 'before_update')
+@orm_event.listens_for(OperationFact, 'before_delete')
+@orm_event.listens_for(OperationFactEntity, 'before_update')
+@orm_event.listens_for(OperationFactEntity, 'before_delete')
+def immutable_operational_evidence(*_):
+    raise ValueError('Operational evidence is append-only.')
