@@ -28,11 +28,15 @@ def test_peer_share_read_and_immediate_revocation(admin, monkeypatch, tmp_path):
     assert any(s['id']==share_id for s in admin.get('/api/exchange/shares', headers=headers).json()['items'])
     downloaded=admin.get(f'/api/exchange/shares/{share_id}/file', headers=headers)
     assert downloaded.status_code == 200 and downloaded.content.startswith(b'%PDF')
+    thumbnail=admin.get(f'/api/shares/{share_id}/thumbnail')
+    assert thumbnail.status_code==200 and thumbnail.content.startswith(b'\x89PNG')
+    assert thumbnail.headers['cache-control']=='no-store'
     from io import BytesIO
     from pypdf import PdfReader
     assert 'SecretAccount123' not in ''.join(p.extract_text() for p in PdfReader(BytesIO(downloaded.content)).pages)
     assert admin.post(f'/api/shares/{share_id}/revoke').status_code == 200
     assert admin.get(f'/api/exchange/shares/{share_id}/file',headers=headers).status_code == 403
+    assert admin.get(f'/api/shares/{share_id}/thumbnail').status_code==403
 
 
 def test_exchange_unavailable_does_not_break_local_access(admin, monkeypatch):
@@ -41,6 +45,32 @@ def test_exchange_unavailable_does_not_break_local_access(admin, monkeypatch):
     assert admin.get('/api/documents').status_code == 200
     login(admin,'technician')
     assert admin.get('/api/received').status_code == 403
+
+
+def test_received_libraries_route_copies_by_source_and_tolerate_one_offline_peer(admin,monkeypatch,tmp_path):
+    import httpx
+    from app.exchange import service
+    gateway_headers(monkeypatch,tmp_path)
+    monkeypatch.setattr(settings,'exchange_peers',{'sibiu':'http://sibiu.test','cluj':'http://cluj.test','iasi':'http://iasi.test'})
+    calls=[]
+    def transport(url,**kwargs):
+        calls.append(url)
+        if 'iasi.test' in url:raise httpx.ConnectError('offline')
+        if url.endswith('/file'):return httpx.Response(200,content=b'%PDF-Cluj',headers={'content-type':'application/pdf'})
+        return httpx.Response(200,json={'items':[{'id':'share-same-id','file_url':'https://untrusted.invalid/file','source_airport_id':'untrusted'}]})
+    monkeypatch.setattr(service.httpx,'get',transport)
+    result=admin.get('/api/received')
+    assert result.status_code==200,result.text
+    libraries=result.json()
+    assert {item['source_airport_id'] for item in libraries['items']}=={'sibiu','cluj'}
+    assert [item['airport_id'] for item in libraries['unavailable']]==['iasi']
+    assert all(item['file_url']==f'/api/received/share-same-id/file?airport_id={item["source_airport_id"]}' for item in libraries['items'])
+    downloaded=admin.get('/api/received/share-same-id/file?airport_id=cluj')
+    assert downloaded.status_code==200 and downloaded.content==b'%PDF-Cluj'
+    assert calls[-1]=='http://cluj.test/outgoing/shares/share-same-id/file'
+    previous=len(calls)
+    assert admin.get('/api/received/share-same-id/file?airport_id=unknown').status_code==503
+    assert len(calls)==previous
 
 
 def test_department_scoped_share_excludes_other_reviewers_and_directors(admin,monkeypatch,tmp_path):

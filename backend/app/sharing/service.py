@@ -83,11 +83,12 @@ def create_share(db,user,document_id,body):
     if doc.status not in ('approved','signed'): raise DomainError('Versiunea trebuie aprobată înainte de partajare.',409)
     if not body.reviewed: raise DomainError('Confirmă că ai verificat integral copia de partajare.',422)
     if body.expires_at<=settings.reference_date: raise DomainError('Alege o dată de expirare ulterioară datei de referință.',422)
-    if body.recipient_airport_id not in ('craiova','sibiu'): raise DomainError('Aeroportul destinatar nu este un partener configurat.',422)
+    from app.exchange.registry import AIRPORTS, trusted_peer_ids
+    if body.recipient_airport_id not in trusted_peer_ids(): raise DomainError('Aeroportul destinatar nu este un partener configurat.',422)
     if body.recipient_airport_id==user.airport_id: raise DomainError('Alege aeroportul partener.',422)
     if body.recipient_department and body.recipient_department not in DEPARTMENTS:
         raise DomainError('Departamentul destinatar nu este valid.',422)
-    item=Share(id='share-'+uuid.uuid4().hex[:12],document_id=doc.id,document_title=doc.title,source_version=doc.version,preview_id=preview.id,recipient_airport={'craiova':'Aeroportul Craiova','sibiu':'Aeroportul Sibiu'}[body.recipient_airport_id],recipient_airport_id=body.recipient_airport_id,created_by=user.id,created_at=now(),expires_at=str(body.expires_at),revoked=False,reviewed=True)
+    item=Share(id='share-'+uuid.uuid4().hex[:12],document_id=doc.id,document_title=doc.title,source_version=doc.version,preview_id=preview.id,recipient_airport=AIRPORTS[body.recipient_airport_id],recipient_airport_id=body.recipient_airport_id,created_by=user.id,created_at=now(),expires_at=str(body.expires_at),revoked=False,reviewed=True)
     item.recipient_department=body.recipient_department or None
     db.add(item); record(db,user,'Document partajat',doc,f'{item.recipient_airport} · {item.recipient_department or "avizatori și directori autorizați"} · versiunea {doc.version} · până la {body.expires_at}'); db.commit()
     return serialize(item,db)

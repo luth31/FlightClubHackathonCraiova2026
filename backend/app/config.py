@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     openai_redaction_model: str = ''
     google_maps_api_key: SecretStr = Field(default=SecretStr(''), validation_alias=AliasChoices('FLYLEAF_GOOGLE_MAPS_API_KEY', 'GOOGLE_MAPS_API_KEY'))
     exchange_url: str = ''
+    exchange_peers: dict[str, str] = Field(default_factory=dict)
     exchange_token_file: Path | None = None
     cors_origins: list[str] = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173', 'http://127.0.0.1:4173']
 settings = Settings()

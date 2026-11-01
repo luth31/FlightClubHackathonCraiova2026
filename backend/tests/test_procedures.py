@@ -135,7 +135,7 @@ def test_new_procedure_creates_full_draft_and_joins_library(admin, monkeypatch):
     assert any(item['code'] == proposal['sop_code'] for item in admin.get('/api/operations/sops').json()['items'])
 
 
-def test_only_senior_roles_share_approved_sop_and_peer_access_revokes(admin, db, monkeypatch, tmp_path):
+def test_only_senior_roles_share_approved_sop_and_peer_access_revokes(admin, db, monkeypatch, tmp_path, collaboration_enabled):
     from test_exchange import gateway_headers
     # Another model avoids state from the earlier draft test; use the real review API.
     identifier = admin.post('/api/operations/sops/SOP-NET-11/draft').json()['document_id']

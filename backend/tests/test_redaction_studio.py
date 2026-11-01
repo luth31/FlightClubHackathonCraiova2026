@@ -106,7 +106,7 @@ def test_access_before_external_call_and_key_unavailable(client,monkeypatch):
     assert client.get('/api/documents/test-hr/redaction-layout').status_code in (403,404)
 
 
-def test_preview_render_owner_and_integrity(admin):
+def test_preview_render_owner_and_integrity(admin, collaboration_enabled):
     from pathlib import Path
     from app.database import SessionLocal
     from app.sharing.models import SharePreview

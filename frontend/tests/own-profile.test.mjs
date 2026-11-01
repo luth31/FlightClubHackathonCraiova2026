@@ -45,8 +45,8 @@ async function setup(t, overrides={}) {
     return Response.json({...state});
   };
   const root=createRoot(document.getElementById('root'));
-  await act(async()=>root.render(h(PersonDirectoryProvider,{revision:0},h('div',null,
-    h(PersonAvatar,{userId:'admin',name:'Ana Ionescu'}),h(PersonAvatar,{userId:'admin',name:'Ana Ionescu'}),h(PersonAvatar,{userId:'colleague',name:'Mara Demo'}),h(PersonStatus,{person})))));
+  await act(async()=>root.render(h(PersonDirectoryProvider,{revision:0,account:{userId:'admin',signOut:async()=>{},signingOut:false,signOutError:''}},h('div',null,
+    h(PersonAvatar,{userId:'admin',name:'Ana Ionescu'}),h(PersonAvatar,{userId:'admin',name:'Ana Ionescu'}),h(PersonAvatar,{userId:'colleague',name:'Mara Demo'}),h(PersonStatus,{person}),h(PersonAvatar,{name:'Director Sibiu',externalAirport:'Aeroportul Sibiu',person:{...person,name:'Director Sibiu',email:'director@sibiu.example'}})))));
   t.after(async()=>{await act(async()=>root.unmount());globalThis.fetch=originalFetch;URL.createObjectURL=originalCreate;URL.revokeObjectURL=originalRevoke;dom.window.close();});
   await act(async()=>document.querySelector('.person-avatar-trigger').focus());
   return {state,calls,fail:()=>{fail=true;},recover:()=>{fail=false;}};
@@ -63,9 +63,24 @@ async function change(element,value) {
 test('only the logged-in person gets account controls; colleague cards remain read-only',async t=>{
   await setup(t);
   assert.ok(document.querySelector('.own-profile'));
+  assert.ok(document.querySelector('.person-signout-button'));
   await act(async()=>document.querySelector('[aria-label="Vezi profilul: Mara Demo"]').focus());
   assert.equal(document.querySelector('.own-profile'),null);
+  assert.equal(document.querySelector('.person-signout-button'),null);
   assert.match(document.querySelector('.person-profile-status-message').textContent,/Pe platformă/);
+});
+
+test('a remote contact with the current user ID cannot inherit local profile or editing controls',async t=>{
+  await setup(t,{status_message:'Internal local status',photo_url:'/api/people/admin/photo?v=private'});
+  await act(async()=>document.querySelector('[aria-label="Vezi profilul: Director Sibiu"]').focus());
+  const card=document.querySelector('.person-profile');
+  assert.equal(card.querySelector('.own-profile'),null);
+  assert.equal(card.querySelector('.person-signout-button'),null);
+  assert.equal(card.querySelector('img'),null);
+  assert.equal(card.querySelector('.person-profile-status-message'),null);
+  assert.equal(card.querySelector('.person-profile-status'),null);
+  assert.match(card.textContent,/Aeroportul Sibiu/);
+  assert.equal(card.querySelector('a').getAttribute('href'),'mailto:director@sibiu.example');
 });
 
 test('saving and resetting presence updates all current-user avatars without changing accounts',async t=>{

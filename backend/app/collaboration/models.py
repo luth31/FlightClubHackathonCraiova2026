@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -11,6 +11,9 @@ class CollaborationThread(Base):
     recipient_airport_id: Mapped[str] = mapped_column(String)
     requester_department: Mapped[str | None] = mapped_column(String, nullable=True)
     recipient_department: Mapped[str | None] = mapped_column(String, nullable=True)
+    requester_contact: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    recipient_contact: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    category: Mapped[str] = mapped_column(String, default='request', server_default='request')
     subject: Mapped[str] = mapped_column(String)
     topic: Mapped[str] = mapped_column(String)
     created_at: Mapped[str] = mapped_column(String)
@@ -48,4 +51,25 @@ class CollaborationSync(Base):
     departments: Mapped[list | None] = mapped_column(JSON, nullable=True)
     last_synced_at: Mapped[str | None] = mapped_column(String, nullable=True)
     acknowledged_cursor: Mapped[int] = mapped_column(Integer, default=0)
+    participation_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default='0')
+    contacts: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+
+class CollaborationParticipation(Base):
+    __tablename__ = 'collaboration_participation'
+    airport_id: Mapped[str] = mapped_column(String, primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    updated_by: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+class CollaborationMailboxState(Base):
+    __tablename__ = 'collaboration_mailbox_state'
+    airport_id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, primary_key=True)
+    thread_id: Mapped[str] = mapped_column(String, primary_key=True)
+    read_sequence: Mapped[int] = mapped_column(Integer, default=0)
+    starred: Mapped[bool] = mapped_column(Boolean, default=False)
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
 

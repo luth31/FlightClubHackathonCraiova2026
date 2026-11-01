@@ -27,6 +27,7 @@ import {
   Modal,
 } from "@/components/ui";
 import { ExtractedText } from './ExtractedText';
+import {ReadOnlyPdf} from '@/components/documents/ReadOnlyPdf';
 import "./documents.css";
 import { ShareDialog } from "@/features/sharing";
 import { date, time, money, actionLabel } from "@/utils/format";
@@ -291,23 +292,10 @@ export function DocumentDetail({
                   <ExternalLink size={16} />
                 </a>
               </div>
-              <div className="mobile-pdf-open">
-                <FileIcon category={doc.category} large />
-                <strong>Document PDF · versiunea {doc.version}</strong>
-                <a
-                  className="button secondary"
-                  href={fileUrl(`${doc.file_url}?version=${doc.version}`)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink size={16} />
-                  Vezi documentul
-                </a>
-              </div>
-              <iframe
+              <ReadOnlyPdf
                 key={`${doc.id}:${doc.version}:${doc.status}`}
-                title={`PDF: ${doc.title} · versiunea ${doc.version}`}
-                src={`${fileUrl(`${doc.file_url}?version=${doc.version}`)}#toolbar=1&navpanes=0&view=FitH`}
+                title={doc.title}
+                source={`${doc.file_url}?version=${doc.version}`}
               />
             </div>
             <aside className="document-side">

@@ -1,11 +1,10 @@
-from urllib.parse import unquote
 from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.orm import Session
 from app.dependencies import current_user, get_db
 from app.core.exceptions import DomainError
 from app.exchange.router import peer
-from app.collaboration import service
-from app.collaboration.schemas import CreateRequest, MessageRequest, StatusRequest
+from app.collaboration import service, participation
+from app.collaboration.schemas import CreateRequest, MessageRequest, StatusRequest, ParticipationRequest, MailboxStateRequest
 
 router = APIRouter(prefix='/api', tags=['Partner coordination'])
 
@@ -13,7 +12,7 @@ router = APIRouter(prefix='/api', tags=['Partner coordination'])
 def coordination_peer(airport=Depends(peer), x_requester_roles: str=Header(default=''),
                       x_requester_department: str=Header(default='')):
     roles = set(x_requester_roles.split(','))
-    if not ('director' in roles or 'department_head' in roles or ('reviewer' in roles and unquote(x_requester_department) == 'Conformitate')):
+    if not ('director' in roles or 'department_head' in roles):
         raise DomainError('Coordonarea aparține conducerii și responsabililor autorizați.', 403)
     return airport
 
@@ -31,6 +30,23 @@ def listing(user=Depends(current_user), db: Session=Depends(get_db)):
 @router.post('/collaboration', status_code=201)
 def create(body: CreateRequest, user=Depends(current_user), db: Session=Depends(get_db)):
     return service.create(db, user, body)
+
+
+@router.patch('/collaboration/participation')
+def update_participation(body: ParticipationRequest, user=Depends(current_user), db: Session=Depends(get_db)):
+    return participation.update(db, user, body)
+
+
+@router.get('/collaboration/airports')
+def airports(q: str=Query(default='',max_length=150), available: bool=True,
+             offset: int=Query(default=0,ge=0),limit: int=Query(default=12,ge=1,le=50),
+             user=Depends(current_user),db: Session=Depends(get_db)):
+    return service.airport_directory(db,user,q,available,offset,limit)
+
+
+@router.patch('/collaboration/{identifier}/mailbox')
+def mailbox(identifier: str,body: MailboxStateRequest,user=Depends(current_user),db: Session=Depends(get_db)):
+    return service.update_mailbox(db,user,identifier,body)
 
 
 @router.get('/collaboration/{identifier}')

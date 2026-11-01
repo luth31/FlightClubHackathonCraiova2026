@@ -56,3 +56,23 @@ def login(client,user='admin'):
     response=client.post('/api/auth/login',json={'user_id':user,'password':'FlyLeaf2026!'})
     assert response.status_code==200,response.text
     return client
+
+
+@pytest.fixture
+def collaboration_enabled(client, db):
+    """Existing document-sharing tests explicitly opt in to the new workspace."""
+    from app.collaboration.models import CollaborationParticipation
+    row = db.get(CollaborationParticipation, 'craiova')
+    previous = row.enabled if row else None
+    if row is None:
+        row = CollaborationParticipation(airport_id='craiova', enabled=True)
+        db.add(row)
+    row.enabled = True
+    db.commit()
+    yield
+    db.rollback()
+    if previous is None:
+        db.delete(row)
+    else:
+        row.enabled = previous
+    db.commit()

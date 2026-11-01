@@ -17,9 +17,10 @@ const {App}=module.exports;
 initialDOM.window.close();
 
 function installDOM(window) {
-  for (const key of ['window','document','navigator','location','localStorage','sessionStorage','HTMLElement','HTMLInputElement','Event','MouseEvent','FormData','File'])
+  for (const key of ['window','document','navigator','location','localStorage','sessionStorage','HTMLElement','HTMLInputElement','Event','MouseEvent','CustomEvent','FormData','File'])
     Object.defineProperty(globalThis,key,{value:key==='window'?window:window[key],configurable:true,writable:true});
   globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+  globalThis.ResizeObserver=class {observe() {} disconnect() {}};
   window.scrollTo=(x,y)=>{
     Object.defineProperty(window,'scrollX',{value:x,configurable:true});
     Object.defineProperty(window,'scrollY',{value:y,configurable:true});
@@ -60,7 +61,7 @@ const supplier={id:'supplier-demo',name:'Demo SRL',document_id:documentRecord.id
   address:'Demo address',category:'Services',state:'active',contracts:[{id:documentRecord.id,title:documentRecord.title,
     version:1,eligible_for_review:true}]};
 
-async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse,briefingResponse}={}) {
+async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse,briefingResponse,peopleResponse}={}) {
   const dom=new JSDOM('<div id="root"></div>',{url:`http://flyleaf.test/${hash}`,pretendToBeVisual:true});
   installDOM(dom.window);
   let currentUser=startUser||{...user,roles};
@@ -71,7 +72,7 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
       const response=Response.json({current_user:currentUser,users:authMode==='oidc'&&!currentUser?[]:[user,technician],airport:'Demo airport',reference_date:'2026-10-30',demo:authMode==='demo',auth:{mode:authMode,login_url:authMode==='oidc'?'/api/auth/oidc/login':null,logout_url:'/api/auth/logout'}});
       return sessionResponse?await sessionResponse(response):response;
     }
-    else if(path==='/api/auth/login'){currentUser=technician;body={};}
+    else if(path==='/api/auth/login'){assert.equal(JSON.parse(options.body).password,'typed-demo-password');currentUser=technician;body={};}
     else if(path==='/api/auth/logout'){
       assert.equal(options.method,'POST');
       const response=logoutResponse?await logoutResponse():Response.json({ok:true,redirect_url:null});
@@ -93,13 +94,13 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/dashboard')body={stats:{documents:1,pending:0,expiring:0,approved:1},recent_documents:[documentRecord],attention:[],activity:[],departments:[]};
     else if(path==='/api/tasks')body={items:[{id:'task-demo',document_id:documentRecord.id,title:documentRecord.title,department:'Achiziții',
       assignee:user.name,status:'pending',priority:'normal',due_date:'2026-11-01',type:'approval',can_act:false}]};
-    else if(path==='/api/collaboration')body={partner:{id:'sibiu',name:'Aeroportul Sibiu'},can_create:true,connected:true,requests:[]};
+    else if(path==='/api/collaboration')body={partner:{id:'sibiu',name:'Aeroportul Sibiu'},partners:[],local_airport:{id:'craiova',name:'Aeroportul Craiova'},participation:{enabled:false,revision:0,can_manage:true,updated_at:null},sender:{id:'admin',name:'Director demo',email:'admin@craiova.example',department:'Conducere',job_title:'Director',role:'director'},can_create:false,connected:false,requests:[]};
     else if(path==='/api/shares')body={items:[{id:'share-demo',document_id:documentRecord.id,document_title:documentRecord.title,
       source_version:1,recipient_airport:'Demo partner',expires_at:'2026-12-01',created_at:'2026-10-01',status:'active'}]};
     else if(path==='/api/audit')body={items:[{id:'audit-demo',document_id:documentRecord.id,document_title:documentRecord.title,
       actor:user.name,action:'Demo action',created_at:'2026-10-01'}]};
-    else if(path==='/api/people')body={items:[],total:0,departments:[],delegations:[],leaves:[],current_user_id:currentUser.id,
-      can_manage_accounts:false,can_manage_delegations:false,reference_date:'2026-10-30'};
+    else if(path==='/api/people')return peopleResponse?await peopleResponse():Response.json({items:[],total:0,departments:[],delegations:[],leaves:[],current_user_id:currentUser.id,
+      can_manage_accounts:false,can_manage_delegations:false,reference_date:'2026-10-30'});
     else if(path.startsWith('/api/documents/')) {
       if(documentError)return Response.json({detail:'Document unavailable'},{status:404});
       body=path.endsWith('/doc-related')?related:{...documentRecord,related_documents:[related],
@@ -122,6 +123,12 @@ async function setInput(input,value){assert.ok(input);await act(async()=>{
   Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set.call(input,value);
   input.dispatchEvent(new window.Event('input',{bubbles:true}));
 });await settle(280);}
+async function signInAnotherAccount(){
+  await click(find('.topbar button','Ieși din cont'));
+  await setInput(document.querySelector('.login-page input[name=username]'),technician.name);
+  await setInput(document.querySelector('.login-page input[type=password]'),'typed-demo-password');
+  await click(find('.login-page button','Intră în spațiul de lucru'));
+}
 const heading=()=>[...document.querySelectorAll('main h1')].find(visible)?.textContent;
 
 test('report deep links and source-document returns preserve the report and table filters',async t=>{
@@ -212,6 +219,61 @@ test('procurement supplier view shows business profiles without banking workflow
   assert.ok(!paths.includes('/api/supplier-registrations'));
 });
 
+test('sidebar name and chevron open the same full profile card as avatar hover',async t=>{
+  await setup(t,'#home',{peopleResponse:()=>Response.json({items:[{...user,email:'ana@demo.example',job_title:'Director',availability:'available'}],current_user_id:user.id,reference_date:'2026-10-30'})});
+  const trigger=document.querySelector('.user-menu-trigger');
+  for(const target of [trigger.querySelector('strong'),trigger.querySelector('svg')]){
+    await act(async()=>target.dispatchEvent(new window.MouseEvent('click',{bubbles:true})));
+    await settle();
+    assert.equal(document.querySelector('.user-menu'),null);
+    assert.equal(document.querySelectorAll('.person-profile').length,1);
+    assert.ok(document.querySelector('.person-profile .own-profile'));
+    assert.match(document.querySelector('.person-profile-details').textContent,/ana@demo.example/);
+    assert.equal(document.querySelector('.person-profile').lastElementChild.className,'person-profile-signout');
+    assert.ok(document.querySelector('.person-signout-button'));
+    await click(document.querySelector('.person-profile-close'));
+  }
+  await act(async()=>document.querySelector('.top-avatar').dispatchEvent(new window.MouseEvent('pointerover',{bubbles:true})));
+  await settle(220);
+  assert.ok(document.querySelector('.person-profile .own-profile'));
+  assert.ok(document.querySelector('.person-signout-button'));
+  await click(document.querySelector('.person-signout-button'));
+  assert.ok(document.querySelector('.login-page'));
+  assert.equal(document.querySelector('.person-profile'),null);
+  assert.equal(localStorage.getItem('flyleaf-user'),null);
+});
+
+test('profile card logout prevents duplicate requests and retries a failed logout',async t=>{
+  let finish,requests=0;
+  const pending=new Promise(resolve=>{finish=resolve});
+  await setup(t,'#home',{logoutResponse:()=>++requests===1?pending:Response.json({ok:true,redirect_url:null})});
+  await click(document.querySelector('.user-menu-trigger'));
+  const button=document.querySelector('.person-signout-button');
+  await click(button);
+  assert.equal(button.disabled,true);
+  assert.equal(button.getAttribute('aria-busy'),'true');
+  await click(button);
+  await click(document.querySelector('.topbar-logout'));
+  assert.equal(requests,1);
+  await act(async()=>finish(Response.json({detail:'Logout temporarily unavailable'},{status:503})));
+  await settle();
+  assert.match(document.querySelector('.person-profile-signout').textContent,/Logout temporarily unavailable/);
+  assert.equal(button.disabled,false);
+  assert.equal(localStorage.getItem('flyleaf-user'),'admin');
+  await click(button);
+  assert.equal(requests,2);
+  assert.ok(document.querySelector('.login-page'));
+  assert.equal(document.querySelector('.person-profile'),null);
+});
+
+test('profile card can sign out even when the people directory cannot load',async t=>{
+  await setup(t,'#home',{peopleResponse:()=>Response.json({detail:'Directory unavailable'},{status:503})});
+  await click(document.querySelector('.user-menu-trigger'));
+  assert.match(document.querySelector('.person-profile-message').textContent,/Profilul nu a putut fi/);
+  await click(document.querySelector('.person-signout-button'));
+  assert.ok(document.querySelector('.login-page'));
+});
+
 test('logout is available without opening the account menu and clears the workspace',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
   assert.equal(localStorage.getItem('flyleaf-user'),'admin');
@@ -226,6 +288,9 @@ test('logout is available without opening the account menu and clears the worksp
   assert.equal(localStorage.getItem('flyleaf-user'),null);
   assert.equal(location.hash,'#home');
   globalThis.fetch=originalFetch;
+  assert.equal(find('.login-page button','Intră în spațiul de lucru').disabled,true);
+  await setInput(document.querySelector('.login-page input[name=username]'),technician.name);
+  await setInput(document.querySelector('.login-page input[type="password"]'),'typed-demo-password');
   await click(find('.login-page button','Intră în spațiul de lucru'));
   assert.ok(find('.user-button',technician.name));
   assert.equal(heading(),'Bine ai venit, Teo.');
@@ -518,8 +583,7 @@ test('account changes reset list state and do not reuse another user’s documen
   await click(find('button','Registru furnizori'));
   await setInput(document.querySelector('[aria-label="Caută un furnizor"]'),'Demo');
   await click(find('button','Contractul sursă'));
-  await click(document.querySelector('.user-button'));
-  await click(find('.user-menu button',technician.name));
+  await signInAnotherAccount();
   assert.equal(location.hash,'#home');
   assert.equal(find('nav button','Furnizori'),undefined);
   await act(async()=>browser.history.back());await settle(70);
@@ -576,8 +640,7 @@ for (const dismiss of ['cancel','navigate','back','account change'])
     else if(dismiss==='navigate')await click(find('nav button','Contracte'));
     else if(dismiss==='back'){await act(async()=>window.history.back());await settle(70);}
     else {
-      await click(document.querySelector('.user-button'));
-      await click(find('.user-menu button',technician.name));
+      await signInAnotherAccount();
     }
     const expectedHash=location.hash,historyLength=window.history.length;
     await act(async()=>complete(Response.json(documentRecord)));await settle(70);

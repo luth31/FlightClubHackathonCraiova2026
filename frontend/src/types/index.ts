@@ -5,7 +5,7 @@ export interface DocumentRecord {id:string;title:string;number:string;category:s
 export interface Task {id:string;document_id:string;title:string;department:string;assignee:string;status:string;priority:string;due_date:string;type:string}
 export interface Share {can_revoke?:boolean;id:string;document_id:string;document_title?:string;title?:string;recipient_airport:string;recipient_department?:string|null;expires_at:string;created_at:string;status?:string;revoked?:boolean;revoked_at?:string;source_version:number;file_url?:string;redactions?:number}
 export interface Dashboard {stats:{documents:number;pending:number;expiring:number;approved:number};recent_documents:DocumentRecord[];attention:Array<Partial<Task>&Partial<DocumentRecord>>;activity:AuditEvent[];departments:Array<{name:string;count:number}>|Record<string,number>}
-export interface Session {auth?:{mode:'demo'|'oidc';login_url:string|null};current_user:User|null;users:User[];airport:string|{name:string};reference_date:string;demo:boolean}
+export interface Session {auth?:{mode:'demo'|'oidc';login_url:string|null};current_user:User|null;users:User[];airport:string|{id?:string;name:string};reference_date:string;demo:boolean}
 export type DocumentFlowStageId = 'purchasing' | 'shipping' | 'inventory_management' | 'invoice_verification';
 export interface DocumentFlowClassification {
   stage: DocumentFlowStageId;

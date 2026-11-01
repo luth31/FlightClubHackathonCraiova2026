@@ -1,4 +1,6 @@
-from fastapi import APIRouter,Depends
+from fastapi import APIRouter,Depends,Query
+from pathlib import Path
+from app.documents.representations import Representation,represent
 from fastapi.responses import FileResponse,Response
 from sqlalchemy import select,desc
 from sqlalchemy.orm import Session
@@ -81,6 +83,15 @@ def revoke(share_id: str,db: Session=Depends(get_db),user=Depends(current_user))
     return service.serialize(share,db)
 
 @router.get('/shares/{share_id}/file')
-def file(share_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+def file(share_id: str,representation: Representation='pdf',page: int=Query(1,ge=1),db: Session=Depends(get_db),user=Depends(current_user)):
     item=service.share_file(db,user,share_id)
+    if representation!='pdf': return represent(Path(item.file_path).read_bytes(),representation,page)
     return FileResponse(item.file_path,media_type='application/pdf',headers={'Cache-Control':'no-store'})
+
+
+@router.get('/shares/{share_id}/thumbnail')
+def thumbnail(share_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    from pathlib import Path
+    from app.sharing.thumbnails import pdf_thumbnail
+    item=service.share_file(db,user,share_id)
+    return Response(pdf_thumbnail(Path(item.file_path).read_bytes()),media_type='image/png',headers={'Cache-Control':'no-store'})

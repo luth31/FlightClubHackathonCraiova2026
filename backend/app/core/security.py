@@ -93,6 +93,7 @@ def require_share_documents(user):
 
 
 def page_permissions(user):
+    from app.collaboration.participation import page_access
     director = has_role(user, 'director')
     head = is_department_head(user)
     finance = has_role(user, 'finance')
@@ -102,7 +103,7 @@ def page_permissions(user):
     return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True, 'reports': True,
             'contracts': not technician and (director or finance or (head and not has_role(user, 'hr'))),
             'suppliers': director or finance or procurement,
-            'sharing': director or head or compliance,
+            'sharing': page_access(user),
             'audit': not technician and (director or head or has_role(user, 'hr') or compliance)}
 
 

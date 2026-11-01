@@ -9,16 +9,24 @@ interface ProfileDirectory {
   current_user_id: string;
 }
 
+interface AccountActions {
+  userId: string;
+  signOut: () => Promise<void>;
+  signingOut: boolean;
+  signOutError: string;
+}
+
 const DirectoryContext = createContext<{
   data?: ProfileDirectory;
   error: boolean;
   refresh: () => void;
   updateProfile: (id: string, profile: PersonProfile) => void;
   now: number;
+  account?: AccountActions;
 }>({error: false, refresh: () => {}, updateProfile: () => {}, now: Date.now()});
 
 // Keep one directory per signed-in workspace, shared by all person avatars.
-export function PersonDirectoryProvider({revision, children}: {revision: number; children: ReactNode}) {
+export function PersonDirectoryProvider({revision, children, account}: {revision: number; children: ReactNode; account?: AccountActions}) {
   const [data, setData] = useState<ProfileDirectory>();
   const [error, setError] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -63,7 +71,7 @@ export function PersonDirectoryProvider({revision, children}: {revision: number;
     return () => clearTimeout(timer);
   }, [data, now]);
 
-  return <DirectoryContext.Provider value={{data, error, refresh, updateProfile, now}}>{children}</DirectoryContext.Provider>;
+  return <DirectoryContext.Provider value={{data, error, refresh, updateProfile, now, account}}>{children}</DirectoryContext.Provider>;
 }
 
 export function usePersonDirectory() {
