@@ -12,6 +12,7 @@ import {
   History,
   Info,
   ShieldCheck,
+  Sparkles,
   LoaderCircle,
   ExternalLink,
   Upload,
@@ -27,6 +28,9 @@ import {
   Modal,
 } from "@/components/ui";
 import { ExtractedText } from './ExtractedText';
+import {DocumentPerson} from './DocumentPerson';
+import {DocumentExpiry} from './DocumentExpiry';
+import {DocumentFollowUp} from './DocumentFollowUp';
 import {ReadOnlyPdf} from '@/components/documents/ReadOnlyPdf';
 import "./documents.css";
 import { ShareDialog } from "@/features/sharing";
@@ -92,6 +96,10 @@ export function DocumentDetail({
   useEffect(() => {
     load();
   }, [load]);
+  const openedId = doc?.id;
+  useEffect(() => {
+    if (openedId) void api('/workspace/recent/' + encodeURIComponent(openedId), {method:'POST'}).catch(() => {});
+  }, [openedId]);
   const extractionStatus = doc?.extraction_status;
   useEffect(() => {
     if (!['queued', 'processing'].includes(extractionStatus || '')) return;
@@ -240,6 +248,7 @@ export function DocumentDetail({
               {doc.department}
             </span>
             <div>
+              <button className="button secondary small-button" onClick={()=>{location.hash='assistant?document='+encodeURIComponent(doc.id)}}><Sparkles size={15}/>Întreabă despre document</button>
               <button
                 className="button secondary small-button"
                 onClick={async () => {
@@ -299,6 +308,8 @@ export function DocumentDetail({
               />
             </div>
             <aside className="document-side">
+              <DocumentFollowUp doc={doc} canArchive={canEdit && ['approved', 'signed'].includes(doc.status) && doc.metadata?.managed_by !== 'leave_workflow' && user.roles.some(role => ['director', 'reviewer'].includes(role))}
+                onArchive={() => setConfirm('archive')} notify={notify} onChanged={() => {onChanged(); void load();}}/>
               {doc.metadata?.managed_by === "leave_workflow" && (
                 <div className="panel document-actions">
                   <h2>{doc.metadata.request_status === "approved" ? "Concediul este aprobat" :
@@ -315,7 +326,9 @@ export function DocumentDetail({
                     <div className="document-task-owner">
                       <span>
                         Responsabil:{" "}
-                        <strong>{doc.workflow.task.assignee}</strong>
+                        {doc.workflow.task.effective_assignee
+                          ? <DocumentPerson name={doc.workflow.task.assignee} userId={doc.workflow.task.effective_assignee}/>
+                          : <strong>{doc.workflow.task.assignee}</strong>}
                       </span>
                       <small>Termen: {date(doc.workflow.task.due_date)}</small>
                       <a href="#approvals">
@@ -556,7 +569,7 @@ export function DocumentDetail({
                             </div>
                             <div>
                               <dt>Responsabil</dt>
-                              <dd>{doc.owner || "Echipa " + doc.department}</dd>
+                              <dd>{doc.owner ? <DocumentPerson name={doc.owner} userId={doc.owner_id}/> : "Echipa " + doc.department}</dd>
                             </div>
                             {doc.supplier && (
                               <div>
@@ -570,16 +583,7 @@ export function DocumentDetail({
                             </div>
                             <div>
                               <dt>Valabil până la</dt>
-                              <dd
-                                className={
-                                  doc.days_remaining != null &&
-                                  doc.days_remaining <= 60
-                                    ? "amber-text"
-                                    : ""
-                                }
-                              >
-                                {date(doc.expires_at)}
-                              </dd>
+                              <dd><DocumentExpiry muted={doc.follow_up?.alerts_suppressed} expiresAt={doc.expires_at} daysRemaining={doc.days_remaining} validated={doc.validated} status={doc.status}/></dd>
                             </div>
                             {doc.value != null && (
                               <div>
@@ -690,7 +694,7 @@ export function DocumentDetail({
                               <strong>{step.label}</strong>
                               {step.actor && (
                                 <small>
-                                  {step.actor}
+                                  <DocumentPerson name={step.actor} userId={step.actor_id}/>
                                   {step.at ? ` · ${date(step.at)}` : ""}
                                 </small>
                               )}
@@ -817,7 +821,7 @@ export function DocumentDetail({
                                 {actionLabel[a.action] || a.action}
                               </strong>
                               <small>
-                                {a.actor} · {time(a.created_at)}
+                                <DocumentPerson name={a.actor} userId={a.actor_id}/> · {time(a.created_at)}
                               </small>
                               {typeof a.detail === "string" && a.detail && (
                                 <p>{a.detail}</p>

@@ -239,6 +239,8 @@ def update_profile(db, actor, uid, body):
         if dept.id != person.department_id:
             from app.tasks.service import flag_offboarding
             flag_offboarding(db, person, actor, 'Departament schimbat')
+            from app.renewals.service import flag_offboarding as flag_renewals
+            flag_renewals(db, person, actor)
             for grant in db.scalars(select(Delegation).where((Delegation.from_user == uid) | (Delegation.to_user == uid))): grant.active = False
             person.manager_id = None
             for report in db.scalars(select(User).where(User.airport_id == person.airport_id,
@@ -273,6 +275,8 @@ def update_account(db, actor, uid, body):
                 raise DomainError('Ultimul administrator sau director activ trebuie păstrat.', 409)
         from app.tasks.service import flag_offboarding
         flag_offboarding(db, person, actor)
+        from app.renewals.service import flag_offboarding as flag_renewals
+        flag_renewals(db, person, actor)
         for session in db.scalars(select(Session).where(Session.user_id == uid)): db.delete(session)
         for grant in db.scalars(select(Delegation).where((Delegation.from_user == uid) | (Delegation.to_user == uid))): grant.active = False
         if person.provisioning_status != 'ready': person.provisioning_status = 'cancelled'

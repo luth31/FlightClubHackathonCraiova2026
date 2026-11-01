@@ -15,17 +15,21 @@ export function DocumentLibrary({
   notify,
   initialFilter = "",
   revision,
+  preferredView,
+  onViewChange,
 }: {
   onOpen: (id: string) => void;
   onUpload: () => void;
   notify: (s: string) => void;
   initialFilter?: string;
   revision: number;
+  preferredView?: LibraryView;
+  onViewChange?: (view: LibraryView) => void;
 }) {
   const caseStorageKey = `flyleaf-document-case:${getIdentity()}`;
   const panelRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<LibraryView>(
-    () => sessionStorage.getItem("flyleaf-document-view") === "flow" ? "flow" : "list",
+    () => preferredView || (sessionStorage.getItem("flyleaf-document-view") === "flow" ? "flow" : "list"),
   ),
     [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
@@ -44,6 +48,7 @@ export function DocumentLibrary({
 
   const changeView = (next: LibraryView) => {
     setView(next);
+    onViewChange?.(next);
     sessionStorage.setItem("flyleaf-document-view", next);
   };
   const selectCase = (id: string) => {

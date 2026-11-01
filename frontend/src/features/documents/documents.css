@@ -1,4 +1,16 @@
 /* Documents keep the file and its next decision together. */
+.document-person{display:inline-flex;align-items:center;gap:8px;max-width:100%;vertical-align:middle;min-width:0}
+.document-person .document-person-avatar{width:30px;height:30px;min-width:30px;flex-shrink:0;font-size:11px;background:#e4eef4;color:#173e52}
+.document-person-name{min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.detail-page .metadata-list>div:has(.document-person),.detail-page .metadata-list>div:has(.document-expiry){align-items:center}
+.document-expiry{display:inline-flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:100%;padding:8px 10px;border-radius:7px;line-height:1.45;border:1px solid transparent}
+.document-expiry time{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.document-expiry>span{font-size:12px}
+.document-expiry--valid{background:#e8f5ee;color:#12613f;border-color:#bbdfc9}
+.document-expiry--soon{background:#fff4db;color:#895100;border-color:#f2d397}
+.document-expiry--urgent{background:#fff0f0;color:#b42318;border-color:#f2b4af}
+.document-expiry--expired{background:#8d1b32;color:#fff;border-color:#8d1b32}
+.document-expiry--neutral{background:#eef2f6;color:#526575;border-color:#d7dfe6}
 .library-navigation{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #d7dfe6}
 .library-navigation .library-view-switch{margin:0;background:#edf1f5;padding:4px;border-color:#d7dfe6;flex-shrink:0}
 .library-navigation .library-tabs{margin:0;padding:0;border:0;min-height:0}
@@ -38,3 +50,15 @@
 .detail-page .workflow-step strong{font-size:13px;color:#142432}
 .detail-page .workflow-step small,.detail-page .detail-history small{font-size:12px;color:#526575}
 @media(max-width:700px){.library-navigation{padding:12px;gap:8px}.library-navigation .library-tabs{width:100%;overflow:auto}.library-navigation .library-tabs button{padding:10px 8px}.detail-page .detail-tab-content,.detail-page .document-actions,.detail-page .related-panel{padding:15px}.detail-page .detail-tabs button{padding:12px 9px;font-size:12px}}
+.document-followup { padding: 20px; }
+.document-followup-heading { display: flex; align-items: center; gap: 8px; color: #173e52; }
+.document-followup-heading h2 { font-size: 15px; margin: 0; }
+.document-followup p { color: #536e80; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+.document-followup-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.document-followup-actions .text-button { font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+.followup-decision { margin: 15px 0; padding: 14px; border: 1px solid #c8d7df; border-radius: 8px; background: #f3f6f8; }
+.followup-decision > strong { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.followup-decision > span { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.followup-decision > small { display: block; color: #627990; margin-top: 12px; font-size: 11px; }
+.followup-personal-state { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.followup-date-notice { padding: 10px; background: #fff3d8; border-left: 3px solid #ba7b17; color: #745019; }

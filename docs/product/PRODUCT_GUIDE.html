@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ghid FlyLeaf: responsabilități, documente, reînnoiri, echipamente și verificarea lucrărilor.">
+  <title>FlyLeaf — Spațiul de lucru și fluxurile produsului</title>
+  <style>
+    :root { color-scheme: light; --ink:#203342; --muted:#556775; --blue:#205b89; --pale:#edf4fa; --line:#d8e0e5; --paper:#fff; --canvas:#f6f7f8; --amber:#885312; --warm:#fff3df; --green:#266447; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:24px; }
+    body { margin:0; color:var(--ink); background:var(--canvas); font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); text-underline-offset:3px; }
+    a:hover { text-decoration-thickness:2px; }
+    button { font:inherit; cursor:pointer; }
+    :focus-visible { outline:3px solid var(--amber); outline-offset:4px; }
+    .skip { position:absolute; top:-100px; left:16px; z-index:2; background:white; padding:12px; }
+    .skip:focus { top:12px; }
+    .layout { display:grid; grid-template-columns:225px minmax(0,1fr); max-width:1430px; margin:auto; }
+    .rail { position:sticky; top:0; height:100dvh; overflow-y:auto; padding:34px 22px; border-right:1px solid var(--line); }
+    .brand { display:block; font-size:28px; font-weight:800; letter-spacing:-1.3px; text-decoration:none; }
+    .brand span { color:var(--amber); }
+    .rail small { display:block; color:var(--muted); margin:5px 0 28px; }
+    .rail nav { display:grid; gap:5px; }
+    .rail nav a { padding:7px 9px; color:var(--ink); text-decoration:none; font-size:14px; border-radius:5px; }
+    .rail nav a:hover { background:#e5edf3; }
+    .rail nav b { display:inline-block; width:26px; color:var(--blue); font-size:11px; }
+    .print { margin-top:24px; border:1px solid var(--line); border-radius:5px; background:white; color:var(--ink); padding:9px 14px; }
+    main { min-width:0; padding:48px clamp(20px,4vw,66px) 50px; }
+    .eyebrow { color:var(--blue); text-transform:uppercase; letter-spacing:1.4px; font-size:11px; font-weight:750; }
+    h1 { font-size:clamp(32px,4.7vw,58px); line-height:1.08; letter-spacing:-2px; max-width:850px; margin:18px 0 24px; }
+    h2 { font-size:27px; line-height:1.25; letter-spacing:-.6px; margin:0 0 15px; }
+    h3 { font-size:19px; line-height:1.35; margin:0 0 12px; }
+    h4 { font-size:16px; margin:20px 0 8px; }
+    p { margin:0 0 14px; }
+    .lead { font-size:20px; max-width:780px; }
+    .muted, figcaption, .meta { color:var(--muted); }
+    .meta { font-size:13px; }
+    .label { display:inline-block; padding:3px 8px; border-radius:4px; background:var(--pale); color:var(--blue); font-size:11px; font-weight:750; letter-spacing:.3px; }
+    .label.proposed { background:var(--warm); color:var(--amber); }
+    .label.existing { background:#eaf5ee; color:var(--green); }
+    .intro-note { padding:16px 20px; border-left:3px solid var(--blue); background:var(--pale); margin:24px 0; }
+    .intro-note p:last-child, .note p:last-child { margin:0; }
+    section { padding:38px 0; border-top:1px solid var(--line); scroll-margin-top:20px; }
+    .section-number { color:var(--blue); font-size:12px; letter-spacing:1.5px; margin-bottom:10px; }
+    .two { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; }
+    .panel { padding:22px; border:1px solid var(--line); border-radius:8px; background:var(--paper); min-width:0; }
+    .note { background:var(--warm); border-left:3px solid #ba8033; padding:16px 20px; margin:18px 0; }
+    ul, ol { padding-left:22px; margin:12px 0 18px; }
+    li { margin:7px 0; }
+    .table-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:7px; background:var(--paper); margin:20px 0; }
+    table { border-collapse:collapse; width:100%; font-size:14px; }
+    th, td { padding:13px 15px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
+    th { background:var(--pale); font-weight:700; }
+    tbody tr:last-child td, tbody tr:last-child th { border-bottom:0; }
+    tbody th { background:transparent; }
+    caption { text-align:left; padding:12px 15px; font-weight:650; }
+    .table-wrap.wide table { min-width:650px; }
+    .flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:25px; padding:0; margin:20px 0; list-style:none; counter-reset:step; }
+    .flow li { position:relative; margin:0; padding:17px; border:1px solid var(--line); border-radius:7px; background:var(--paper); counter-increment:step; min-width:0; }
+    .flow li::before { content:counter(step, decimal-leading-zero); display:block; color:var(--blue); font-size:11px; font-weight:750; margin-bottom:10px; }
+    .flow li:not(:last-child)::after { content:"→"; position:absolute; right:-21px; top:43%; color:var(--blue); }
+    .flow strong { display:block; font-size:15px; line-height:1.3; margin-bottom:8px; }
+    .flow span { display:block; font-size:13px; color:var(--muted); }
+    figure { margin:24px 0; }
+    figcaption { font-size:13px; }
+    .nav-map { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:7px; overflow:hidden; margin:22px 0; }
+    .nav-map div { padding:20px; background:white; }
+    .nav-map h3 { font-size:12px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; }
+    .nav-map a { display:block; padding:6px 0; font-weight:600; }
+    .page { padding:25px 0; border-bottom:1px solid var(--line); }
+    .page:last-child { border:0; padding-bottom:0; }
+    .page-heading { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
+    .page-heading h3 { margin:0; }
+    .question { font-weight:650; color:var(--blue); }
+    .page dl { display:grid; grid-template-columns:115px minmax(0,1fr); gap:9px 18px; margin:16px 0 0; }
+    dt { color:var(--muted); font-size:13px; font-weight:650; }
+    dd { margin:0; font-size:15px; }
+    .shell-example { background:#fff; border:1px solid var(--line); border-radius:7px; padding:15px; display:flex; flex-wrap:wrap; align-items:center; gap:12px; font-size:13px; }
+    .shell-example span { padding:5px 9px; border:1px solid var(--line); border-radius:4px; }
+    .shell-example strong { margin-right:auto; }
+    .object-line { padding:18px; border:1px solid var(--line); background:white; border-radius:7px; font-weight:600; text-align:center; overflow-wrap:anywhere; }
+    details { margin:16px 0; border:1px solid var(--line); border-radius:7px; padding:15px 18px; background:white; }
+    summary { font-weight:650; cursor:pointer; }
+    details[open] summary { margin-bottom:14px; }
+    .checklist { list-style:none; padding:0; }
+    .checklist li { padding-left:25px; position:relative; }
+    .checklist li::before { content:"□"; position:absolute; left:0; color:var(--blue); }
+    .closing { padding:25px; background:var(--blue); color:white; border-radius:7px; font-size:21px; line-height:1.5; }
+    .closing p:last-child { margin:0; }
+    footer { border-top:1px solid var(--line); padding-top:25px; color:var(--muted); font-size:13px; }
+    code { background:var(--pale); font-size:.88em; padding:2px 5px; border-radius:3px; overflow-wrap:anywhere; }
+    @media (max-width:1100px) { .layout { grid-template-columns:190px minmax(0,1fr); } .rail { padding:25px 12px; } .flow { grid-template-columns:1fr; gap:24px; } .flow li:not(:last-child)::after { content:"↓"; top:auto; bottom:-24px; left:50%; right:auto; } }
+    @media (max-width:760px) { .layout { display:block; } .rail { height:auto; position:static; border-right:0; border-bottom:1px solid var(--line); padding:20px; } .rail small { margin:0 0 12px; } .rail nav { grid-template-columns:repeat(2,minmax(0,1fr)); } .rail nav a { padding:7px 0; font-size:13px; } .print { margin-top:15px; } main { padding:30px 20px; } .two, .nav-map { grid-template-columns:1fr; } h1 { letter-spacing:-1px; } section { padding:30px 0; } .page dl { grid-template-columns:1fr; gap:4px; } dd { margin-bottom:10px; } .lead { font-size:18px; } }
+    @media (max-width:380px) { main { padding:25px 14px; } .rail { padding:18px 14px; } .rail nav b { width:20px; } .panel { padding:17px; } th, td { padding:10px; font-size:13px; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+    @media print { @page { margin:16mm; } body { background:white; font-size:10pt; } .layout { display:block; } .rail, .skip { display:none; } main { padding:0; } h1 { font-size:32pt; } h2 { font-size:20pt; } section { padding:22px 0; } .table-wrap { overflow:visible; } .table-wrap.wide table { min-width:0; } .flow { grid-template-columns:repeat(4,minmax(0,1fr)); } .flow li:not(:last-child)::after { content:"→"; top:43%; right:-21px; bottom:auto; left:auto; } h2, h3, h4, summary { break-after:avoid; } .flow li, tr, .panel, .note { break-inside:avoid; } a { color:inherit; } .closing { color:var(--ink); background:var(--pale); } .meta { font-size:9pt; } }
+  </style>
+</head>
+<body>
+<a class="skip" href="#main">Mergi la ghid</a>
+<div class="layout"><aside class="rail"><a class="brand" href="#main">FlyLeaf<span>.</span></a><small>Ghidul produsului<br>1 noiembrie 2026</small><nav aria-label="Cuprins">
+<a href="#structure">01 · Structura aplicației</a><a href="#documents">02 · Documente și termene</a><a href="#equipment">03 · Echipamente</a><a href="#assistant">04 · Căutare și asistent</a><a href="#roles">05 · Responsabilități</a><a href="#demo">06 · Scenariu de verificare</a><a href="#limits">07 · Limitele implementării</a>
+</nav><button class="print" onclick="window.print()">Tipărește / salvează PDF</button></aside>
+<main id="main"><header><p class="eyebrow">Ghid pentru echipă · Implementare pe main actualizat</p><h1>O sarcină clară.<br>Un responsabil.<br>Un rezultat verificat.</h1>
+<p class="lead">FlyLeaf leagă documentele, termenele și lucrările tehnice de persoana care trebuie să facă următorul pas.</p>
+<div class="intro-note"><p>Acest ghid descrie implementarea din <code>feature/personal-product-workspace</code>. Operațiuni la sol, Flux achiziții, Colaborare și Rapoarte își păstrează funcționalitățile existente. Modificările de navigare le păstrează accesibile.</p></div></header>
+<section id="structure"><p class="section-number">01 / STRUCTURĂ</p><h2>Fiecare pagină are un scop.</h2><div class="table-wrap"><table><thead><tr><th>Locul</th><th>Ce rezolvă</th></tr></thead><tbody>
+<tr><td><strong>Acasă</strong></td><td>Sarcinile utilizatorului, aprobările proprii, termenele, reînnoirile atribuite, lucrările tehnice și documentele deschise recent. Accesul larg la documente nu transformă toate documentele în sarcini personale.</td></tr>
+<tr><td><strong>Documente</strong></td><td>Registru cu filtre, Contracte, Aprobări și sarcini, Reînnoiri și acces la Flux achiziții. Validările și semnările rămân vizibile alături de aprobări.</td></tr>
+<tr><td><strong>Echipamente</strong></td><td>Registru, fișă cu istoric, incidente, lucrări corective sau preventive, dovezi și confirmarea disponibilității.</td></tr>
+<tr><td><strong>Întreabă FlyLeaf</strong></td><td>Pagină dedicată întrebărilor, cu sursele și versiunea documentelor consultate.</td></tr>
+<tr><td><strong>Furnizori / Echipă</strong></td><td>Profilurile și verificările furnizorilor, respectiv persoanele, pontajul, concediile și delegările existente.</td></tr>
+<tr><td><strong>Operațiuni la sol / Rapoarte / Colaborare</strong></td><td>Modulele din main, păstrate. Indicatorii generali rămân în Rapoarte; Acasă se concentrează pe utilizator.</td></tr>
+</tbody></table></div></section>
+<section id="documents"><p class="section-number">02 / DOCUMENTE</p><h2>O dată de expirare devine o responsabilitate.</h2>
+<p>Registrul caută în documentele accesibile și filtrează după stare, categorie, departament, furnizor, responsabil sau valabilitate. Documentele fără metadate validate nu sunt prezentate ca fiind confirmate. Exportul etichetat „registrul complet” include toate documentele accesibile, independent de filtrele afișate.</p>
+<figure><ol class="flow"><li><strong>Contract validat</strong><span>Aprobat sau semnat, cu dată de expirare verificată.</span></li><li><strong>Urmărire creată</strong><span>La intrarea în intervalul de 90 de zile; praguri păstrate la 90 / 60 / 30.</span></li><li><strong>Responsabilul preia</strong><span>Confirmă și înregistrează progresul și următorul termen.</span></li><li><strong>Rezultat înregistrat</strong><span>Închide urmărirea cu un comentariu; valabilitatea contractului rămâne neschimbată.</span></li></ol><figcaption>Verificările periodice nu dublează aceeași urmărire. Schimbarea versiunii sau expirării închide urmărirea vechii surse și păstrează istoricul.</figcaption></figure>
+<p>Responsabilul este un cont explicit. Directorul sau șeful departamentului poate reatribui. Dezactivarea contului ori schimbarea departamentului lasă urmărirea pentru reatribuire; reactivarea nu reia automat responsabilitatea.</p></section>
+<section id="equipment"><p class="section-number">03 / ECHIPAMENTE</p><h2>De la problemă raportată la disponibilitate confirmată.</h2>
+<p>Fiecare echipament are cod, denumire, categorie, locație, furnizor, document asociat și data următoarei inspecții. Registrul pornește cu datele introduse de echipă. Starea inițială este „De verificat”.</p>
+<figure><ol class="flow"><li><strong>Raportează</strong><span>Un angajat descrie incidentul și prioritatea observată.</span></li><li><strong>Atribuie</strong><span>Directorul sau șeful tehnic alege tehnicianul și termenul.</span></li><li><strong>Preia și lucrează</strong><span>Tehnicianul confirmă, începe, raportează blocaje și înregistrează rezultatul.</span></li><li><strong>Verifică</strong><span>Un alt responsabil autorizat acceptă dovezile sau cere refacerea.</span></li></ol></figure>
+<div class="intro-note"><p><strong>Pas separat: disponibilitatea.</strong> Închiderea lucrării nu declară automat echipamentul disponibil. Responsabilul confirmă starea după rezolvarea incidentelor și verificarea lucrărilor active. Un incident nou invalidează o confirmare anterioară de disponibilitate.</p></div>
+<p>Lucrarea apare în Acasă pentru tehnician. Verificarea apare pentru coordonator. Istoricul reține persoana, acțiunea, comentariul și data. O schimbare concurentă respinge salvarea unei versiuni vechi și cere reîncărcarea.</p></section>
+<section id="assistant"><p class="section-number">04 / GĂSIREA INFORMAȚIILOR</p><h2>Căutare rapidă, context explicit.</h2><div class="two"><div class="panel"><h3>Căutare globală</h3><p>Lupa din antet sau Ctrl/Cmd + K deschide căutarea rapidă din orice pagină. Pe telefon rămâne butonul cu lupă. „Vezi toate rezultatele” transferă termenul în Documente.</p></div><div class="panel"><h3>Întrebări cu surse</h3><p>Pagina asistentului consultă metadatele validate autorizate. Din fișa unui document, „Întreabă despre document” limitează răspunsul la acel document și versiunea curentă. Sursele se pot deschide și se poate reveni la răspuns.</p></div></div>
+<p>Implementarea curentă oferă răspunsuri locale bazate pe reguli și metadate; nu face raționament generativ asupra tuturor paginilor PDF. Sursa indică „Metadate validate” când nu există o pagină PDF verificată. Nu substituie validarea umană.</p></section>
+<section id="roles"><p class="section-number">05 / RESPONSABILITĂȚI</p><h2>Accesul și atribuirea sunt lucruri diferite.</h2><div class="table-wrap"><table><thead><tr><th>Persoana</th><th>Poate face</th></tr></thead><tbody>
+<tr><td>Angajat autentificat</td><td>Își vede acțiunile și documentele autorizate; consultă echipamentele aeroportului și raportează un incident.</td></tr>
+<tr><td>Tehnician desemnat</td><td>Preia lucrarea, înregistrează intervenția, blocajele și dovezile.</td></tr>
+<tr><td>Șef tehnic desemnat / director</td><td>Înregistrează echipamente, atribuie lucrări, verifică lucrarea altui angajat și confirmă disponibilitatea.</td></tr>
+<tr><td>Responsabil reînnoire</td><td>Preia și urmărește exclusiv cazul atribuit lui. Delegarea unei aprobări nu transferă automat reînnoirea.</td></tr>
+</tbody></table></div><p>Permisiunile se verifică în API. Un document asociat unui echipament nu devine automat accesibil tuturor celor care văd echipamentul. Datele sunt limitate la aeroportul utilizatorului.</p></section>
+<section id="demo"><p class="section-number">06 / PARCURS DE VERIFICARE</p><h2>Un scenariu complet, în trei roluri.</h2><ol>
+<li>Directorul deschide Acasă, apoi caută un contract folosind lupa. Deschide documentul, întreabă despre termen și verifică sursa.</li>
+<li>În Documente → Reînnoiri, verifică responsabilul, pragurile și istoricul. Responsabilul desemnat confirmă preluarea și adaugă următorul pas.</li>
+<li>Directorul înregistrează un echipament și un incident, apoi atribuie tehnicianului o lucrare cu termen.</li>
+<li>Tehnicianul se conectează cu propriul cont, găsește lucrarea în Acasă, confirmă primirea, începe și trimite dovezile spre verificare.</li>
+<li>Directorul sau șeful tehnic verifică rezultatul. Fișa păstrează „De verificat” până la confirmarea separată a disponibilității.</li>
+<li>Pe telefon, verifică lupa, meniul, citirea fișei și înregistrarea unui incident.</li></ol><p>Conturile de demonstrație existente și datele lor sunt păstrate. Datele introduse pentru scenariu trebuie prezentate drept exemple de demonstrație.</p></section>
+<section id="limits"><p class="section-number">07 / LIMITE</p><h2>Ce demonstrează această versiune.</h2><ul><li>Stările echipamentelor sunt introduse și verificate de oameni. Nu există telemetrie automată sau diagnoză conectată.</li><li>Reînnoirile apar în aplicație; pragurile nu expediază emailuri sau notificări push.</li><li>Calendarul de demonstrație folosește data de referință configurată și afișată în aplicație.</li><li>Confirmarea unei lucrări și închiderea unei urmăriri nu modifică automat documentul contractual, cerințele legale sau starea unui zbor.</li><li>Integrarea sistemelor operaționale reale și validarea regulilor aeroportului rămân etape distincte.</li></ul></section>
+</main></div></body></html>

@@ -222,6 +222,8 @@ def update_account(db, user, user_id, payload):
     if not target.active:
         from app.tasks.service import flag_offboarding
         flag_offboarding(db,target,user)
+        from app.renewals.service import flag_offboarding as flag_renewals
+        flag_renewals(db,target,user)
         for session in db.scalars(select(Session).where(Session.user_id == target.id)):
             db.delete(session)
         for delegation in db.scalars(select(Delegation).where((Delegation.from_user == target.id) | (Delegation.to_user == target.id))):

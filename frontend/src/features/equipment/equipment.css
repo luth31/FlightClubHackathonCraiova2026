@@ -1,0 +1,39 @@
+.equipment-workspace .asset-card.asset-alert { background: #fff0ef; border-color: #e7aaa7; box-shadow: inset 4px 0 #cc403a; }
+.equipment-workspace .asset-card.asset-alert-high { background: #f9e8eb; border-color: #ce899b; box-shadow: inset 4px 0 #922a45; }
+.equipment-workspace .asset-card.asset-alert:hover { outline: 1px solid #c16464; }
+.equipment-alert-label { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; color: #a6252c; font-size: 12px; font-weight: 650; }
+.equipment-support-team { display: flex; align-items: center; flex-wrap: wrap; gap: 16px 25px; padding: 17px 20px; margin-bottom: 20px; background: #edf4f7; border: 1px solid #cadce6; border-radius: 10px; }
+.equipment-support-team strong { font-size: 14px; }
+.equipment-support-team p { margin: 6px 0 0; font-size: 12px; color: #5c7585; }
+.equipment-team-members { display: flex; flex-wrap: wrap; gap: 15px; flex: 1; font-size: 12px; }
+.equipment-team-members .document-person { min-width: 120px; }
+.equipment-workspace .incident-open { background: #fff0ef; border-left: 4px solid #cc403a; }
+.equipment-workspace .incident-high { background: #f9e8eb; border-left-color: #922a45; }
+.equipment-workspace .incident-resolved { background: #eff8f2; border-left: 4px solid #50846b; }
+.equipment-workspace .equipment-job-assigned, .equipment-workspace .equipment-job-blocked { background: #fff0ef; border-left: 4px solid #cc403a; }
+.equipment-workspace .equipment-job-awaiting_verification { background: #fff8e7; border-left: 4px solid #bd901e; }
+.equipment-workspace .equipment-job-closed { background: #eff8f2; border-left: 4px solid #50846b; }
+.equipment-workspace .equipment-item-focused { outline: 2px solid #173e52; outline-offset: -3px; scroll-margin: 90px; }
+.equipment-workspace .job-heading p { margin-top: 10px; line-height: 1.6; }
+.equipment-workspace .job-incident-description { padding: 12px 14px; border-radius: 6px; background: #ffffffa8; white-space: pre-wrap; }
+.equipment-recipient { position: relative; min-width: 0; }
+.equipment-recipient-label { display: block; font-size: 13px; margin-bottom: 7px; color: #244c61; }
+.equipment-recipient-input, .equipment-recipient-chip { display: flex; align-items: center; gap: 10px; border: 1px solid #b8cdd8; border-radius: 8px; padding: 10px 12px; background: #fff; }
+.workspace-form .equipment-recipient-input input { border: 0; padding: 3px 0; flex: 1; min-width: 0; outline: none; border-radius: 0; background: transparent; }
+.equipment-recipient-input:focus-within { outline: 2px solid #258080; outline-offset: 1px; }
+.equipment-recipient-chip { background: #edf5fa; }
+.equipment-recipient-chip > span, .equipment-recipient-options button > span:last-child { flex: 1; min-width: 0; }
+.equipment-recipient-chip strong, .equipment-recipient-options strong { display: block; font-size: 13px; font-weight: 600; }
+.equipment-recipient-chip small, .equipment-recipient-options small { display: block; font-size: 12px; color: #60778b; line-height: 1.6; overflow-wrap: anywhere; }
+.equipment-recipient-options { position: relative; margin-top: 7px; max-height: 270px; overflow-y: auto; border: 1px solid #c7d8e3; box-shadow: 0 5px 15px #173e5210; border-radius: 8px; background: #fff; }
+.equipment-recipient-options button { display: flex; gap: 11px; align-items: center; width: 100%; padding: 11px 13px; text-align: left; }
+.equipment-recipient-options button:hover, .equipment-recipient-options button[aria-selected=true] { background: #eaf3f7; }
+.equipment-recipient-options .equipment-option-avatar { flex: 0 0 35px; width: 35px; height: 35px; background: #dcebf2; font-size: 12px; color: #173e52; }
+.equipment-recipient-group { padding: 9px 13px; background: #f4f7f9; font-size: 11px; font-weight: 600; color: #526e82; }
+.equipment-recipient-options p { padding: 14px; font-size: 13px; }
+.equipment-recipient-notice { padding: 12px 14px; background: #edf4f7; border-radius: 7px; color: #466577; font-size: 13px; line-height: 1.6; }
+@media (max-width: 600px) {
+  .equipment-recipient-chip { gap: 7px; padding: 9px; }
+  .equipment-team-members { flex-basis: 100%; }
+  .equipment-workspace .job-heading p .document-person { display: inline-flex; }
+}

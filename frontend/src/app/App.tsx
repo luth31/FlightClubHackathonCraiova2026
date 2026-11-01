@@ -1,12 +1,14 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
-import {House,FolderOpen,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
+import {House,FolderOpen,Wrench,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
-import {pagePermissions,personalTasks} from '@/services/access';
+import {pagePermissions} from '@/services/access';
 import {api,setIdentity,clearIdentity,onSessionExpired,isSessionExpired} from '@/services/api-client';
 import {Loading,ErrorMessage,Toast,ViewActiveContext,Modal} from '@/components/ui';
-import {DashboardPage} from '@/features/dashboard';
-import {DocumentLibrary,DocumentDetail,UploadDialog} from '@/features/documents';
-import {ApprovalsPage} from '@/features/approvals';
+import {DashboardPage} from '@/features/dashboard/PersonalHome';
+import {DocumentDetail,UploadDialog} from '@/features/documents';
+import {DocumentWorkspace} from '@/features/documents/DocumentWorkspace';
+import {EquipmentPage} from '@/features/equipment';
+import {QuickSearch} from '@/components/QuickSearch';
 import {SharingPage} from '@/features/sharing';
 import {useCollaborationInbox} from '@/features/sharing/useCollaborationInbox';
 import {AuditPage} from '@/features/audit';
@@ -16,7 +18,7 @@ import {PeoplePage} from '@/features/people';
 import {PersonAvatar} from '@/components/people/PersonAvatar';
 import {PersonDirectoryProvider} from '@/components/people/PersonDirectory';
 import {ReportsPage} from '@/features/reports';
-import {AssistantDialog} from '@/features/assistant';
+import {AssistantPage} from '@/features/assistant/AssistantPage';
 import {LoginPage} from '@/features/auth';
 import {rememberNfcLink,pendingNfcCard,nfcHash} from '@/features/operations/nfc-links';
 import {roleLabel} from '@/utils/format';
@@ -30,12 +32,12 @@ function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:st
     <Suspense fallback={<Loading/>}><OperationsPage notify={notify}/></Suspense>
   </ViewActiveContext></div>;
 }
-const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
+const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'equipment',label:'Echipamente',icon:Wrench},{id:'assistant',label:'Întreabă FlyLeaf',icon:Sparkles},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
 const secondNav=[{id:'sharing',label:'Colaborare',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
-    [filter,setFilter]=useState(''), [upload,setUpload]=useState(false),
-    [assistant,setAssistant]=useState(false), [revision,setRevision]=useState(0),
+    [upload,setUpload]=useState(false),
+    [search,setSearch]=useState(false), [revision,setRevision]=useState(0),
     [toast,setToast]=useState(''), [mobileOpen,setMobileOpen]=useState(false),
     [loggingOut,setLoggingOut]=useState(false), [logoutError,setLogoutError]=useState(''),
     [confirmingLogout,setConfirmingLogout]=useState(false);
@@ -44,12 +46,20 @@ export function App() {
   const sessionEpoch = useRef(0);
   const allowedPages = pagePermissions(session?.current_user);
   const collaborationInbox = useCollaborationInbox(!!session?.current_user && allowedPages.sharing, session?.current_user?.id);
-  const ownTasks = personalTasks(session?.current_user);
-  const labels = {...pageLabels, approvals:ownTasks?'Sarcinile mele':pageLabels.approvals};
-  const {page,doc,navigate:goToPage,openDocument,returnToOrigin} = useNavigation(session?.current_user?.id,allowedPages);
+  const labels = pageLabels;
+  const {page,doc,workspaceHash,documentView,query,filter,renewalId,equipmentId,assistantDocumentId,navigate:goToPage,openDocument,returnToOrigin} = useNavigation(session?.current_user?.id,allowedPages);
   const mainRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<{element: HTMLElement; page: Page; userId: string} | undefined>(undefined);
   const userId = session?.current_user?.id;
+  useEffect(()=>{
+    const searchShortcut=(event:KeyboardEvent)=>{
+      if(userId&&(event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){
+        event.preventDefault();setSearch(true);
+      }
+    };
+    window.addEventListener('keydown',searchShortcut);
+    return()=>window.removeEventListener('keydown',searchShortcut);
+  },[userId]);
   useEffect(()=>{
     if(doc){mainRef.current?.querySelector<HTMLElement>('.back-button')?.focus({preventScroll:true});return}
     const previous = returnFocus.current;
@@ -69,7 +79,7 @@ export function App() {
   useEffect(()=>onSessionExpired(()=>{
     sessionEpoch.current++;
     returnFocus.current=undefined;
-    setError('');setToast('');setUpload(false);setAssistant(false);
+    setError('');setToast('');setUpload(false);setSearch(false);
     setMobileOpen(false);setLogoutError('');setConfirmingLogout(false);
     setSession(current=>current?{...current,current_user:null,users:[]}:current);
   }),[]);
@@ -83,7 +93,7 @@ export function App() {
   useEffect(()=>{
     setMobileOpen(false);
     setUpload(false);
-    setAssistant(false);
+    setSearch(false);
   },[page,doc]);
   useEffect(()=>{
     if(!toast)return;
@@ -91,15 +101,15 @@ export function App() {
     return()=>clearTimeout(t);
   },[toast]);
   const notify=useCallback((s:string)=>{if(!isSessionExpired())setToast(s)},[]);
-  const closeUpload=useCallback(()=>setUpload(false),[]),closeAssistant=useCallback(()=>setAssistant(false),[]);
-  const navigate=(p:Page,f='')=>{setFilter(f);goToPage(p);setMobileOpen(false);setUpload(false);setAssistant(false)};
+  const closeUpload=useCallback(()=>setUpload(false),[]),closeSearch=useCallback(()=>setSearch(false),[]);
+  const navigate=(p:Page,f='')=>{goToPage(p,f?'?filter='+encodeURIComponent(f):'');setMobileOpen(false);setUpload(false);setSearch(false)};
   const openDoc=(id:string)=>{
     const element=document.activeElement;
     if(!doc){
       returnFocus.current=userId&&element instanceof HTMLElement&&mainRef.current?.contains(element)
         ? {element,page,userId} : undefined;
     }
-    openDocument(id);setMobileOpen(false);setUpload(false);setAssistant(false);
+    openDocument(id);setMobileOpen(false);setUpload(false);setSearch(false);
   };
   async function logout(){
     if(logoutPending.current)return;
@@ -138,7 +148,7 @@ export function App() {
   if(!session)return <Loading/>;
   if(!session.current_user)return <LoginPage session={session} onLogin={s=>{setSession(s);setRevision(v=>v+1)}}/>;
   const user=session.current_user,airport=typeof session.airport==='string'?session.airport:session.airport?.name||'Aeroportul Craiova';
-  return <PersonDirectoryProvider key={`${user.airport_id || ''}:${user.id}`} revision={revision} account={{userId:user.id,signOut:requestLogout,signingOut:loggingOut,signOutError:logoutError}}><div className="app-shell">
+  return <PersonDirectoryProvider key={`${user.airport_id || ''}:${user.id}`} revision={revision} account={{userId:user.id,signOut:requestLogout,signingOut:loggingOut,signOutError:logoutError}}><div className="app-shell workspace-shell">
     {mobileOpen&&<div className="sidebar-overlay" onClick={()=>setMobileOpen(false)}/>}
     <aside className={`sidebar ${mobileOpen?'open':''}`}>
       <a href="#home" className="brand" onClick={event=>{
@@ -178,8 +188,8 @@ export function App() {
           {doc?<><button className="breadcrumb-parent" onClick={returnToOrigin}>{labels[page]}</button><ChevronRight size={13}/><strong>Document</strong></>:<strong>{labels[page]}</strong>}
         </div>
         <div className="topbar-actions">
-          <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
-          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button><PersonAvatar userId={user.id} name={user.name} className="avatar top-avatar" openOnFocus={false}/>
+          <button className="quick-search" onClick={()=>setSearch(true)} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
+          <PersonAvatar userId={user.id} name={user.name} className="avatar top-avatar" openOnFocus={false}/>
         </div>
       </header>
       <main className="main-content" key={user.id} ref={mainRef} tabIndex={-1}>
@@ -187,9 +197,10 @@ export function App() {
         <div className="workspace-view" hidden={!!doc} inert={!!doc}>
           <ViewActiveContext value={!doc}>
           {page==='home'&&<DashboardPage name={user.name} onOpen={openDoc} onNavigate={navigate} onUpload={()=>setUpload(true)} revision={revision}/>}
-          {page==='documents'&&<DocumentLibrary onOpen={openDoc} onUpload={()=>setUpload(true)} notify={notify} initialFilter={filter} revision={revision}/>}
+          {page==='documents'&&<DocumentWorkspace workspaceHash={workspaceHash} view={documentView || 'list'} initialQuery={query || ''} initialFilter={filter || ''} renewalId={renewalId} onView={view=>goToPage('documents','/'+view)} onOpen={openDoc} onUpload={()=>setUpload(true)} notify={notify} revision={revision} user={user}/>}
+          {page==='equipment'&&<EquipmentPage assetId={equipmentId} workspaceHash={workspaceHash} onOpen={openDoc} notify={notify} onChanged={changed}/>}
+          {page==='assistant'&&<AssistantPage key={assistantDocumentId || 'all'} documentId={assistantDocumentId} onOpen={openDoc}/>}
 
-          {page==='approvals'&&<ApprovalsPage onOpen={openDoc} revision={revision} notify={notify} user={user}/>}
           {page==='sharing'&&<SharingPage revision={revision} onOpen={openDoc} notify={notify}/>}
           {page==='suppliers'&&(user.roles.some(role=>['director','finance'].includes(role))
             ? <SuppliersPage revision={revision} notify={notify} onOpen={openDoc} user={user}/>
@@ -206,7 +217,7 @@ export function App() {
 
     </div>
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
-    {assistant&&<AssistantDialog onClose={closeAssistant} onOpen={openDoc}/>}
+    {search&&<QuickSearch onClose={closeSearch} onOpen={openDoc} onAll={q=>{setSearch(false);goToPage('documents','/list?q='+encodeURIComponent(q))}}/>}
     {confirmingLogout&&<Modal title="Vrei să ieși din cont?" onClose={cancelLogout} initialFocusRef={cancelLogoutRef} className="logout-confirmation">
       <div className="modal-body">
         <p>Sesiunea ta FlyLeaf se va încheia. Te poți conecta din nou oricând.</p>

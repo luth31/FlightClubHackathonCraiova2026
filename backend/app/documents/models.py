@@ -46,3 +46,28 @@ class DocumentVersion(Base):
     signed_sha256: Mapped[str | None] = mapped_column(String, nullable=True)
     signer_id: Mapped[str | None] = mapped_column(String, nullable=True)
     certificate_fingerprint: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+class DocumentReminder(Base):
+    __tablename__ = 'document_reminders'
+    document_id: Mapped[str] = mapped_column(ForeignKey('documents.id'), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    source_version: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    remind_on: Mapped[str | None] = mapped_column(String, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[str] = mapped_column(String)
+
+
+class DocumentRenewalDecision(Base):
+    __tablename__ = 'document_renewal_decisions'
+    document_id: Mapped[str] = mapped_column(ForeignKey('documents.id'), primary_key=True)
+    source_version: Mapped[int] = mapped_column(Integer)
+    expires_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    responsible_id: Mapped[str] = mapped_column(ForeignKey('users.id'))
+    decided_by: Mapped[str] = mapped_column(ForeignKey('users.id'))
+    reason: Mapped[str] = mapped_column(Text)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[str] = mapped_column(String)

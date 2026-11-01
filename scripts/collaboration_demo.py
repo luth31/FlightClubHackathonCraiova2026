@@ -66,6 +66,7 @@ def seed(identifier):
     from app.core.audit import record
     from sqlalchemy import delete
     from demo_documents import install_demo_documents
+    from demo_equipment import install_demo_equipment
     marker=RUNTIME/identifier/'initialized.json'
     command.upgrade(Config('alembic.ini'),'head');seed_workspace()
     with SessionLocal() as db:
@@ -83,6 +84,7 @@ def seed(identifier):
         # Upgrade only by adding new originals. Existing approved files, shares,
         # accounts, sessions and participation settings are never rewritten.
         install_demo_documents(db,identifier,node['env']['FLYLEAF_STORAGE_DIR'])
+        install_demo_equipment(db,identifier)
         db.commit()
     if not marker.exists():marker.write_text(json.dumps({'airport':identifier,'seeded':True}),encoding='utf-8')
 

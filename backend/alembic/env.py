@@ -10,6 +10,8 @@ from app.identity import models as identity_models
 from app.extraction import models as extraction_models
 from app.operations import models as operations_models
 from app.collaboration import models as collaboration_models
+from app.equipment import models as equipment_models
+from app.renewals import models as renewal_models
 config=context.config
 target_metadata=Base.metadata
 
