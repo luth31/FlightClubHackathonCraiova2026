@@ -1,0 +1,52 @@
+# Opt-in presentation deployment. Default compose.yaml and dev.sh stay local.
+# A separate project, ports and volumes allow both deployments to run together.
+name: flyleaf-presentation
+services:
+  craiova-api:
+    environment:
+      FLYLEAF_OIDC_ISSUER: ${FLYLEAF_CRAIOVA_PUBLIC_URL:?Set .env.tailscale}/auth/realms/craiova
+      FLYLEAF_OIDC_INTERNAL_ISSUER: http://craiova-identity:8080/auth/realms/craiova
+      FLYLEAF_OIDC_REDIRECT_URI: ${FLYLEAF_CRAIOVA_PUBLIC_URL}/api/auth/oidc/callback
+      FLYLEAF_OIDC_FRONTEND_URL: ${FLYLEAF_CRAIOVA_PUBLIC_URL}/
+      FLYLEAF_COOKIE_SECURE: 'true'
+      FLYLEAF_CORS_ORIGINS: '["${FLYLEAF_CRAIOVA_PUBLIC_URL}"]'
+  sibiu-api:
+    environment:
+      FLYLEAF_OIDC_ISSUER: ${FLYLEAF_SIBIU_PUBLIC_URL:?Set .env.tailscale}/auth/realms/sibiu
+      FLYLEAF_OIDC_INTERNAL_ISSUER: http://sibiu-identity:8080/auth/realms/sibiu
+      FLYLEAF_OIDC_REDIRECT_URI: ${FLYLEAF_SIBIU_PUBLIC_URL}/api/auth/oidc/callback
+      FLYLEAF_OIDC_FRONTEND_URL: ${FLYLEAF_SIBIU_PUBLIC_URL}/
+      FLYLEAF_COOKIE_SECURE: 'true'
+      FLYLEAF_CORS_ORIGINS: '["${FLYLEAF_SIBIU_PUBLIC_URL}"]'
+  craiova-web:
+    ports: !override ['127.0.0.1:18080:80']
+    environment:
+      IDENTITY_HOST: craiova-identity
+      AIRPORT_ID: craiova
+      PUBLIC_ORIGIN: ${FLYLEAF_CRAIOVA_PUBLIC_URL}
+    volumes:
+      - ./deploy/nginx.tailscale.conf:/etc/nginx/templates/default.conf.template:ro
+    depends_on: [craiova-api, craiova-identity]
+  sibiu-web:
+    ports: !override ['127.0.0.1:18081:80']
+    environment:
+      IDENTITY_HOST: sibiu-identity
+      AIRPORT_ID: sibiu
+      PUBLIC_ORIGIN: ${FLYLEAF_SIBIU_PUBLIC_URL}
+    volumes:
+      - ./deploy/nginx.tailscale.conf:/etc/nginx/templates/default.conf.template:ro
+    depends_on: [sibiu-api, sibiu-identity]
+  craiova-identity:
+    ports: !override ['127.0.0.1:18180:8080']
+    environment:
+      KC_HOSTNAME: ${FLYLEAF_CRAIOVA_PUBLIC_URL}/auth
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_PROXY_HEADERS: xforwarded
+      FLYLEAF_PUBLIC_URL: ${FLYLEAF_CRAIOVA_PUBLIC_URL}
+  sibiu-identity:
+    ports: !override ['127.0.0.1:18181:8080']
+    environment:
+      KC_HOSTNAME: ${FLYLEAF_SIBIU_PUBLIC_URL}/auth
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_PROXY_HEADERS: xforwarded
+      FLYLEAF_PUBLIC_URL: ${FLYLEAF_SIBIU_PUBLIC_URL}

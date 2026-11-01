@@ -1,10 +1,18 @@
-# AeroDesk
+# FlyLeaf
+
+Built by **Flight Club**. The product name is **FlyLeaf**; the existing logo is retained until its replacement is ready.
+
+For an existing installation, follow [the branding upgrade notes](docs/BRANDING_UPGRADE.md) to preserve database volumes and identity links. The published fixture password below applies to fresh installations; existing identity-provider passwords remain unchanged.
 
 For architecture diagrams, feature explanations, implementation details, the data model and setup instructions, see the [complete project documentation](docs/PROJECT_DOCUMENTATION.md).
 
 A Romanian airport workspace for documents, contracts, people, assigned approvals, supplier verification and controlled collaboration. React/Vite/TypeScript frontend; feature-based FastAPI backend; SQLAlchemy, Alembic and SQLite FTS5; Keycloak login; real embedded PDF signatures with demonstration certificates.
 
 **148 researched, explicitly fictional PDFs** are included: 20 connected procurement cases, maintenance and reception evidence, invoices, amendments, HR, training, procedures and audit records. The archive has 316 pages. See [research and inventory](docs/CORPUS_RESEARCH.md).
+
+**Luna redaction studio:** interactive word/phrase selection, individual or repeated occurrences, undo, source/copy comparison and optional OpenAI suggestions with reviewed legal references. Set `OPENAI_API_KEY` in the ignored root `.env` file to enable `gpt-6-luna`; manual editing works without it. See [setup, behavior and verification](docs/LUNA_REDACTION.md).
+
+**Airport operations:** open **Operațiuni la sol** for an interactive shift, a grouped multi-day ledger and evidence-backed SOP proposals. iPhone NFC card links log attendance into the same persistent gate/boarding/departure simulation; completed outcomes update KPIs here and on the home page. Leave requests automatically create versioned PDFs. Live ADSB.lol aircraft are geographically positioned in a separate map mode. Local development and presentation both support Google 3D streaming using `GOOGLE_MAPS_API_KEY` in the ignored root `.env`; bundled OSM geometry remains available without a key. See [the five-minute demo and iPhone setup](docs/OPERATIONS_DEMO.md), [operations details](docs/AIRPORT_OPERATIONS.md), and [API contract](docs/OPERATIONS_API.md).
 
 ## Run the two-airport demonstration
 
@@ -16,20 +24,32 @@ cd FlightClubHackathonCraiova2026
 ./scripts/start-demo.sh
 ```
 
-On an existing checkout, run just `./scripts/start-demo.sh` from the repository root. All application code, migrations, dependency lockfiles, Keycloak realm/theme configuration, Docker configuration, 148 source PDFs, seed manifests and generation scripts are included. The launcher creates fresh local gateway credentials; application databases, PDF signing keys and sessions are created on first use. Existing machine-specific runtime data and private keys are not needed to reproduce the features.
+On an existing Craiova/Sibiu checkout, run `./scripts/start-demo.sh` from the repository root. An installation still using the previous airport names must first run `backend/.venv/bin/python scripts/migrate_airports.py` once; it copies the existing volumes and preserves account IDs, passwords and stored document versions. All application code, migrations, dependency lockfiles, Keycloak realm/theme configuration, Docker configuration, 148 source PDFs, seed manifests and generation scripts are included. The launcher creates fresh local gateway credentials; application databases, PDF signing keys and sessions are created on first use. Existing machine-specific runtime data and private keys are not needed to reproduce the features.
 
-A fresh installation seeds the Dunărea corpus and the fixture accounts in both airports. Approval actions, signed uploads, supplier changes and sharing grants shown in the verification record were created during testing; follow the demonstration steps below to recreate them. Carpați's received list starts empty until a document is explicitly shared.
+A fresh installation seeds the Craiova corpus and the fixture accounts in both airports. Approval actions, signed uploads, supplier changes and sharing grants shown in the verification record were created during testing; follow the demonstration steps below to recreate them. Sibiu's received list starts empty until a document is explicitly shared.
 
-- Dunărea: <http://127.0.0.1:8080>
-- Carpați: <http://127.0.0.1:8081>
+- Craiova: <http://127.0.0.1:8080>
+- Sibiu: <http://127.0.0.1:8081>
 
-Each airport has its own database, document volume, signing keystore, Keycloak instance, realm, users and session cookies. Carpați intentionally starts with an empty local archive; it receives only explicitly shared Dunărea copies and can upload its own local documents. The gateway network contains only gateways. Neither gateway mounts a document, database, identity or signing-key volume. Only the application and identity web entry points bind to loopback; identity uses ports 8180 and 8181.
+For private HTTPS access from other devices, follow [the Tailscale Service setup](docs/TAILSCALE.md). It includes exact service names, ports, policy, environment values and commands for this tailnet.
 
-Docker uses real Keycloak authorization-code login with PKCE, state, nonce and strict token validation. Local application roles and active-account checks remain authoritative. Sign in with a fixture account from the table below and password `AeroDesk2026!`. The local password-switching endpoint is disabled in this mode. Logging out clears the application session and opens Keycloak's sign-out confirmation. See [identity configuration and trust boundaries](docs/OIDC.md).
+Each airport has its own database, document volume, signing keystore, Keycloak instance, realm, users and session cookies. Sibiu intentionally starts with an empty local archive; it receives only explicitly shared Craiova copies and can upload its own local documents. The gateway network contains only gateways. Neither gateway mounts a document, database, identity or signing-key volume. Only the application and identity web entry points bind to loopback; identity uses ports 8180 and 8181.
+
+Docker uses real Keycloak authorization-code login with PKCE, state, nonce and strict token validation. Local application roles and active-account checks remain authoritative. Sign in with a fixture account from the table below and password `FlyLeaf2026!`. The local password-switching endpoint is disabled in this mode. Logging out clears the application session and opens Keycloak's sign-out confirmation. See [identity configuration and trust boundaries](docs/OIDC.md).
 
 Gateway certificates are generated locally under ignored `.runtime/exchange/`. They use mutual TLS and a demo CA. Independent connector secrets authenticate the local application-to-gateway boundary. Exchange requests are read-only, recipient-scoped, version-specific and checked for revocation, expiry and file integrity at the source. A downloaded copy cannot be recalled.
 
 ## Develop locally
+
+For live UI and backend updates inside the two-airport Docker environment, use the development override from the repository root:
+
+```sh
+docker compose -f compose.yaml -f compose.dev.yaml up -d --build
+```
+
+The first run builds a Vite development image. Afterwards, edits to `frontend/src`, `frontend/public`, the frontend configuration and `backend/app` are mounted directly into both airports: Vite updates the browser and Uvicorn reloads Python changes. The URLs stay at ports 8080 and 8081, with the same Keycloak instances and persistent data volumes. Vite uses polling for reliable Docker Desktop file detection on Windows; backend reload uses Uvicorn's built-in polling.
+
+Repeat that command after dependency or Dockerfile changes. After adding or editing database migrations, restart both APIs with `docker compose -f compose.yaml -f compose.dev.yaml restart craiova-api sibiu-api`. Use the same two `-f` arguments for subsequent development Compose commands. Return to the static demonstration images with `docker compose -f compose.yaml up -d --build`; `scripts/start-demo.sh` also starts that static mode.
 
 Requirements: Node 24 (matching Docker; `.nvmrc` is included), Python 3.12 and optionally `uv`.
 
@@ -49,8 +69,11 @@ Local development uses a convenient **demo account selector**; Docker uses the s
 | `finance` / Radu Marinescu | Finance reviewer |
 | `hr` / Ioana Stancu | Personnel records and leave decisions |
 | `technician` / Andrei Neagu | Permitted technical records and own uploads |
+| `technical-head` / Sorin Pavel | Technical and operations head; department approvals, without automatic signing authority |
 
-All fixture passwords are `AeroDesk2026!`. Never deploy these accounts with real airport data. Demo reference date: **30 October 2026**, displayed in the application and used for deadlines/delegations; actual audit timestamps remain actual timestamps.
+All fixture passwords are `FlyLeaf2026!`. Never deploy these accounts with real airport data. Demo reference date: **30 October 2026**, displayed in the application and used for deadlines/delegations; actual audit timestamps remain actual timestamps.
+
+Four departments report to the director, with role-specific menus and record permissions. See [organization, access matrix and existing-realm upgrade](docs/DEMO_ACCESS.md). Existing realms receive the missing technical-head account through the launcher, with an initial temporary password displayed once.
 
 ## Demonstrate the complete flow
 
@@ -59,17 +82,17 @@ In **Documente → Flux achiziții**, follow the document cards and arrows acros
 1. Search `scari` to find **Scări pasageri mobile SP-02**, including matches inside PDF text. Open its invoice, reception and service report from the linked case file.
 2. Upload `data/pdfs/doc-001.pdf`. Compare suggested supplier, value and expiry with the source; correct them, validate and submit.
 3. Sign in as Elena, the manager's authorized delegate. Approve the exact assigned version. Sign in as Ana to explicitly sign it and verify the embedded signature. A changed version requires fresh validation and approval. Coordinators can explicitly reassign eligible tasks with a due date and reason; deactivation leaves outstanding work flagged for reassignment.
-4. Open contracts and their deadlines; ask AeroDesk about the register. Counts come from structured records and answers identify their sources.
-5. Share an approved procedure or contract. Use automatic redaction suggestions, adjust the terms, inspect the actual derivative PDF, choose Carpați and an optional recipient department, and confirm review. Open Carpați's **Partajate → Primite**. Revoke access at Dunărea and verify that Carpați can no longer open it.
+4. Open contracts and their deadlines; ask FlyLeaf about the register. Counts come from structured records and answers identify their sources.
+5. Share an approved procedure or contract. In the redaction studio, select a word/phrase, choose one or all occurrences, or ask Luna for suggestions with optional purpose/context. Review its reasons and legal references, apply the selections, inspect each derivative page and compare against the original. Check the partner airport, choose an optional recipient department and access expiry, and confirm review. Open Sibiu's **Partajate → Primite**. Revoke access at Craiova and verify that Sibiu can no longer open it.
 6. Inspect the audit trail, team directory, leave workflow and scoped delegation. Switch to the technician to demonstrate restricted access.
 7. In **Furnizori**, compare a sample request with the verified fictional registry. A changed IBAN remains under review even from a known sender. Record verification through the known contact, then sign in as another authorized employee to approve the change. Bank history is preserved; no money moves.
 
 An outage demonstration is reversible:
 
 ```sh
-docker compose stop dunarea-gateway carpati-gateway
+docker compose stop craiova-gateway sibiu-gateway
 # Local documents/people still work; remote access reports unavailable.
-docker compose start dunarea-gateway carpati-gateway
+docker compose start craiova-gateway sibiu-gateway
 ```
 
 ## Verify and regenerate
@@ -79,6 +102,7 @@ backend/.venv/bin/python -m pytest backend/tests -q
 npm --prefix frontend run build
 npm --prefix frontend run lint
 node --experimental-strip-types --test frontend/tests/flow-graph.test.mjs frontend/tests/flow-label.test.mjs
+npm --prefix frontend test
 backend/.venv/bin/python scripts/generate_corpus.py
 ```
 
@@ -86,7 +110,9 @@ Tests use separate temporary databases and files. The PDF generator is determini
 
 Python direct dependencies live in `backend/requirements.txt`; the cross-platform, fully pinned `backend/requirements.lock` includes package hashes and is used for development and Docker installation. The frontend uses `npm ci` and its lockfile. See [verification evidence](docs/VERIFICATION.md) for the recorded quality gate.
 
-The frontend is browser-tested through Chrome DevTools MCP. Fonts are bundled locally. All displayed document totals respect the active user's permissions; the director sees fewer than 148 records because sensitive HR records remain restricted.
+Feature changes must follow the [navigation contract](docs/NAVIGATION.md): document visits retain their originating section and list state, and new entry points require interaction regression coverage.
+
+The current access model is browser-tested with isolated headless Playwright sessions on both airports, including a 390 px mobile viewport. Fonts are bundled locally. All displayed document totals respect the active user's permissions; the director sees fewer than 148 records because sensitive HR records remain restricted.
 
 ## Repository map
 
@@ -105,6 +131,10 @@ The frontend is browser-tested through Chrome DevTools MCP. Fonts are bundled lo
 
 This is a working demonstration foundation. Keycloak runs in development mode with fixture users, a file database and loopback HTTP; production requires hardened identity infrastructure, TLS and provisioning. Separate employee records without logins and HR editing are not implemented. Contracts are document-backed registers with related case files; separate obligation/renewal entities and scheduled reminder delivery/escalation remain future work. Current reminders are derived in-app views.
 
-Self-signed PDF certificates provide testable cryptographic integrity; they are not qualified electronic signatures. The assistant uses deterministic retrieval and structured queries, not an external language model. Metadata and redaction suggestions use text extraction/rules; scanned PDFs require manual metadata because OCR is not configured. There is no real banking, email, e-Factura, operational airport or airline integration. Supplier contact verification records a human attestation; it does not itself prove account ownership.
+Self-signed PDF certificates provide testable cryptographic integrity; they are not qualified electronic signatures. The general register assistant uses deterministic retrieval and structured queries. Optional Luna redaction advice uses OpenAI; metadata extraction remains rule-based. PDF text is now extracted locally in the background with per-page native/OCR routing and bundled Romanian/English models. Search, metadata rules, and the redaction studio reuse the stored text and word geometry; scans remain subject to human review. See [OCR research and measured results](docs/OCR_RESEARCH.md). There is no real banking, email, e-Factura, operational airport or airline integration. Supplier contact verification records a human attestation; it does not itself prove account ownership.
 
 Production work includes identity/MFA policies and provider revocation integration, independent security review, malware scanning and isolated PDF processing, backups and recovery objectives, organizational records retention, qualified signing integration where required, production monitoring and approved data protection arrangements. “Archived” is a workflow label, not a claim of legally compliant archiving. The audit table is application-controlled, not an independently immutable archive.
+
+### Local text extraction
+
+Uploads queue background processing automatically. Open **Vezi textul extras** in document details to inspect each page; OCR pages are marked for review. Existing documents are indexed on first startup after the migration. No OpenAI key or network connection is needed for parsing/OCR. Both language models, their license, the queue migration, and all pinned dependencies are included in this repository.

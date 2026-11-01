@@ -25,7 +25,7 @@ def signer_for(user):
     certpath=folder/f'{user.id}.der'
     if not pfx.exists():
         key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
-        name=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,f'{user.name} — AeroDesk DEMO'),x509.NameAttribute(NameOID.ORGANIZATION_NAME,settings.airport_name)])
+        name=x509.Name([x509.NameAttribute(NameOID.COMMON_NAME,f'{user.name} — FlyLeaf DEMO'),x509.NameAttribute(NameOID.ORGANIZATION_NAME,settings.airport_name)])
         cert=(x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key()).serial_number(x509.random_serial_number()).not_valid_before(datetime.now(timezone.utc)-timedelta(days=1)).not_valid_after(datetime.now(timezone.utc)+timedelta(days=365)).add_extension(x509.BasicConstraints(ca=False,path_length=None),critical=True).add_extension(x509.KeyUsage(digital_signature=True,content_commitment=True,key_encipherment=False,data_encipherment=False,key_agreement=False,key_cert_sign=False,crl_sign=False,encipher_only=False,decipher_only=False),critical=True).sign(key,hashes.SHA256()))
         pfx.write_bytes(pkcs12.serialize_key_and_certificates(user.id.encode(),key,cert,None,serialization.NoEncryption()))
         pfx.chmod(0o600)
@@ -38,8 +38,8 @@ def sign_file(user,input_path,output_path):
     signer,fingerprint=signer_for(user)
     with open(input_path,'rb') as source,open(output_path,'wb') as target:
         writer=IncrementalPdfFileWriter(source)
-        meta=signers.PdfSignatureMetadata(field_name='AeroDeskApproval',reason='Aprobare document — certificat demonstrativ, fără valoare calificată',location=settings.airport_name)
-        signers.PdfSigner(meta,signer=signer,new_field_spec=fields.SigFieldSpec(sig_field_name='AeroDeskApproval',box=(40,30,340,75))).sign_pdf(writer,output=target)
+        meta=signers.PdfSignatureMetadata(field_name='FlyLeafApproval',reason='Aprobare document — certificat demonstrativ, fără valoare calificată',location=settings.airport_name)
+        signers.PdfSigner(meta,signer=signer,new_field_spec=fields.SigFieldSpec(sig_field_name='FlyLeafApproval',box=(40,30,340,75))).sign_pdf(writer,output=target)
     return fingerprint
 
 def verify_file(path,signer_id,expected_fingerprint):

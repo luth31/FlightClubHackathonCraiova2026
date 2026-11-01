@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { UploadCloud, FileText, Check, LoaderCircle } from "lucide-react";
 import { Modal, ErrorMessage } from "@/components/ui";
 import { api } from "@/services/api-client";
@@ -28,12 +28,17 @@ export function UploadDialog({
           ? "Tehnic"
           : user.department === "Conducere"
             ? "Achiziții"
-            : user.department,
+            : user.business_area || user.department,
     ),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [drag, setDrag] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const choose = (f?: File) => {
     if (f) {
       if (!f.name.toLowerCase().endsWith(".pdf")) {
@@ -64,16 +69,17 @@ export function UploadDialog({
         method: "POST",
         body: form,
       });
-      onCreated(d);
+      if (mounted.current) onCreated(d);
     } catch (e) {
+      if (!mounted.current) return;
       setError((e as Error).message);
       setBusy(false);
     }
   }
   return (
     <Modal
-      title="Un document nou, în locul potrivit"
-      subtitle="Încarcă PDF-ul. Verifici informațiile înainte să îl trimiți mai departe."
+      title="Adaugă document"
+      subtitle="PDF · maximum 25 MB"
       onClose={onClose}
     >
       <form onSubmit={submit} className="modal-body">
@@ -114,7 +120,7 @@ export function UploadDialog({
             <>
               <UploadCloud size={32} />
               <strong>Trage un PDF aici sau alege fișierul</strong>
-              <span>Document PDF · maximum 25 MB</span>
+              <span>Alege fișierul de pe dispozitiv</span>
             </>
           )}
         </button>
@@ -177,7 +183,7 @@ export function UploadDialog({
                       "Operațiuni",
                       "Resurse umane",
                       "Conformitate",
-                    ]
+                    ].filter(d => d !== 'Resurse umane' && (user.roles.includes('director') || d === (user.business_area || user.department)))
               ).map((d) => (
                 <option key={d}>{d}</option>
               ))}
@@ -185,8 +191,7 @@ export function UploadDialog({
           </label>
         </div>
         <p className="quiet-note">
-          Documentul se salvează ca ciornă. Publicarea și aprobarea rămân în
-          controlul tău.
+          Se salvează ca ciornă. Verifici informațiile înainte de aprobare.
         </p>
         {error && <ErrorMessage message={error} />}
         <div className="modal-footer">

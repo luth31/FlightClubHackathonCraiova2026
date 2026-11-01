@@ -6,14 +6,14 @@ import httpx
 from sqlalchemy import select
 from app.config import settings
 from app.core.exceptions import DomainError
-from app.core.security import require_role
+from app.core.security import require_role,require_page
 from app.core.audit import record
 from app.documents.models import Document
 from app.documents.service import file_hash
 from app.sharing.models import Share, SharePreview
 from app.sharing.service import serialize
 
-PEERS = {'dunarea': 'Aeroportul Dunărea', 'carpati': 'Aeroportul Carpați'}
+PEERS = {'craiova': 'Aeroportul Craiova', 'sibiu': 'Aeroportul Sibiu'}
 
 
 def gateway_token():
@@ -79,6 +79,7 @@ def incoming_file(db, peer, share_id):
 
 
 def fetch_peer(db, user, suffix=''):
+    require_page(user, 'sharing')
     require_role(user, 'director', 'reviewer')
     if not settings.exchange_url:
         raise DomainError('Legătura cu aeroportul partener nu este configurată. Documentele locale rămân disponibile.', 503)

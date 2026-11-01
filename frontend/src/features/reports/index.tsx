@@ -1,7 +1,7 @@
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useContext, useEffect, useState} from 'react';
 import {ArrowLeft, RefreshCw} from 'lucide-react';
 import {api} from '@/services/api-client';
-import {ErrorMessage} from '@/components/ui';
+import {ErrorMessage, ViewActiveContext} from '@/components/ui';
 import type {Page, User} from '@/types';
 import {PowerReport} from './PowerReport';
 import {ReportHub} from './ReportHub';
@@ -28,16 +28,21 @@ function ReportSkeleton() {
 }
 
 export function ReportsPage({user, revision, onOpen, onNavigate, notify}: {user: User; revision: number; onOpen: (id: string) => void; onNavigate: (page: Page) => void; notify: (message: string) => void}) {
+  const active = useContext(ViewActiveContext);
   const [reportId, setReportId] = useState(routeReport), [department, setDepartment] = useState(routeDepartment), [days, setDays] = useState(90);
   const [briefing, setBriefing] = useState<ReportBriefing>();
   const [catalog, setCatalog] = useState<ReportCatalog>(), [data, setData] = useState<ReportData>(), [error, setError] = useState(''), [refreshing, setRefreshing] = useState(false), [tick, setTick] = useState(0);
   const [pins, setPins] = useState<string[]>(() => storedPins(user.id));
   useEffect(() => {
-    const handler = () => { setReportId(routeReport()); setDepartment(routeDepartment()); };
+    const handler = () => {
+      if (location.hash !== '#reports' && !location.hash.startsWith('#reports/') && !location.hash.startsWith('#reports?')) return;
+      setReportId(routeReport()); setDepartment(routeDepartment());
+    };
     window.addEventListener('hashchange', handler);
     return () => window.removeEventListener('hashchange', handler);
   }, []);
   useEffect(() => {
+    if (!active) return;
     const controller = new AbortController();
     let busy = false;
     async function load() {
@@ -68,8 +73,14 @@ export function ReportsPage({user, revision, onOpen, onNavigate, notify}: {user:
     const focus = () => { if (!document.hidden) void load(); };
     window.addEventListener('focus', focus);
     return () => { controller.abort(); clearInterval(timer); window.removeEventListener('focus', focus); };
-  }, [reportId, department, days, revision, tick, user.id]);
+  }, [active, reportId, department, days, revision, tick, user.id]);
   const refresh = useCallback(() => setTick(v => v + 1), []);
+  const changeDepartment = (value: string) => {
+    const query = new URLSearchParams(location.hash.split('?')[1] || '');
+    if (value) query.set('department', value); else query.delete('department');
+    setDepartment(value);
+    location.hash = (reportId ? `reports/${reportId}` : 'reports') + (query.size ? '?' + query.toString() : '');
+  };
   const select:SelectReport = (id, options={}) => { const query=new URLSearchParams(); const scope=options.department ?? department; if(scope)query.set('department',scope); if(options.status)query.set('status',options.status); if(options.focus)query.set('focus',options.focus); if(options.tab)query.set('view',options.tab); location.hash = id ? `reports/${id}`+(query.size?'?'+query.toString():'') : 'reports'; window.scrollTo(0,0); };
   function pin(id: string) {
     const next = pins.includes(id) ? pins.filter(p => p !== id) : [...pins, id];
@@ -81,6 +92,6 @@ export function ReportsPage({user, revision, onOpen, onNavigate, notify}: {user:
   if (!catalog || (!reportId&&!briefing) || (reportId && data?.report.id !== reportId)) return <div className="rp-page"><ReportSkeleton/></div>;
   return <div className="rp-page">{reportId && data ? <>
     <div className="rp-report-navigation"><button className="rp-back-to-hub" onClick={() => select('')}><ArrowLeft size={15}/>Biblioteca de rapoarte</button><span>/</span><select aria-label="Schimbă raportul" value={reportId} onChange={e => select(e.target.value)}>{catalog.items.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}</select><span className="rp-live-tag">{refreshing ? <RefreshCw size={12} className="rp-spin"/> : <i/>}{refreshing ? 'Se actualizează…' : 'Conectat la datele aplicației'}</span></div>
-    <PowerReport key={data.report.id} data={data} days={days} department={department} onDays={setDays} onDepartment={setDepartment} onOpen={onOpen} onNavigate={onNavigate} onRefresh={refresh} refreshing={refreshing} pinned={pins.includes(data.report.id)} onPin={() => pin(data.report.id)} notify={notify}/>
-  </> : briefing&&<ReportHub data={briefing} pins={pins} onPin={pin} onSelect={select} user={user} onOpen={onOpen} onNavigate={onNavigate} onRefresh={refresh} refreshing={refreshing} department={department} onDepartment={setDepartment}/>}</div>;
+    <PowerReport key={data.report.id} data={data} days={days} department={department} onDays={setDays} onDepartment={changeDepartment} onOpen={onOpen} onNavigate={onNavigate} onRefresh={refresh} refreshing={refreshing} pinned={pins.includes(data.report.id)} onPin={() => pin(data.report.id)} notify={notify}/>
+  </> : briefing&&<ReportHub data={briefing} pins={pins} onPin={pin} onSelect={select} user={user} onOpen={onOpen} onNavigate={onNavigate} onRefresh={refresh} refreshing={refreshing} department={department} onDepartment={changeDepartment}/>}</div>;
 }

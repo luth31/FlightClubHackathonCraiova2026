@@ -5,8 +5,8 @@ COPY backend/requirements.lock ./requirements.lock
 RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY backend/ ./
 COPY data/ /app/data/
-ENV AERODESK_CORPUS_DIR=/app/data AERODESK_STORAGE_DIR=/state/storage AERODESK_DATABASE_URL=sqlite:////state/aerodesk.db
-RUN useradd --uid 10001 --create-home aerodesk && mkdir -p /state && chown aerodesk:aerodesk /state
-USER aerodesk
+ENV FLYLEAF_CORPUS_DIR=/app/data FLYLEAF_STORAGE_DIR=/state/storage FLYLEAF_DATABASE_URL=sqlite:////state/flyleaf.db
+RUN useradd --uid 10001 --create-home flyleaf && mkdir -p /state && chown flyleaf:flyleaf /state
+USER flyleaf
 EXPOSE 8000
 CMD ["sh", "-c", "python -m alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log"]

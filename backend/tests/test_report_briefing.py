@@ -6,6 +6,7 @@ import pytest
 from conftest import login
 from app.core.models import AuditEvent
 from app.documents.models import Document
+from app.config import settings
 from app.reports.briefing import local_day
 
 
@@ -93,7 +94,7 @@ def test_briefing_activity_never_includes_hidden_or_foreign_airport_documents(ad
     events = [AuditEvent(actor='Private actor', actor_id='hr', action='private-'+uuid4().hex,
         document_id=identifier, document_title='Private title', detail='Private details',
         airport_id=airport, created_at=datetime.now(ZoneInfo('Europe/Bucharest')).isoformat())
-        for identifier, airport in [('test-hr','dunarea'), ('test-contract','other-airport')]]
+        for identifier, airport in [('test-hr',settings.airport_id), ('test-contract','other-airport')]]
     try:
         db.add_all(events); db.commit()
         after = admin.get('/api/reports/briefing').json()

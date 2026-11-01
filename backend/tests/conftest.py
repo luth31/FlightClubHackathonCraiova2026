@@ -5,12 +5,13 @@ from pathlib import Path
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 
-TEST_ROOT=Path(tempfile.mkdtemp(prefix='aerodesk-tests-'))
-os.environ['AERODESK_DATABASE_URL']=f'sqlite:///{TEST_ROOT}/test.db'
-os.environ['AERODESK_STORAGE_DIR']=str(TEST_ROOT/'storage')
-os.environ['AERODESK_CORPUS_DIR']=str(TEST_ROOT/'corpus')
-os.environ['AERODESK_AIRPORT_ID']='dunarea'
-os.environ['AERODESK_AIRPORT_NAME']='Aeroportul Dunărea'
+TEST_ROOT=Path(tempfile.mkdtemp(prefix='flyleaf-tests-'))
+os.environ['FLYLEAF_DATABASE_URL']=f'sqlite:///{TEST_ROOT}/test.db'
+os.environ['FLYLEAF_STORAGE_DIR']=str(TEST_ROOT/'storage')
+os.environ['FLYLEAF_CORPUS_DIR']=str(TEST_ROOT/'corpus')
+os.environ['FLYLEAF_AIRPORT_ID']='craiova'
+os.environ['FLYLEAF_EXTRACTION_ENABLED']='false'
+os.environ['FLYLEAF_AIRPORT_NAME']='Aeroportul Craiova'
 from reportlab.pdfgen import canvas
 corpus=TEST_ROOT/'corpus'; (corpus/'pdfs').mkdir(parents=True)
 records=[]
@@ -33,11 +34,13 @@ from app.people.models import User,Delegation
 @pytest.fixture
 def client():
     with TestClient(app) as c:
+        from app.extraction.worker import drain
+        drain()
         yield c
 
 @pytest.fixture
 def admin(client):
-    response=client.post('/api/auth/login',json={'user_id':'admin','password':'AeroDesk2026!'})
+    response=client.post('/api/auth/login',json={'user_id':'admin','password':'FlyLeaf2026!'})
     assert response.status_code==200,response.text
     return client
 
@@ -50,6 +53,6 @@ def pdf_bytes():
     return (corpus/'pdfs'/'test-contract.pdf').read_bytes()
 
 def login(client,user='admin'):
-    response=client.post('/api/auth/login',json={'user_id':user,'password':'AeroDesk2026!'})
+    response=client.post('/api/auth/login',json={'user_id':user,'password':'FlyLeaf2026!'})
     assert response.status_code==200,response.text
     return client

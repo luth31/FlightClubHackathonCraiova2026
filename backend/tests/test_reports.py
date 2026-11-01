@@ -133,3 +133,32 @@ def test_changing_roles_revokes_report_access_immediately(admin, db):
     finally:
         user.roles = previous
         db.commit()
+
+
+def test_supplier_report_and_csv_include_records_beyond_the_first_list_page(admin, db):
+    from app.suppliers.models import SupplierReview
+
+    before = admin.get('/api/reports/suppliers').json()['total']
+    records = [SupplierReview(
+        id='report-review-' + uuid.uuid4().hex, fingerprint=uuid.uuid4().hex,
+        airport_id=settings.airport_id, document_id='test-contract', source_version=1,
+        supplier_name=f'Report supplier {i}', expected_iban='', observed_iban='',
+        sender_email='supplier@example.test', verified_contact='', message='Test review',
+        reasons=[], status='needs_review', created_by='admin', created_at='2026-10-31T12:00:00Z',
+    ) for i in range(30)]
+    try:
+        db.add_all(records)
+        db.commit()
+        identifiers = {record.id for record in records}
+        listing = admin.get('/api/supplier-reviews').json()
+        assert len(listing['items']) == 25
+        report = admin.get('/api/reports/suppliers').json()
+        assert report['total'] == before + 30
+        assert identifiers <= {row['id'] for row in report['rows']}
+        exported = list(csv.reader(io.StringIO(admin.get('/api/reports/suppliers/export.csv').content.decode('utf-8-sig'))))
+        assert len(exported) == report['total'] + 1
+        assert identifiers <= {row[0] for row in exported[1:]}
+    finally:
+        for record in records:
+            db.delete(record)
+        db.commit()

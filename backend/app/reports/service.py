@@ -19,6 +19,7 @@ from app.people import service as people_service
 from app.sharing.models import Share
 from app.sharing.service import serialize as serialize_share
 from app.suppliers import service as supplier_service
+from app.suppliers.query import ReviewFilters, matching_reviews
 from app.tasks import service as task_service
 
 # Reports can ship independently; use renewal tracking when that module is installed.
@@ -201,9 +202,11 @@ def report(db, user, report_id, days=90, department='', reference_date=None):
         table_title, series_label = 'Coada de lucru și istoricul sarcinilor', 'Sarcini create'
 
     elif report_id == 'suppliers':
-        review_data = supplier_service.list_reviews(db, user)
+        actor_names = supplier_service.actors(db, user)
+        all_reviews = [supplier_service.serialize_case(db, user, item, actor_names)
+                       for item in matching_reviews(db, user, ReviewFilters())]
         doc_departments = {d['id']: d['department'] for d in docs}
-        reviews = [r for r in review_data['items'] if not department or doc_departments.get(r['document_id']) == department]
+        reviews = [r for r in all_reviews if not department or doc_departments.get(r['document_id']) == department]
         rows = [dict(id=r['id'], document_id=r['document_id'], title=r['supplier_name'], number=r['id'],
                      department=doc_departments.get(r['document_id'], 'Fără contract'), status=r['status'],
                      category=r['risk_level'], owner=r['verified_by'] or r['created_by'], date=r['created_at'],

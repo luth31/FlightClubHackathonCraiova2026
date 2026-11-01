@@ -1,10 +1,10 @@
-# AeroDesk: researched Romanian airport demonstration archive
+# FlyLeaf: researched Romanian airport demonstration archive
 
 Research date: 31 October 2026. Scenario reference date: **30 October 2026**.
 
 The archive contains **148 original Romanian PDFs, 316 pages and 49,213 words**. It is designed to exercise a complete administrative document flow across procurement, maintenance, finance, compliance, people and controlled collaboration. It is not an official airport archive or a claim of regulatory completeness.
 
-Every page says **Date fictive pentru demonstrație**. Aeroportul Dunărea, Aeroportul Carpați, suppliers, people, prices, dates and findings are fictional. No original airport contracts, personal data, operational access details, real bank accounts or real signatures are included. The documents are authored examples, not copies of published contracts.
+Every page says **Date fictive pentru demonstrație**. Craiova and Sibiu are real airport names used as demo labels; suppliers, people, prices, dates and findings are fictional. No original airport contracts, personal data, operational access details, real bank accounts or real signatures are included. The documents are authored examples, not copies of published contracts.
 
 ## Research and source map
 

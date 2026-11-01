@@ -4,7 +4,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.database import get_db
-from app.core.security import current_user,can_read
+from app.core.security import current_user,can_read,can_read_version
 from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.core.signing import verify_file
@@ -13,6 +13,7 @@ from app.documents.models import DocumentVersion
 from app.documents.schemas import DocumentPatch,Action
 from app.documents.flow import document_flow
 from app.workflows.service import apply_action
+from app.people.organization import canonical_department
 
 router=APIRouter(prefix='/api/documents',tags=['Documents'])
 
@@ -29,7 +30,7 @@ def list_documents(q: str=Query('',max_length=200),category: str='',status: str=
         docs=[d for d in docs if d.id in matching]
     if category: docs=[d for d in docs if d.category==category]
     if status: docs=[d for d in docs if d.status==status or (status=='approved' and d.status=='signed')]
-    if department: docs=[d for d in docs if d.department==department]
+    if department: docs=[d for d in docs if canonical_department(d.department)==canonical_department(department)]
     return {'items':[service.serialize(d,user=user) for d in docs[offset:offset+limit]],'total':len(docs),'categories':service.CATEGORIES,'departments':service.DEPARTMENTS}
 
 @router.get('/flow')
@@ -64,6 +65,7 @@ def file(document_id: str,version: int | None=None,download: bool=False,db: Sess
     doc=service.get_document(db,document_id,user)
     v=db.scalar(select(DocumentVersion).where(DocumentVersion.document_id==doc.id,DocumentVersion.version==(version or doc.version)))
     if not v: raise DomainError('Versiunea nu există.',404)
+    if not can_read_version(user, doc, v): raise DomainError('Versiunea nu a fost găsită sau nu ai acces.',404)
     path=Path(v.signed_path or v.file_path)
     if not path.is_file(): raise DomainError('Fișierul nu este disponibil.',404)
     expected=v.signed_sha256 or v.sha256
@@ -71,6 +73,30 @@ def file(document_id: str,version: int | None=None,download: bool=False,db: Sess
     record(db,user,'Document descărcat' if download else 'Document consultat',doc,f'Versiunea {v.version}')
     db.commit()
     return FileResponse(path,media_type='application/pdf',filename=v.filename,content_disposition_type='attachment' if download else 'inline',headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
+
+@router.get('/{document_id}/extraction')
+def extraction(document_id: str,page: int=Query(1,ge=1),db: Session=Depends(get_db),user=Depends(current_user)):
+    from app.core.security import require_role
+    from app.extraction import service as extraction_service
+    doc=service.get_document(db,document_id,user)
+    require_role(user,'director','reviewer','finance','hr')
+    version=service.current_version(db,doc)
+    if service.file_hash(version.file_path)!=version.sha256:
+        raise DomainError('Integritatea originalului nu poate fi confirmată.',409)
+    data=extraction_service.summary(db,version)
+    if data['status']=='ready':
+        result=extraction_service.cached_result(db,version)
+        if page>len(result['pages']): raise DomainError('Pagina nu există.',404)
+        data['page']={k:v for k,v in result['pages'][page-1].items() if k!='words'}
+    return data
+
+@router.post('/{document_id}/extraction/retry')
+def retry_extraction(document_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    from app.extraction import service as extraction_service
+    from sqlalchemy import text
+    db.execute(text('BEGIN IMMEDIATE'))
+    doc=service.get_document(db,document_id,user,edit=True)
+    return extraction_service.retry(db,service.current_version(db,doc),doc)
 
 @router.get('/{document_id}/verify')
 def verify(document_id: str,db: Session=Depends(get_db),user=Depends(current_user)):

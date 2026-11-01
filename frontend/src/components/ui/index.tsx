@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode, type RefObject } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -54,7 +54,7 @@ export function Loading() {
   return (
     <div className="loading">
       <LoaderCircle className="spin" size={22} />
-      <span>Se încarcă spațiul de lucru…</span>
+      <span>Se încarcă…</span>
     </div>
   );
 }
@@ -80,30 +80,42 @@ export function ErrorMessage({
     </div>
   );
 }
+// Retained workspace views must not retain a modal's global keyboard/scroll effects.
+export const ViewActiveContext = createContext(true);
+
 export function Modal({
   title,
   subtitle,
   onClose,
   children,
   wide = false,
+  className = "",
+  initialFocusRef,
 }: {
   title: string;
   subtitle?: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  className?: string;
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const active = useContext(ViewActiveContext);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
+    if (!active) {
+      closeRef.current();
+      return;
+    }
     const prev = document.activeElement as HTMLElement;
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeRef.current();
       if (e.key === "Tab") {
-        const nodes = ref.current?.querySelectorAll<HTMLElement>(
-          'button,input,select,textarea,a[href],[tabindex="0"]',
-        );
+        const nodes = Array.from(ref.current?.querySelectorAll<HTMLElement>(
+          'button,input,select,textarea,summary,a[href],[tabindex="0"]',
+        ) || []).filter(node => !node.matches(':disabled') && node.tabIndex >= 0 && node.getClientRects().length > 0);
         if (!nodes?.length) return;
         const first = nodes[0],
           last = nodes[nodes.length - 1];
@@ -117,15 +129,16 @@ export function Modal({
       }
     };
     document.addEventListener("keydown", key);
-    ref.current?.querySelector<HTMLElement>("button,input")?.focus();
+    (initialFocusRef?.current ?? ref.current?.querySelector<HTMLElement>("button,input"))?.focus();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", key);
       document.body.style.overflow = overflow;
-      prev?.focus();
+      if (prev?.isConnected && !prev.closest('[hidden],[inert]')) prev.focus({preventScroll: true});
     };
-  }, []);
+  }, [active, initialFocusRef]);
+  if (!active) return null;
   return (
     <div
       className="modal-backdrop"
@@ -134,7 +147,7 @@ export function Modal({
       }}
     >
       <div
-        className={`modal ${wide ? "modal-wide" : ""}`}
+        className={`modal ${wide ? "modal-wide" : ""} ${className}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

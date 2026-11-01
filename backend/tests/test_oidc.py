@@ -22,23 +22,64 @@ from app.main import app
 from app.people.models import User
 
 
-@pytest.mark.parametrize('airport',['dunarea','carpati'])
+@pytest.mark.parametrize('airport',['craiova','sibiu'])
 def test_keycloak_import_supplies_required_identity_claims(airport):
     realm_path=Path(__file__).resolve().parents[2]/'deploy'/'keycloak'/f'{airport}-realm.json'
     realm=json.loads(realm_path.read_text())
-    client=next(item for item in realm['clients'] if item['clientId']=='aerodesk-web')
+    client=next(item for item in realm['clients'] if item['clientId']=='flyleaf-web')
     # Since Keycloak 25, the default basic scope supplies sub/auth_time mappers.
     # Omitting it from an explicit client scope list rejects every real login.
     assert 'basic' in client['defaultClientScopes']
 
 
+@pytest.mark.parametrize('airport', ['craiova', 'sibiu'])
+def test_fixture_subjects_survive_brand_changes_and_match_realm_accounts(monkeypatch, airport):
+    realm_path = Path(__file__).resolve().parents[2] / 'deploy' / 'keycloak' / f'{airport}-realm.json'
+    realm = json.loads(realm_path.read_text())
+    monkeypatch.setattr(settings, 'airport_id', airport)
+    monkeypatch.setattr(settings, 'oidc_subject_map', None)
+    expected = {user['id']: user['username'] for user in realm['users']
+        if not user['username'].startswith('service-account-')}
+    assert len(expected) == 7
+    assert service.subject_map() == expected
+
+
+def test_unknown_airport_has_no_implicit_fixture_identities(monkeypatch):
+    monkeypatch.setattr(settings, 'airport_id', 'another-airport')
+    monkeypatch.setattr(settings, 'oidc_subject_map', None)
+    assert service.subject_map() == {}
+
+
+def test_persisted_employee_identity_can_login_without_configured_subject_map(oidc,db):
+    from uuid import uuid4
+    from sqlalchemy import delete
+    from app.people.models import Session
+    client,provider=oidc
+    uid='emp-'+uuid4().hex
+    subject='employee-provider-'+uuid4().hex
+    db.add(User(id=uid,name='Mara Persistent',email=f'{uid}@airport.example',department='Tehnic',
+        department_id='dept-tehnic',role='Inginer',job_title='Inginer',roles=['employee'],airport_id='craiova',
+        active=True,password_hash='not-a-local-password',avatar='',identity_issuer=settings.oidc_issuer,
+        identity_subject=subject,provisioning_status='ready'))
+    db.commit()
+    try:
+        provider['claims']={'sub':subject,'realm_access':{'roles':['admin','signer']}}
+        state=begin(oidc)
+        assert callback(client,state).status_code==303
+        user=client.get('/api/session').json()['current_user']
+        assert user['id']==uid and user['roles']==['employee']
+    finally:
+        db.execute(delete(Session).where(Session.user_id==uid))
+        db.delete(db.get(User,uid));db.commit()
+
+
 @pytest.fixture
 def oidc(client, monkeypatch):
     for name, value in {'auth_mode':'oidc',
-        'oidc_issuer':'http://127.0.0.1:8180/realms/dunarea',
-        'oidc_internal_issuer':'http://dunarea-identity:8080/realms/dunarea',
+        'oidc_issuer':'http://127.0.0.1:8180/realms/craiova',
+        'oidc_internal_issuer':'http://craiova-identity:8080/realms/craiova',
         'oidc_redirect_uri':'http://127.0.0.1:8080/api/auth/oidc/callback',
-        'oidc_frontend_url':'http://127.0.0.1:8080/', 'oidc_client_id':'aerodesk-web',
+        'oidc_frontend_url':'http://127.0.0.1:8080/', 'oidc_client_id':'flyleaf-web',
         'oidc_subject_map':None, 'cookie_secure':False}.items():
         monkeypatch.setattr(settings,name,value)
     key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
@@ -60,7 +101,7 @@ def oidc(client, monkeypatch):
         assert method=='POST' and url==internal+'/protocol/openid-connect/token'
         provider['token_requests']+=1
         assert data['code']=='valid-code'
-        assert data['client_id']=='aerodesk-web'
+        assert data['client_id']=='flyleaf-web'
         assert data['grant_type']=='authorization_code'
         assert data['redirect_uri']==settings.oidc_redirect_uri
         challenge=base64.urlsafe_b64encode(hashlib.sha256(data['code_verifier'].encode()).digest()).rstrip(b'=').decode()
@@ -95,7 +136,7 @@ def test_oidc_success_pkce_pinned_subject_and_local_roles(oidc):
     client,provider=oidc
     anonymous=client.get('/api/session').json()
     assert anonymous['auth']['mode']=='oidc' and anonymous['users']==[] and not anonymous['demo']
-    assert client.post('/api/auth/login',json={'user_id':'admin','password':'AeroDesk2026!'}).status_code==403
+    assert client.post('/api/auth/login',json={'user_id':'admin','password':'FlyLeaf2026!'}).status_code==403
     state=begin(oidc)
     query=provider['query']
     assert query['code_challenge_method']==['S256'] and query['response_type']==['code']
@@ -103,7 +144,9 @@ def test_oidc_success_pkce_pinned_subject_and_local_roles(oidc):
     assert 'code_verifier' not in query
     response=callback(client,state)
     assert response.status_code==303 and response.headers['location']==settings.oidc_frontend_url
-    current=client.get('/api/session').json()['current_user']
+    payload=client.get('/api/session').json()
+    assert [person['id'] for person in payload['users']]==['technician']
+    current=payload['current_user']
     assert current['id']=='technician' and current['roles']==['technician']
     assert client.get('/api/documents/test-hr/file').status_code==404
     assert provider['token_requests']==1
@@ -111,11 +154,24 @@ def test_oidc_success_pkce_pinned_subject_and_local_roles(oidc):
     assert client.get('/api/session').json()['current_user'] is None
 
 
+def test_sign_in_link_hint_prefills_username_without_selecting_identity(oidc):
+    client, provider = oidc
+    response = client.get('/api/auth/oidc/login', params={'login_hint':'d.voicu'}, follow_redirects=False)
+    assert response.status_code == 303
+    query = parse_qs(urlsplit(response.headers['location']).query)
+    assert query['login_hint'] == ['d.voicu']
+    assert query['code_challenge_method'] == ['S256']
+    assert query['prompt'] == ['login']
+    provider['query'] = query
+    assert callback(client, query['state'][0]).status_code == 303
+    assert client.get('/api/session').json()['current_user']['id'] == 'technician'
+
+
 @pytest.mark.parametrize('overrides,absent',[
-    ({'iss':'http://127.0.0.1:8181/realms/carpati'},[]),
+    ({'iss':'http://127.0.0.1:8181/realms/sibiu'},[]),
     ({'aud':'other-client'},[]),
     ({'azp':'other-client'},[]),
-    ({'aud':['aerodesk-web','other-client']},['azp']),
+    ({'aud':['flyleaf-web','other-client']},['azp']),
     ({'nonce':'wrong-nonce'},[]),
     ({'exp':int(time.time())-120},[]),
     ({'iat':int(time.time())+300},[]),
@@ -137,7 +193,7 @@ def test_wrong_signature_and_unknown_subject_rejected(oidc):
     response=callback(client,begin(oidc))
     assert 'auth_error=invalid_token' in response.headers['location']
     del provider['signing_key']
-    provider['claims']={'sub':'unprovisioned-subject','preferred_username':'admin','email':'admin@dunarea.example'}
+    provider['claims']={'sub':'unprovisioned-subject','preferred_username':'admin','email':'admin@craiova.example'}
     response=callback(client,begin(oidc))
     assert 'auth_error=account_unavailable' in response.headers['location']
     assert client.get('/api/session').json()['current_user'] is None
@@ -147,7 +203,7 @@ def test_validation_diagnostic_excludes_credentials_and_claim_values(oidc,caplog
     client,provider=oidc
     provider['absent']=['auth_time']
     state=begin(oidc)
-    browser=client.cookies.get('aerodesk_oidc_dunarea')
+    browser=client.cookies.get('flyleaf_oidc_craiova')
     response=callback(client,state)
     assert 'auth_error=invalid_token' in response.headers['location']
     diagnostic='\n'.join(record.getMessage() for record in caplog.records
@@ -160,20 +216,20 @@ def test_validation_diagnostic_excludes_credentials_and_claim_values(oidc,caplog
 def test_state_browser_binding_expiry_and_replay(oidc,db):
     client,provider=oidc
     state=begin(oidc)
-    browser=client.cookies.get('aerodesk_oidc_dunarea')
+    browser=client.cookies.get('flyleaf_oidc_craiova')
     response=callback(client,'unrecognized-state')
     assert 'auth_error=invalid_state' in response.headers['location']
-    client.cookies.set('aerodesk_oidc_dunarea','wrong-browser',domain='testserver.local',path='/api/auth/oidc')
+    client.cookies.set('flyleaf_oidc_craiova','wrong-browser',domain='testserver.local',path='/api/auth/oidc')
     response=callback(client,state)
     assert 'auth_error=invalid_state' in response.headers['location'] and provider['token_requests']==0
-    client.cookies.set('aerodesk_oidc_dunarea',browser,domain='testserver.local',path='/api/auth/oidc')
+    client.cookies.set('flyleaf_oidc_craiova',browser,domain='testserver.local',path='/api/auth/oidc')
     transaction=db.get(LoginTransaction,token_hash(state))
     transaction.expires_at=(service.now()-timedelta(seconds=1)).isoformat();db.commit()
     response=callback(client,state)
     assert 'auth_error=invalid_state' in response.headers['location'] and provider['token_requests']==0
-    state=begin(oidc);browser=client.cookies.get('aerodesk_oidc_dunarea')
+    state=begin(oidc);browser=client.cookies.get('flyleaf_oidc_craiova')
     assert callback(client,state).headers['location']==settings.oidc_frontend_url
-    client.cookies.set('aerodesk_oidc_dunarea',browser,domain='testserver.local',path='/api/auth/oidc')
+    client.cookies.set('flyleaf_oidc_craiova',browser,domain='testserver.local',path='/api/auth/oidc')
     response=callback(client,state)
     assert 'auth_error=invalid_state' in response.headers['location'] and provider['token_requests']==1
 
@@ -196,7 +252,7 @@ def test_deactivated_account_blocked_at_login_and_existing_session(oidc,db):
 
 def test_configuration_pins_discovery_and_endpoint_origin(oidc):
     client,provider=oidc
-    provider['discovery_issuer']='https://evil.example/realms/dunarea'
+    provider['discovery_issuer']='https://evil.example/realms/craiova'
     result=client.get('/api/auth/oidc/login',follow_redirects=False)
     assert 'auth_error=invalid_provider' in result.headers['location']
     del provider['discovery_issuer']
@@ -209,18 +265,18 @@ def test_configuration_pins_discovery_and_endpoint_origin(oidc):
 def test_provider_logout_uses_only_fixed_registered_destination(oidc):
     client,_=oidc
     assert callback(client,begin(oidc)).headers['location']==settings.oidc_frontend_url
-    old_session=client.cookies.get('aerodesk_session_dunarea')
+    old_session=client.cookies.get('flyleaf_session_craiova')
     response=client.post('/api/auth/logout?return_to=https://untrusted.example/',
         json={'redirect_url':'https://untrusted.example/','post_logout_redirect_uri':'https://untrusted.example/'})
     assert response.status_code==200
     redirect=urlsplit(response.json()['redirect_url'])
     assert redirect.scheme=='http' and redirect.netloc=='127.0.0.1:8180'
-    assert redirect.path=='/realms/dunarea/protocol/openid-connect/logout'
+    assert redirect.path=='/realms/craiova/protocol/openid-connect/logout'
     parameters=parse_qs(redirect.query)
-    assert parameters=={'client_id':['aerodesk-web'],
+    assert parameters=={'client_id':['flyleaf-web'],
         'post_logout_redirect_uri':[settings.oidc_frontend_url],'ui_locales':['ro']}
     assert 'id_token_hint' not in parameters
-    client.cookies.set('aerodesk_session_dunarea',old_session,domain='testserver.local',path='/api')
+    client.cookies.set('flyleaf_session_craiova',old_session,domain='testserver.local',path='/api')
     assert client.get('/api/session').json()['current_user'] is None
 
 
@@ -234,11 +290,11 @@ def test_demo_session_rejected_after_switch_to_oidc(admin,monkeypatch):
 def test_concurrent_callbacks_consume_login_once(oidc):
     client,provider=oidc
     state=begin(oidc)
-    browser=client.cookies.get('aerodesk_oidc_dunarea')
+    browser=client.cookies.get('flyleaf_oidc_craiova')
     start=Barrier(2)
     with TestClient(app) as first,TestClient(app) as second:
         for other in (first,second):
-            other.cookies.set('aerodesk_oidc_dunarea',browser,domain='testserver.local',path='/api/auth/oidc')
+            other.cookies.set('flyleaf_oidc_craiova',browser,domain='testserver.local',path='/api/auth/oidc')
         def finish(other):
             start.wait(timeout=5)
             return callback(other,state)

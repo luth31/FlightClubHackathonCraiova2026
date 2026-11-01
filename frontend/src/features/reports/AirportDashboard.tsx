@@ -11,7 +11,7 @@ import {ReportTable} from './ReportTable';
 import {ReportLibrary} from './ReportLibrary';
 
 type Mode='overview'|'documents'|'contracts'|'decisions';
-type Source={title:string;rows:ReportRow[]};
+type Source={title:string;rows:ReportRow[];snapshot:ReportBriefing};
 type Props={data:ReportBriefing;pins:string[];onPin:(id:string)=>void;onSelect:SelectReport;user:User;onNavigate:(page:Page)=>void;onOpen:(id:string)=>void;onRefresh:()=>void;refreshing:boolean;department:string;onDepartment:(value:string)=>void};
 const MODES:{id:Mode;name:string;icon:ComponentType<{size?:number}>}[]=[{id:'overview',name:'Imagine de ansamblu',icon:ChartNoAxesCombined},{id:'documents',name:'Analiza documentelor',icon:FileText},{id:'contracts',name:'Analiza contractelor',icon:Wallet},{id:'decisions',name:'Decizii & termene',icon:ClipboardCheck}];
 
@@ -33,7 +33,7 @@ export function AirportDashboard({data,pins,onPin,onSelect,user,onNavigate,onOpe
   const currencyCode=currentCurrency?.currency||currency;
   const chartSeries=dailySeries(selectedRows,data.date,filters);
   const comparison=departmentComparison(selection.documents,selection.tasks);
-  const show=(title:string,rows:ReportRow[])=>setSource({title,rows});
+  const show=(title:string,rows:ReportRow[])=>setSource({title,rows,snapshot:data});
   const update=(key:'departments'|'categories'|'statuses'|'months',value:string)=>setFilters(old=>({...old,[key]:toggleValue(old[key],value),...(key==='months'?{period:'all' as const}:{})}));
   const reset=()=>{setFilters(emptyDashboardFilters);if(department)onDepartment('');};
   const pickDepartment=(name:string)=>setFilters(old=>({...old,departments:old.departments.length===1&&old.departments[0]===name?[]:[name]}));
@@ -85,6 +85,6 @@ export function AirportDashboard({data,pins,onPin,onSelect,user,onNavigate,onOpe
     <div className="px-dashboard-footer"><span><Database size={12}/>Registrul AeroDesk · {shortDate(data.date)} · Europe/Bucharest</span><span>Stare curentă · Date demo · {filterCount?`${filterCount} filtre active`:'Fără filtre'}</span><button onClick={()=>onSelect(currentMode==='overview'?'documents':currentMode==='decisions'?'approvals':currentMode,{department:data.department})}>Deschide raportul complet<ArrowUpRight size={13}/></button></div>
     <section className="px-library-section"><button className="px-library-toggle" onClick={()=>setLibrary(!library)} aria-expanded={library}><Layers3 size={19}/><span>Biblioteca de rapoarte <b>{data.catalog.items.length}</b><small>Perspective detaliate, favorite și exporturi</small></span><span>{library?'Restrânge':'Explorează rapoartele'}<ChevronDown size={17} style={{transform:library?'rotate(180deg)':undefined}}/></span></button>{library&&<ReportLibrary data={data} pins={pins} onPin={onPin} onSelect={onSelect} onNavigate={onNavigate}/>}</section>
     <p className="px-data-note">Analiză administrativă din datele aplicației. Indicatorii de trafic aerian și harta geografică necesită o sursă operațională conectată.</p>
-    {source&&<SourceDialog source={source} onClose={()=>setSource(undefined)} onOpen={onOpen}/>}
+    {source?.snapshot===data&&<SourceDialog source={source} onClose={()=>setSource(undefined)} onOpen={onOpen}/>}
   </div>;
 }

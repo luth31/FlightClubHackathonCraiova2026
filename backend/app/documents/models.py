@@ -17,6 +17,7 @@ class Document(Base):
     value: Mapped[float | None] = mapped_column(Float, nullable=True)
     currency: Mapped[str] = mapped_column(String, default='RON')
     owner: Mapped[str] = mapped_column(String)
+    owner_id: Mapped[str | None] = mapped_column(String, nullable=True)
     created_by: Mapped[str] = mapped_column(String, default='seed')
     confidentiality: Mapped[str] = mapped_column(String, default='internal')
     summary: Mapped[str] = mapped_column(Text, default='')

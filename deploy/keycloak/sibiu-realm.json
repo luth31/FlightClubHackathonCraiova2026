@@ -1,0 +1,219 @@
+{
+  "realm": "sibiu",
+  "enabled": true,
+  "displayName": "FlyLeaf · Aeroportul Sibiu",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "rememberMe": false,
+  "sslRequired": "none",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "internationalizationEnabled": true,
+  "supportedLocales": [
+    "ro",
+    "en"
+  ],
+  "defaultLocale": "ro",
+  "clients": [
+    {
+      "clientId": "flyleaf-web",
+      "name": "FlyLeaf",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "${FLYLEAF_PUBLIC_URL}/api/auth/oidc/callback"
+      ],
+      "webOrigins": [
+        "${FLYLEAF_PUBLIC_URL}"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${FLYLEAF_PUBLIC_URL}/"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "email",
+        "basic"
+      ],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "flyleaf-provisioner",
+      "name": "FlyLeaf employee provisioning",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${FLYLEAF_KEYCLOAK_PROVISIONING_SECRET}",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "roles",
+        "basic"
+      ],
+      "optionalClientScopes": []
+    }
+  ],
+  "users": [
+    {
+      "id": "0a2d6e9c-66af-5313-a952-91c8442bf828",
+      "username": "technical-head",
+      "firstName": "Sorin",
+      "lastName": "Pavel",
+      "email": "technical-head@sibiu.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [{"type": "password", "value": "FlyLeaf2026!", "temporary": false}]
+    },
+    {
+      "id": "ae41e412-8c0a-515c-89d3-b6a87c7c0d83",
+      "username": "admin",
+      "firstName": "Ana",
+      "lastName": "Ionescu",
+      "email": "admin@sibiu.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "FlyLeaf2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "f116602c-c29c-5511-a885-b8f20a20dfaa",
+      "username": "manager",
+      "firstName": "Mihai",
+      "lastName": "Dumitrescu",
+      "email": "manager@sibiu.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "FlyLeaf2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "84ace447-6e3f-5b8b-bf26-d38741cc816f",
+      "username": "reviewer",
+      "firstName": "Elena",
+      "lastName": "Popa",
+      "email": "reviewer@sibiu.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "FlyLeaf2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "2d4ed3c9-d08e-55ab-b0fb-e0525978a7e6",
+      "username": "finance",
+      "firstName": "Radu",
+      "lastName": "Marinescu",
+      "email": "finance@sibiu.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "FlyLeaf2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "c8461524-70c7-57e2-b67e-db9fc8b56da3",
+      "username": "hr",
+      "firstName": "Ioana",
+      "lastName": "Stancu",
+      "email": "hr@sibiu.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "FlyLeaf2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "id": "78bf8f1f-a282-5448-9157-d3979caa5015",
+      "username": "technician",
+      "firstName": "Andrei",
+      "lastName": "Neagu",
+      "email": "technician@sibiu.example",
+      "emailVerified": true,
+      "enabled": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "FlyLeaf2026!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "service-account-flyleaf-provisioner",
+      "enabled": true,
+      "serviceAccountClientId": "flyleaf-provisioner",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users"
+        ]
+      }
+    }
+  ],
+  "loginTheme": "flyleaf",
+  "clientScopeMappings": {
+    "realm-management": [
+      {
+        "client": "flyleaf-provisioner",
+        "roles": [
+          "manage-users"
+        ]
+      }
+    ]
+  },
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "name": "declarative-user-profile",
+        "providerId": "declarative-user-profile",
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\": [{\"name\": \"username\", \"validations\": {\"length\": {\"min\": 3, \"max\": 255}, \"username-prohibited-characters\": {}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\"]}, \"multivalued\": false}, {\"name\": \"email\", \"validations\": {\"email\": {}, \"length\": {\"max\": 254}}, \"required\": {\"roles\": [\"user\"]}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"firstName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"lastName\", \"validations\": {\"length\": {\"max\": 150}}, \"permissions\": {\"view\": [\"admin\", \"user\"], \"edit\": [\"admin\", \"user\"]}, \"multivalued\": false}, {\"name\": \"flyleaf_user_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}, {\"name\": \"flyleaf_airport_id\", \"permissions\": {\"view\": [\"admin\"], \"edit\": [\"admin\"]}, \"multivalued\": false}]}"
+          ]
+        }
+      }
+    ]
+  },
+  "editUsernameAllowed": true
+}

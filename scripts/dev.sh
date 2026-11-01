@@ -22,9 +22,9 @@ fi
 if [ ! -d frontend/node_modules ]; then
   npm --prefix frontend ci
 fi
-export AERODESK_DATABASE_URL="sqlite:///$PROJECT_DIR/.runtime/aerodesk.db"
-export AERODESK_STORAGE_DIR="$PROJECT_DIR/.runtime/storage"
-export AERODESK_CORPUS_DIR="$PROJECT_DIR/data"
+export FLYLEAF_DATABASE_URL="sqlite:///$PROJECT_DIR/.runtime/flyleaf.db"
+export FLYLEAF_STORAGE_DIR="$PROJECT_DIR/.runtime/storage"
+export FLYLEAF_CORPUS_DIR="$PROJECT_DIR/data"
 PYTHON_BIN="$PROJECT_DIR/backend/.venv/bin/python"
 (
   cd backend

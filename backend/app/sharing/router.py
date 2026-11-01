@@ -1,18 +1,39 @@
 from fastapi import APIRouter,Depends
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse,Response
 from sqlalchemy import select,desc
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.core.security import current_user,require_role,can_read
+from app.core.security import current_user,require_role,can_read,require_page
 from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.documents.models import Document
 from app.documents.service import get_document
+from app.documents.service import file_hash
 from app.sharing.models import Share,SharePreview
-from app.sharing.schemas import PreviewRequest,ShareRequest
-from app.sharing import service
+from app.sharing.schemas import PreviewRequest,ShareRequest,AnalysisRequest,MatchRequest
+from app.sharing import service,studio
 from app.sharing.suggestions import redaction_suggestions
-router=APIRouter(prefix='/api',tags=['Sharing'])
+def sharing_access(user=Depends(current_user)):
+    require_page(user, 'sharing')
+
+router=APIRouter(prefix='/api',tags=['Sharing'],dependencies=[Depends(sharing_access)])
+
+@router.get('/documents/{document_id}/redaction-layout')
+def redaction_layout(document_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    return studio.layout(db,user,document_id)
+
+@router.get('/documents/{document_id}/redaction-pages/{page_number}')
+def redaction_page(document_id: str,page_number: int,source_version: int,source_sha256: str,db: Session=Depends(get_db),user=Depends(current_user)):
+    return Response(studio.render_page(db,user,document_id,page_number,source_version,source_sha256),media_type='image/png')
+
+@router.post('/documents/{document_id}/redaction-matches')
+def redaction_matches(document_id: str,body: MatchRequest,db: Session=Depends(get_db),user=Depends(current_user)):
+    studio.source(db,user,document_id,body.source_version,body.source_sha256)
+    return {'items':studio.matches(studio.layout(db,user,document_id)['pages'],body.term)}
+
+@router.post('/documents/{document_id}/redaction-analysis')
+def redaction_analysis(document_id: str,body: AnalysisRequest,db: Session=Depends(get_db),user=Depends(current_user)):
+    return studio.analyze(db,user,document_id,body)
 
 @router.get('/documents/{document_id}/redaction-suggestions')
 def suggestions(document_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
@@ -20,14 +41,23 @@ def suggestions(document_id: str,db: Session=Depends(get_db),user=Depends(curren
 
 @router.post('/documents/{document_id}/share-preview')
 def preview(document_id: str,body: PreviewRequest,db: Session=Depends(get_db),user=Depends(current_user)):
-    return service.preview(db,user,document_id,body.redact_terms)
+    return service.preview(db,user,document_id,body.redact_terms,body.word_ids,body.source_version,body.source_sha256)
 
 @router.get('/share-previews/{preview_id}/file')
 def preview_file(preview_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
     item=db.get(SharePreview,preview_id)
     if not item or item.creator_id!=user.id: raise DomainError('Copia nu a fost găsită.',404)
     get_document(db,item.document_id,user)
+    if file_hash(item.file_path)!=item.sha256: raise DomainError('Integritatea copiei nu poate fi confirmată.',409)
     return FileResponse(item.file_path,media_type='application/pdf',headers={'Cache-Control':'no-store'})
+
+@router.get('/share-previews/{preview_id}/pages/{page_number}')
+def preview_page(preview_id: str,page_number: int,db: Session=Depends(get_db),user=Depends(current_user)):
+    item=db.get(SharePreview,preview_id)
+    if not item or item.creator_id!=user.id: raise DomainError('Copia nu a fost găsită.',404)
+    get_document(db,item.document_id,user)
+    if file_hash(item.file_path)!=item.sha256: raise DomainError('Integritatea copiei nu poate fi confirmată.',409)
+    return Response(studio.render_file(item.file_path,page_number),media_type='image/png')
 
 @router.post('/documents/{document_id}/shares',status_code=201)
 def create(document_id: str,body: ShareRequest,db: Session=Depends(get_db),user=Depends(current_user)):

@@ -16,7 +16,8 @@ class Login(BaseModel):
     password: str = Field(min_length=1,max_length=200)
 
 def session_payload(db, user):
-    users = db.scalars(select(User).where(User.airport_id == settings.airport_id, User.active == True)).all()
+    # OIDC has no account switcher: only return the signed-in user's capabilities.
+    users = db.scalars(select(User).where(User.airport_id == settings.airport_id, User.active == True)).all() if settings.auth_mode == 'demo' else ([user] if user else [])
     login_url = '/api/auth/oidc/login' if settings.auth_mode == 'oidc' else None
     return {'current_user':user_dict(user) if user else None,
         'users':[user_dict(u) for u in users] if user or settings.auth_mode == 'demo' else [],
@@ -43,11 +44,11 @@ def login(body: Login, response: Response, request: Request, db: DbSession = Dep
 
 @router.post('/auth/logout')
 def logout(request: Request, response: Response, db: DbSession = Depends(get_db)):
-    aerodesk_session=request.cookies.get(f'aerodesk_session_{settings.airport_id}')
-    if aerodesk_session:
-        session = db.get(Session,token_hash(aerodesk_session))
+    flyleaf_session=request.cookies.get(f'flyleaf_session_{settings.airport_id}')
+    if flyleaf_session:
+        session = db.get(Session,token_hash(flyleaf_session))
         if session: db.delete(session)
         db.commit()
-    response.delete_cookie(f'aerodesk_session_{settings.airport_id}',path='/api')
-    response.delete_cookie(f'aerodesk_oidc_{settings.airport_id}',path='/api/auth/oidc')
+    response.delete_cookie(f'flyleaf_session_{settings.airport_id}',path='/api')
+    response.delete_cookie(f'flyleaf_oidc_{settings.airport_id}',path='/api/auth/oidc')
     return {'ok':True,'redirect_url':provider_logout_url() if settings.auth_mode == 'oidc' else None}

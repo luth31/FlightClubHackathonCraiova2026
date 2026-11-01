@@ -32,6 +32,10 @@ def candidates(db,document,kind):
 
 def default_assignee(db,document,kind,preferred=None):
     people=candidates(db,document,kind)
+    if kind=='approval':
+        from app.people.models import Department
+        dept=db.scalar(select(Department).where(Department.airport_id==document.airport_id,Department.name==document.department))
+        if dept and any(u.id==dept.head_user_id for u in people): return dept.head_user_id
     if kind=='validation':
         creator=preferred or document.created_by
         if any(u.id==creator for u in people): return creator
@@ -71,25 +75,26 @@ def on_new_version(db,document,user):
 
 
 def active_delegates(db,task,document):
-    if task.type!='approval' or not task.assigned_to: return []
+    if task.type!='approval' or not task.assigned_to or task.reassignment_required: return []
     principal=db.get(User,task.assigned_to)
-    if not principal or not principal.active or principal.airport_id!=document.airport_id: return []
+    if not principal or not eligible(db,principal,document,'approval'): return []
     today=settings.reference_date.isoformat()
     grants=db.scalars(select(Delegation).where(Delegation.from_user==principal.id,Delegation.active==True,Delegation.starts_at<=today,Delegation.ends_at>=today)).all()
     return [u for grant in grants if (u:=db.get(User,grant.to_user)) and eligible(db,u,document,'approval')]
 
 
 def can_act(db,user,task,document):
-    if not task or task.status!='pending' or task.document_version!=document.version or not eligible(db,user,document,task.type): return False
+    if not task or task.reassignment_required or task.status!='pending' or task.document_version!=document.version or not eligible(db,user,document,task.type): return False
     principal=db.get(User,task.assigned_to) if task.assigned_to else None
-    if not principal or not principal.active: return False
+    if not principal or not eligible(db,principal,document,task.type): return False
     if task.assigned_to==user.id: return True
     return any(delegate.id==user.id for delegate in active_delegates(db,task,document))
 
 
 def can_reassign(db,user,task,document):
     if task.status!='pending' or task.document_version!=document.version or not can_read(user,document): return False
-    return has_role(user,'admin','director') or (has_role(user,'reviewer','hr') and user.department==document.department and can_review_department(db,user,document.department))
+    from app.people.management import is_head
+    return has_role(user,'admin','director') or is_head(db,user,document.department) or (has_role(user,'reviewer','hr','department_head') and user.department==document.department and can_review_department(db,user,document.department))
 
 
 def require_task(db,user,document,kind):
@@ -108,7 +113,7 @@ def serialize(db,task,user,document=None):
     document=document or db.get(Document,task.document_id)
     principal=db.get(User,task.assigned_to) if task.assigned_to else None
     delegates=active_delegates(db,task,document)
-    valid=principal and eligible(db,principal,document,task.type)
+    valid=principal and not task.reassignment_required and eligible(db,principal,document,task.type)
     effective=delegates[0] if delegates else principal if valid else None
     assignment_state='delegated' if delegates else 'assigned' if valid else 'needs_reassignment'
     events=db.scalars(select(TaskEvent).where(TaskEvent.task_id==task.id).order_by(desc(TaskEvent.id))).all()
@@ -123,7 +128,9 @@ def list_tasks(db,user,status='pending',mine=False):
     for task in db.scalars(query).all():
         doc=db.get(Document,task.document_id)
         if not doc or not can_read(user,doc): continue
-        if mine and not can_act(db,user,task,doc): continue
+        from app.people.management import is_head
+        personal = has_role(user, 'technician', 'employee') and not is_head(db,user) and not has_role(user,'director','reviewer','finance','hr')
+        if (mine or personal) and not can_act(db,user,task,doc): continue
         result.append(serialize(db,task,user,doc))
     return {'items':result,'total':len(result),'reference_date':str(settings.reference_date)}
 
@@ -144,6 +151,7 @@ def assign(db,user,task_id,body):
     if not eligible(db,target,document,task.type): raise DomainError('Persoana aleasă nu este activă sau nu are autoritatea necesară în acest departament.',422)
     previous=db.get(User,task.assigned_to) if task.assigned_to else None
     task.assigned_to=target.id
+    task.reassignment_required=False
     if body.due_date: task.due_date=body.due_date.isoformat()
     detail=f'{previous.name if previous else "Neatribuit"} → {target.name}. {body.comment}'
     task_event(db,task,user,'Sarcină reatribuită',detail)
@@ -167,6 +175,7 @@ def add_comment(db,user,task_id,body):
     db.commit();return serialize(db,task,user,document)
 
 
-def flag_offboarding(db,target,user):
+def flag_offboarding(db,target,user,label='Responsabil dezactivat'):
     for task in db.scalars(select(WorkflowTask).where(WorkflowTask.assigned_to==target.id,WorkflowTask.status=='pending')).all():
-        task_event(db,task,user,'Responsabil dezactivat','Sarcina rămâne deschisă și necesită reatribuire explicită către o persoană activă și eligibilă.')
+        task.reassignment_required=True
+        task_event(db,task,user,label,'Sarcina rămâne deschisă și necesită reatribuire explicită către o persoană activă și eligibilă.')

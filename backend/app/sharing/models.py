@@ -21,7 +21,7 @@ class Share(Base):
     source_version: Mapped[int] = mapped_column(Integer)
     preview_id: Mapped[str] = mapped_column(String)
     recipient_airport: Mapped[str] = mapped_column(String)
-    recipient_airport_id: Mapped[str] = mapped_column(String, default='carpati')
+    recipient_airport_id: Mapped[str] = mapped_column(String, default='sibiu')
     recipient_department: Mapped[str | None] = mapped_column(String, nullable=True)
     created_by: Mapped[str] = mapped_column(String)
     created_at: Mapped[str] = mapped_column(String)

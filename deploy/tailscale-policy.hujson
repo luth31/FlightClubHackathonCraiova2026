@@ -1,0 +1,32 @@
+// Review copy based on the policy supplied by the user.
+// Existing grants, SSH and tag owners are preserved. Only Service grant and
+// autoApprovers are added. Apply tag:flyleaf-host to a DEDICATED instance,
+// not the personal Mac client, to preserve its existing user identity.
+{
+  "grants": [
+    {"src": ["autogroup:member"], "dst": ["*"], "ip": ["*"]},
+    {
+      "src": ["autogroup:member"],
+      "dst": ["svc:aeroport-craiova", "svc:aeroport-sibiu"],
+      "ip": ["tcp:443"],
+    },
+  ],
+  "ssh": [
+    {
+      "action": "check",
+      "src": ["autogroup:member"],
+      "dst": ["autogroup:self"],
+      "users": ["autogroup:nonroot", "root"],
+    },
+  ],
+  "tagOwners": {
+    "tag:homepc": ["luth31@github"],
+    "tag:flyleaf-host": ["autogroup:admin"],
+  },
+  "autoApprovers": {
+    "services": {
+      "svc:aeroport-craiova": ["tag:flyleaf-host"],
+      "svc:aeroport-sibiu": ["tag:flyleaf-host"],
+    },
+  },
+}

@@ -7,6 +7,8 @@ from app.core import models as core_models
 from app.suppliers import models as supplier_models
 from app.tasks import models as task_models
 from app.identity import models as identity_models
+from app.extraction import models as extraction_models
+from app.operations import models as operations_models
 config=context.config
 target_metadata=Base.metadata
 

@@ -1,0 +1,107 @@
+{
+  "platform": "macOS-26.2-arm64-arm-64bit",
+  "processor": "Apple M3 Pro",
+  "corpus_documents": 148,
+  "fixtures": {
+    "native": {
+      "elapsed_ms": 19.36,
+      "methods": [
+        "native"
+      ],
+      "exact_word_recall": 1.0,
+      "accent_folded_word_recall": 1.0
+    },
+    "scan": {
+      "elapsed_ms": 206.12,
+      "methods": [
+        "ocr"
+      ],
+      "exact_word_recall": 0.8936,
+      "accent_folded_word_recall": 1.0
+    },
+    "low-resolution": {
+      "elapsed_ms": 186.73,
+      "methods": [
+        "ocr"
+      ],
+      "exact_word_recall": 0.8936,
+      "accent_folded_word_recall": 0.9787
+    },
+    "mixed-page": {
+      "elapsed_ms": 194.22,
+      "methods": [
+        "ocr"
+      ],
+      "exact_word_recall": 0.8936,
+      "accent_folded_word_recall": 1.0
+    },
+    "hybrid": {
+      "elapsed_ms": 193.89,
+      "methods": [
+        "native",
+        "ocr"
+      ],
+      "exact_word_recall": 0.8936,
+      "accent_folded_word_recall": 1.0
+    }
+  },
+  "engines": {
+    "integrated": [
+      {
+        "total_seconds": 2.328,
+        "median_document_ms": 14.78
+      },
+      {
+        "total_seconds": 2.434,
+        "median_document_ms": 15.268
+      },
+      {
+        "total_seconds": 2.686,
+        "median_document_ms": 16.194
+      }
+    ],
+    "pymupdf": [
+      {
+        "total_seconds": 1.251,
+        "median_document_ms": 7.822
+      },
+      {
+        "total_seconds": 1.253,
+        "median_document_ms": 7.723
+      },
+      {
+        "total_seconds": 1.218,
+        "median_document_ms": 7.661
+      }
+    ],
+    "pdf-inspector": [
+      {
+        "total_seconds": 0.419,
+        "median_document_ms": 2.703
+      },
+      {
+        "total_seconds": 0.411,
+        "median_document_ms": 2.59
+      },
+      {
+        "total_seconds": 0.417,
+        "median_document_ms": 2.663
+      }
+    ],
+    "kreuzberg": [
+      {
+        "total_seconds": 0.47,
+        "median_document_ms": 2.271
+      },
+      {
+        "total_seconds": 0.342,
+        "median_document_ms": 2.202
+      },
+      {
+        "total_seconds": 0.341,
+        "median_document_ms": 2.207
+      }
+    ]
+  },
+  "corpus_pages": 316
+}

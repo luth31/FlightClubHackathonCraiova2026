@@ -1,7 +1,11 @@
-let identity = localStorage.getItem("aerodesk-user") || "admin";
+let identity = localStorage.getItem("flyleaf-user") || "admin";
 export function setIdentity(id: string) {
   identity = id;
-  localStorage.setItem("aerodesk-user", id);
+  localStorage.setItem("flyleaf-user", id);
+}
+export function clearIdentity() {
+  identity = "";
+  localStorage.removeItem("flyleaf-user");
 }
 export function getIdentity() {
   return identity;

@@ -12,11 +12,10 @@ import math
 import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode, urlsplit
-from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 import jwt
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from app.config import settings
 from app.core.security import token_hash
@@ -24,7 +23,27 @@ from app.identity.models import LoginTransaction
 from app.people.models import User
 
 
-DEMO_USER_IDS = ('admin', 'manager', 'reviewer', 'finance', 'hr', 'technician')
+# Fixture subjects stay fixed across product renames and match the realm imports.
+DEMO_SUBJECTS = {
+    "craiova": {
+        "af4c2bc9-6243-53f5-8051-574255e83321": "admin",
+        "cfb97976-e57b-585e-aeba-f8f62eea15d9": "manager",
+        "214b2438-a8ab-57d3-8557-354f2c26d698": "reviewer",
+        "c88526c8-e1d2-53bc-a857-a12237d1aae1": "finance",
+        "b7b6d88d-a20c-5dbd-83ff-0636b59c4ad8": "hr",
+        "c3906149-d2d1-5e03-8a52-b8b04a11867f": "technician",
+        "78f3f62f-9942-57a0-b610-8bc449514179": "technical-head"
+    },
+    "sibiu": {
+        "ae41e412-8c0a-515c-89d3-b6a87c7c0d83": "admin",
+        "f116602c-c29c-5511-a885-b8f20a20dfaa": "manager",
+        "84ace447-6e3f-5b8b-bf26-d38741cc816f": "reviewer",
+        "2d4ed3c9-d08e-55ab-b0fb-e0525978a7e6": "finance",
+        "c8461524-70c7-57e2-b67e-db9fc8b56da3": "hr",
+        "78bf8f1f-a282-5448-9157-d3979caa5015": "technician",
+        "0a2d6e9c-66af-5313-a952-91c8442bf828": "technical-head"
+    }
+}
 FLOW_SECONDS = 300
 logger = logging.getLogger(__name__)
 
@@ -42,8 +61,7 @@ def now():
 def subject_map():
     if settings.oidc_subject_map is not None:
         return settings.oidc_subject_map
-    return {str(uuid5(NAMESPACE_URL, f'aerodesk:{settings.airport_id}:{user_id}')):user_id
-        for user_id in DEMO_USER_IDS}
+    return dict(DEMO_SUBJECTS.get(settings.airport_id, {}))
 
 
 def provider_logout_url():
@@ -120,7 +138,7 @@ def discovery():
     return metadata
 
 
-def start_login(db):
+def start_login(db, login_hint=None):
     metadata = discovery()
     state, browser, nonce, verifier = (secrets.token_urlsafe(48) for _ in range(4))
     created = now()
@@ -131,10 +149,12 @@ def start_login(db):
         expires_at=(created + timedelta(seconds=FLOW_SECONDS)).isoformat()))
     db.commit()
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest()).rstrip(b'=').decode()
-    query = urlencode({'client_id':settings.oidc_client_id, 'response_type':'code',
+    parameters = {'client_id':settings.oidc_client_id, 'response_type':'code',
         'redirect_uri':settings.oidc_redirect_uri, 'scope':'openid profile', 'state':state,
         'nonce':nonce, 'code_challenge':challenge, 'code_challenge_method':'S256',
-        'prompt':'login', 'max_age':'0', 'ui_locales':'ro'})
+        'prompt':'login', 'max_age':'0', 'ui_locales':'ro'}
+    if login_hint: parameters['login_hint'] = login_hint
+    query = urlencode(parameters)
     return metadata['authorization_endpoint'] + '?' + query, browser
 
 
@@ -210,8 +230,13 @@ def complete_login(db, transaction, code):
         'redirect_uri':transaction.redirect_uri, 'code_verifier':transaction.verifier})
     jwks = provider_json('GET', transport_url(metadata['jwks_uri']))
     claims = validate_id_token(tokens.get('id_token'), jwks, transaction)
-    user_id = subject_map().get(claims['sub'])
-    user = db.get(User, user_id) if user_id else None
+    user = db.scalar(select(User).where(User.identity_issuer == settings.oidc_issuer,
+        User.identity_subject == claims['sub']))
+    if user is None:
+        user_id = subject_map().get(claims['sub'])
+        user = db.get(User, user_id) if user_id else None
+        if user and user.identity_subject and (user.identity_issuer != settings.oidc_issuer or user.identity_subject != claims['sub']):
+            user = None
     if not user or not user.active or user.airport_id != settings.airport_id:
         raise IdentityError('account_unavailable')
     return user

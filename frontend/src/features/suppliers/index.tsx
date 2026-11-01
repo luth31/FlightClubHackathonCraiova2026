@@ -17,65 +17,18 @@ import {
   LoaderCircle,
   X,
 } from "lucide-react";
-import { api } from "@/services/api-client";
-import { Empty, ErrorMessage, Loading, Modal } from "@/components/ui";
-import { date, money, time } from "@/utils/format";
+import { api, download } from "@/services/api-client";
+import { Empty, ErrorMessage, Modal } from "@/components/ui";
+import { date, time } from "@/utils/format";
 import type { User } from "@/types";
 import "./suppliers.css";
-interface Supplier {
-  id: string;
-  name: string;
-  document_id: string;
-  expected_iban: string;
-  verified_contact: string;
-  trust_status: string;
-  bank_history: Array<{
-    iban: string;
-    version: number;
-    created_at: string;
-    verified_by?: string;
-    approved_by?: string;
-  }>;
-}
-interface Review {
-  id: string;
-  document_id?: string;
-  source_version?: number;
-  supplier_name: string;
-  expected_iban: string;
-  observed_iban: string;
-  sender_email: string;
-  verified_contact: string;
-  invoice_amount?: number;
-  message: string;
-  reasons: Array<{ code: string; message: string }>;
-  status: string;
-  created_by: string;
-  created_at: string;
-  verified_by?: string;
-  verified_at?: string;
-  approved_by?: string;
-  approved_at?: string;
-  verification_note?: string;
-  decision_note?: string;
-  risk_level: string;
-  iban_valid: boolean;
-  can_verify: boolean;
-  can_approve: boolean;
-  duplicate?: boolean;
-}
-interface Registry {
-  items: Review[];
-  total: number;
-  suppliers: Supplier[];
-  counters: {
-    needs_review: number;
-    verified: number;
-    approved: number;
-    clear: number;
-  };
-  notice: string;
-}
+import type { Supplier, Review, Registry, Registration } from './types';
+import { ReviewChecks } from './ReviewChecks';
+import { SupplierDetail } from './SupplierDetail';
+import { RegistrationDialog } from './RegistrationDialog';
+import { RegistrationDetail } from './RegistrationDetail';
+import { AssignmentForm } from './AssignmentForm';
+import { SupplierContent } from './SupplierContent';
 const labels: Record<string, string> = {
   needs_review: "Necesită verificare",
   verified: "Verificat independent",
@@ -108,15 +61,26 @@ export function SuppliersPage({
   user: User;
 }) {
   const [data, setData] = useState<Registry>(),
+    [catalog,setCatalog]=useState<Supplier[]>(),[catalogError,setCatalogError]=useState(''),
+    [registrations,setRegistrations]=useState<Registration[]>([]),[registrationOpen,setRegistrationOpen]=useState(false),[registrationId,setRegistrationId]=useState<string>(),
     [error, setError] = useState(""),
     [tab, setTab] = useState("reviews"),
     [query, setQuery] = useState(""),
     [create, setCreate] = useState(false),
     [selected, setSelected] = useState<Review>(),
-    [refresh, setRefresh] = useState(0);
+    [refresh, setRefresh] = useState(0),
+    [registryId,setRegistryId]=useState<string>(),
+    [recheck,setRecheck]=useState<Review>(),
+    [status,setStatus]=useState(''),[risk,setRisk]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),
+    [offset,setOffset]=useState(0),[search,setSearch]=useState(''),[mine,setMine]=useState(false);
+  useEffect(()=>{const timer=window.setTimeout(()=>setSearch(query),250);return()=>window.clearTimeout(timer)},[query]);
+  const params=new URLSearchParams({q:search,limit:'25',offset:String(offset)});
+  if(status)params.set('status',status);if(risk)params.set('risk_level',risk);if(from)params.set('created_from',from);if(to)params.set('created_to',to);
+  if(mine)params.set('mine','true');
+  const request=params.toString();
   useEffect(() => {
     let active = true;
-    api<Registry>("/supplier-reviews")
+    api<Registry>(`/supplier-reviews?${request}`)
       .then((v) => {
         if (active) {
           setData(v);
@@ -129,73 +93,78 @@ export function SuppliersPage({
     return () => {
       active = false;
     };
+  }, [revision, refresh, request]);
+  useEffect(() => {
+    let active = true;
+    api<{items: Supplier[]}>('/suppliers')
+      .then(v => {
+        if (active) {
+          setCatalog(v.items);
+          setCatalogError('');
+        }
+      })
+      .catch(e => { if (active) setCatalogError(e.message); });
+    return () => { active = false; };
   }, [revision, refresh]);
+  useEffect(()=>{let active=true;api<{items:Registration[]}>('/supplier-registrations').then(v=>{if(active)setRegistrations(v.items)}).catch(e=>{if(active)setError(e.message)});return()=>{active=false}},[revision,refresh]);
   const changed = (item: Review, message: string) => {
     setSelected(item);
     setCreate(false);
     setRefresh((n) => n + 1);
     notify(message);
   };
-  const cases = data?.items.filter((c) =>
-    `${c.supplier_name} ${c.sender_email}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
-  const suppliers = data?.suppliers.filter((s) =>
+  const cases = data?.items;
+  const suppliers = catalog?.filter((s) =>
     `${s.name} ${s.verified_contact}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
+  const matchingRegistrations=registrations.filter(item=>`${item.payload.name} ${item.payload.tax_id}`.toLocaleLowerCase('ro').includes(query.toLocaleLowerCase('ro')));
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading supplier-page-heading">
         <div>
-          <div className="eyebrow">DETALII CONFIRMATE. DECIZII SEPARATE.</div>
+
           <h1>Furnizori</h1>
-          <p>Verifică solicitările primite înainte să modifici registrul.</p>
+
         </div>
-        <button
-          className="button primary"
-          disabled={!data}
-          onClick={() => setCreate(true)}
-        >
-          <Plus size={17} />
-          Verifică o solicitare
-        </button>
-      </div>
-      <div className="supplier-intro">
-        <ShieldCheck size={24} />
-        <div>
-          <strong>Un cont nou merită o a doua verificare.</strong>
-          <p>
-            Compară detaliile cu registrul, confirmă prin contactul cunoscut și
-            cere decizia unui alt coleg.
-          </p>
+        <div className="heading-actions supplier-heading-actions">
+          <button className="button secondary" onClick={()=>setRegistrationOpen(true)}>
+            <Building2 size={17} />
+            Înregistrează furnizor
+          </button>
+          <button
+            className="button primary"
+            disabled={!data}
+            onClick={() => {setRecheck(undefined);setCreate(true)}}
+          >
+            <Plus size={17} />
+            Verifică o solicitare
+          </button>
         </div>
-        <span>Fără acces la e-mail sau plăți</span>
       </div>
-      {error ? (
-        <ErrorMessage message={error} retry={() => setRefresh((n) => n + 1)} />
-      ) : !data ? (
-        <Loading />
-      ) : (
+      <ol className="supplier-process" aria-label="Pașii verificării">
+        <li><span>1</span>Compară datele</li><li><span>2</span>Confirmă independent</li><li><span>3</span>Aprobă cu un coleg</li>
+      </ol>
+      <SupplierContent error={error} loading={!data} retry={() => setRefresh((n) => n + 1)}>
+      {data && (
         <>
           <div className="supplier-summary">
-            <div>
+            <button onClick={()=>{setTab("reviews");setStatus("needs_review");setOffset(0)}}>
               <ShieldAlert size={19} />
               <strong>{data.counters.needs_review}</strong>
               <span>de verificat</span>
-            </div>
-            <div>
+            </button>
+            <button onClick={()=>{setTab("reviews");setStatus("verified");setOffset(0)}}>
               <UserRound size={19} />
               <strong>{data.counters.verified}</strong>
-              <span>așteaptă a doua persoană</span>
-            </div>
-            <div>
+              <span>de aprobat</span>
+            </button>
+            <button onClick={()=>setTab("registry")}>
               <Building2 size={19} />
-              <strong>{data.suppliers.length}</strong>
+              <strong>{catalog?.length ?? '—'}</strong>
               <span>furnizori în registru</span>
-            </div>
+            </button>
           </div>
           <div className="panel">
             <div className="library-tabs">
@@ -209,8 +178,9 @@ export function SuppliersPage({
                 className={tab === "registry" ? "active" : ""}
                 onClick={() => setTab("registry")}
               >
-                Registru furnizori<span>{data.suppliers.length}</span>
+                Registru furnizori<span>{catalog?.length ?? '—'}</span>
               </button>
+              <button className={tab === "registrations" ? "active" : ""} onClick={()=>setTab("registrations")}>Înregistrări inițiale<span>{registrations.length}</span></button>
             </div>
             <div className="filters">
               <label className="search-input">
@@ -219,15 +189,28 @@ export function SuppliersPage({
                   aria-label="Caută un furnizor"
                   placeholder="Caută furnizorul sau contactul…"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => {setQuery(e.target.value);setOffset(0)}}
                 />
               </label>
               <span className="result-count">
-                {tab === "reviews" ? cases?.length : suppliers?.length}{" "}
+                {tab === "reviews" ? cases?.length : tab === "registrations" ? matchingRegistrations.length : suppliers?.length ?? '—'}{" "}
                 rezultate
               </span>
             </div>
-            {tab === "reviews" ? (
+            {tab==='reviews'&&<div className="supplier-query-controls">
+              <button type="button" className="supplier-mine-toggle" role="switch" aria-checked={mine}
+                onClick={() => {setMine(!mine);setOffset(0)}}>
+                <span className="supplier-toggle-track" aria-hidden="true"><span /></span>
+                <span>Ale mele</span>
+              </button>
+              <label>Stare<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="">Toate</option>{Object.entries(labels).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
+              <details className="supplier-extra-filters"><summary>Alte filtre{(risk||from||to)&&<span>{[risk,from,to].filter(Boolean).length}</span>}</summary><div>
+                <label>Risc orientativ<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">Toate</option><option value="high">Ridicat</option><option value="medium">Mediu</option><option value="low">Scăzut</option></select></label>
+                <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
+              </div></details>
+              <button className="button secondary" onClick={()=>download(`/supplier-reviews/export.csv?${request}`,'verificari-furnizori.csv').catch(e=>notify(e.message))}>Export CSV</button>
+            </div>}
+            {tab==='registrations' ? <div className="supplier-reviews-list">{matchingRegistrations.length?matchingRegistrations.map(r=><button className="supplier-review-row" key={r.id} onClick={()=>setRegistrationId(r.id)}><span className="review-row-copy"><strong>{r.payload.name} · CUI {r.payload.tax_id}</strong><small>{date(r.created_at)}</small></span><ReviewStatus status={r.status}/></button>):<Empty title="Niciun dosar de înregistrare"/>}</div> : tab === "reviews" ? (
               cases?.length ? (
                 <div className="supplier-reviews-list">
                   {cases.map((c) => (
@@ -263,19 +246,19 @@ export function SuppliersPage({
                 </div>
               ) : (
                 <Empty
-                  title="Încă nu sunt solicitări de verificat"
-                  message="Pornește cu un exemplu demonstrativ sau introdu detaliile unei solicitări."
+                  title="Nicio solicitare găsită"
+                  message="Schimbă filtrele sau începe o verificare."
                 >
                   <button
                     className="button secondary"
-                    onClick={() => setCreate(true)}
+                    onClick={() => {setRecheck(undefined);setCreate(true)}}
                   >
-                    Prima verificare
+                    Verifică o solicitare
                     <ArrowRight size={16} />
                   </button>
                 </Empty>
               )
-            ) : suppliers?.length ? (
+            ) : <SupplierContent error={catalogError} loading={!catalog} retry={()=>setRefresh(n=>n+1)}>{suppliers?.length ? (
               <div className="supplier-registry">
                 {suppliers.map((s) => (
                   <article className="supplier-registry-card" key={s.id}>
@@ -287,8 +270,8 @@ export function SuppliersPage({
                         <h3>{s.name}</h3>
                         <small>
                           {s.trust_status === "demo_verified"
-                            ? "Date fictive, verificate în scenariu"
-                            : "Modificare aprobată de două persoane"}
+                            ? "Date de referință"
+                            : "Verificat și aprobat"}
                         </small>
                       </div>
                     </div>
@@ -317,7 +300,7 @@ export function SuppliersPage({
                         <ArrowUpRight size={14} />
                       </button>
                       <span>
-                        {s.bank_history.length}{" "}
+                        <button className="text-button" onClick={()=>setRegistryId(s.id)}>Istoric complet</button> {s.bank_history.length}{" "}
                         {s.bank_history.length === 1 ? "versiune" : "versiuni"}{" "}
                         de cont păstrate
                       </span>
@@ -327,18 +310,23 @@ export function SuppliersPage({
               </div>
             ) : (
               <Empty title="Niciun furnizor găsit" />
-            )}
+            )}</SupplierContent>}
           </div>
+          {tab==='reviews'&&(data.total>25||offset>0)&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
           <p className="supplier-disclaimer">
-            Verificări pe date demonstrative. Un rezultat fără diferențe nu
-            confirmă legitimitatea mesajului sau proprietarul contului. AeroDesk
+            Un rezultat fără diferențe nu
+            confirmă legitimitatea mesajului sau proprietarul contului. FlyLeaf
             nu execută și nu blochează plăți externe.
           </p>
         </>
       )}
+      </SupplierContent>
+      {registrationOpen&&<RegistrationDialog onClose={()=>setRegistrationOpen(false)} onCreated={r=>{setRegistrationOpen(false);setRegistrationId(r.id);setRefresh(v=>v+1);notify("Dosarul de furnizor a fost înregistrat.")}}/>}
+      {registrationId&&<RegistrationDetail id={registrationId} onClose={()=>setRegistrationId(undefined)} onChanged={()=>{setRefresh(v=>v+1);notify("Decizia a fost înregistrată.")}} onOpen={id=>{setRegistrationId(undefined);onOpen(id)}}/>}
       {create && data && (
         <NewReview
           suppliers={data.suppliers}
+          initialReview={recheck}
           onClose={() => setCreate(false)}
           onOpen={onOpen}
           onCreated={(c) =>
@@ -351,6 +339,7 @@ export function SuppliersPage({
           }
         />
       )}
+      {registryId&&<SupplierDetail supplierId={registryId} onClose={()=>{setRegistryId(undefined);setRefresh(v=>v+1)}} onOpen={id=>{setRegistryId(undefined);onOpen(id)}} onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(v=>{setRegistryId(undefined);setSelected(v)}).catch(e=>notify(e.message))}} onRegistration={id=>{setRegistryId(undefined);setRegistrationId(id)}}/>}
       {selected && (
         <ReviewDetail
           review={selected}
@@ -358,6 +347,8 @@ export function SuppliersPage({
           onClose={() => setSelected(undefined)}
           onOpen={onOpen}
           onChanged={changed}
+          onRecheck={()=>{setRecheck(selected);setSelected(undefined);setCreate(true)}}
+          onReview={id=>{api<Review>(`/supplier-reviews/${id}`).then(setSelected).catch(e=>notify(e.message))}}
         />
       )}
     </>
@@ -368,18 +359,22 @@ function NewReview({
   onClose,
   onOpen,
   onCreated,
+  initialReview,
 }: {
   suppliers: Supplier[];
+  initialReview?: Review;
   onClose: () => void;
   onOpen: (id: string) => void;
   onCreated: (r: Review) => void;
 }) {
-  const [supplierId, setSupplierId] = useState(suppliers[0]?.id || ""),
-    [sender, setSender] = useState(""),
-    [iban, setIban] = useState(""),
-    [amount, setAmount] = useState(""),
-    [serviceDate, setServiceDate] = useState(""),
-    [message, setMessage] = useState(""),
+  const [supplierId, setSupplierId] = useState(suppliers.find(s=>s.id===initialReview?.supplier_id)?.id||suppliers[0]?.id||""),
+    [contractId,setContractId]=useState(initialReview?.document_id||suppliers[0]?.document_id||""),
+    [currency,setCurrency]=useState(initialReview?.invoice_currency||"RON"),
+    [sender, setSender] = useState(initialReview?.sender_email||""),
+    [iban, setIban] = useState(initialReview?.observed_iban||""),
+    [amount, setAmount] = useState(initialReview?.invoice_amount!=null?String(initialReview.invoice_amount):""),
+    [serviceDate, setServiceDate] = useState(initialReview?.service_date||""),
+    [message, setMessage] = useState(initialReview?.message||""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const supplier = suppliers.find((s) => s.id === supplierId);
@@ -410,7 +405,7 @@ function NewReview({
   }
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!supplier) return;
+    if (!supplier || !contractId) return;
     setBusy(true);
     setError("");
     try {
@@ -418,7 +413,10 @@ function NewReview({
         await api<Review>("/supplier-reviews", {
           method: "POST",
           body: JSON.stringify({
-            document_id: supplier.document_id,
+            document_id: contractId,
+            supplier_id: supplier.id,
+            invoice_currency: currency,
+            previous_review_id: initialReview?.id,
             observed_iban: iban,
             sender_email: sender,
             invoice_amount: amount ? Number(amount) : null,
@@ -448,15 +446,16 @@ function NewReview({
             Furnizor
             <select
               value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
+              onChange={(e) => {setSupplierId(e.target.value);setContractId(suppliers.find(s=>s.id===e.target.value)?.document_id||"")}}
             >
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name}
+                  {s.name} · {s.tax_id||"CUI neînregistrat"}
                 </option>
               ))}
             </select>
           </label>
+          <label className="field">Contract<select required value={contractId} onChange={e=>setContractId(e.target.value)}>{supplier?.contracts.map(c=><option key={c.id} value={c.id} disabled={!c.eligible_for_review}>{c.title}{!c.eligible_for_review?" · Indisponibil":""}</option>)}</select></label>
           {supplier ? (
             <>
               <div className="baseline-label">
@@ -474,7 +473,7 @@ function NewReview({
                 className="text-button"
                 onClick={() => {
                   onClose();
-                  onOpen(supplier.document_id);
+                  onOpen(contractId);
                 }}
               >
                 <FileText size={14} />
@@ -485,7 +484,7 @@ function NewReview({
                 <ShieldCheck size={18} />
                 <p>
                   {supplier.trust_status === "demo_verified"
-                    ? "Registru fictiv verificat pentru demonstrație."
+                    ? "Date de referință din registrul furnizorilor."
                     : "Date aprobate prin verificare independentă și decizia unui alt coleg."}{" "}
                   Un IBAN valid nu dovedește cine deține contul.
                 </p>
@@ -503,7 +502,7 @@ function NewReview({
             Completează un exemplu
             <select defaultValue="" onChange={(e) => example(e.target.value)}>
               <option value="" disabled>
-                Alege un scenariu demonstrativ
+                Alege un exemplu
               </option>
               <option value="matched">Aceleași date ca în registru</option>
               <option value="changed">Contact cunoscut, IBAN diferit</option>
@@ -528,13 +527,13 @@ function NewReview({
               required
               value={iban}
               onChange={(e) => setIban(e.target.value)}
-              placeholder="RO00 DEMO 0000 0000 0000 0000"
+              placeholder="Introdu IBAN-ul comunicat"
               autoComplete="off"
             />
           </label>
           <div className="form-grid">
             <label className="field">
-              Valoare factură · RON <small>Opțional</small>
+              Valoare factură <small>Opțional</small>
               <input
                 type="number"
                 min="0"
@@ -544,6 +543,7 @@ function NewReview({
                 placeholder="0,00"
               />
             </label>
+            <label className="field">Monedă<input value={currency} maxLength={3} minLength={3} pattern="[A-Za-z]{3}" onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label>
             <label className="field">
               Data prestației <small>Opțional</small>
               <input
@@ -587,19 +587,30 @@ function NewReview({
     </Modal>
   );
 }
-function ReviewDetail({
-  review: r,
+export function ReviewDetail({
+  review,
   user,
   onClose,
   onOpen,
   onChanged,
+  onRecheck,
+  onReview,
 }: {
   review: Review;
   user: User;
   onClose: () => void;
   onOpen: (id: string) => void;
   onChanged: (r: Review, message: string) => void;
+  onRecheck:()=>void;
+  onReview:(id:string)=>void;
 }) {
+  const [loaded,setLoaded]=useState<Review>(),[loadError,setLoadError]=useState('');
+  const r=loaded?.id===review.id && loaded.status===review.status && loaded.assignment_revision===review.assignment_revision ? loaded : review;
+  useEffect(()=>{
+    let active=true;
+    api<Review>(`/supplier-reviews/${review.id}`).then(v=>{if(active){setLoaded(v);setLoadError('')}}).catch(e=>{if(active)setLoadError(e.message)});
+    return()=>{active=false};
+  },[review.id,review.status,review.assignment_revision]);
   const [mode, setMode] = useState<"verify" | "approve" | "reject">(),
     [note, setNote] = useState(""),
     [contact, setContact] = useState(r.verified_contact),
@@ -646,6 +657,12 @@ function ReviewDetail({
       onClose={onClose}
     >
       <div className="review-detail">
+        {loadError&&<ErrorMessage message={loadError}/>}
+        {(r.previous_review_id||r.rechecks?.length)&&<section className="review-control" aria-label="Istoric reevaluări">
+          <h3>Istoric reevaluări</h3>
+          {r.previous_review_id&&<button className="text-button" onClick={()=>onReview(r.previous_review_id!)}>Verificarea precedentă · {r.previous_review_id}</button>}
+          {r.rechecks?.map(c=><p key={c.id}><button className="text-button" onClick={()=>onReview(c.id)}>Reevaluare · {c.id} · {labels[c.status]||c.status} · {date(c.created_at)}</button></p>)}
+        </section>}
         <div className="review-result-heading">
           <ReviewStatus status={r.status} />
           {r.document_id && (
@@ -683,7 +700,7 @@ function ReviewDetail({
           <div className="review-positive">
             <CheckCheck size={21} />
             <div>
-              <strong>Detaliile coincid cu registrul.</strong>
+              <strong>Fără diferențe în controalele efectuate.</strong>
               <p>
                 Rezultatul nu confirmă legitimitatea solicitării. Nicio plată nu
                 a fost inițiată.
@@ -691,6 +708,8 @@ function ReviewDetail({
             </div>
           </div>
         )}
+        <ReviewChecks review={r}/>
+        <AssignmentForm review={r} onChanged={onChanged}/>
         <div className="comparison-grid">
           <div>
             <h3>
@@ -727,9 +746,13 @@ function ReviewDetail({
               {r.invoice_amount != null && (
                 <>
                   <dt>Valoare factură</dt>
-                  <dd>{money(r.invoice_amount)}</dd>
+                  <dd>{new Intl.NumberFormat('ro-RO',{style:'currency',currency:r.invoice_currency||'RON'}).format(r.invoice_amount)}</dd>
                 </>
               )}
+              <dt>Data prestației</dt>
+              <dd>{r.service_date ? date(r.service_date) : 'Neînregistrat'}</dd>
+              <dt>Perioada evaluată</dt>
+              <dd>{r.contract_snapshot ? `${r.contract_snapshot.effective_date ? date(r.contract_snapshot.effective_date) : 'Început neînregistrat'} — ${r.contract_snapshot.expires_at ? date(r.contract_snapshot.expires_at) : 'Sfârșit neînregistrat'}` : 'Neînregistrat'}</dd>
             </dl>
           </div>
         </div>
@@ -743,13 +766,13 @@ function ReviewDetail({
               <strong>Verificare independentă înregistrată</strong>
               <p>{r.verification_note}</p>
               <small>
-                {r.verified_by === user.id ? user.name : r.verified_by} ·{" "}
+                {r.actors?.verified_by?.name||(r.verified_by === user.id ? user.name : r.verified_by)} ·{" "}
                 {r.verified_at ? time(r.verified_at) : ""}
               </small>
             </div>
           </div>
         )}
-        {r.decision_note && (
+        {r.approved_at && (
           <div className="recorded-decision">
             <ClipboardCheck size={17} />
             <div>
@@ -760,7 +783,7 @@ function ReviewDetail({
               </strong>
               <p>{r.decision_note}</p>
               <small>
-                {r.approved_by === user.id ? user.name : r.approved_by}
+                {r.actors?.approved_by?.name||(r.approved_by === user.id ? user.name : r.approved_by)} · {time(r.approved_at!)}
               </small>
             </div>
           </div>
@@ -777,6 +800,7 @@ function ReviewDetail({
         )}
         {!mode && (
           <div className="review-detail-actions">
+            <button className="button secondary" onClick={onRecheck}>Verifică din nou</button>
             {["needs_review", "verified"].includes(r.status) && (
               <button
                 className="button secondary"
@@ -878,7 +902,7 @@ function ReviewDetail({
           </form>
         )}
         <p className="supplier-disclaimer">
-          AeroDesk păstrează dovezile și deciziile. Acest flux nu execută și nu
+          FlyLeaf păstrează dovezile și deciziile. Acest flux nu execută și nu
           blochează plăți într-un sistem financiar extern.
         </p>
       </div>
