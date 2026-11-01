@@ -33,6 +33,8 @@ import {DocumentPerson} from './DocumentPerson';
 import {DocumentExpiry} from './DocumentExpiry';
 import {DocumentFollowUp} from './DocumentFollowUp';
 import {ReadOnlyPdf} from '@/components/documents/ReadOnlyPdf';
+import { ProcurementDocumentPanel } from '@/features/procurement/ProcurementDocumentPanel';
+import {DocumentWorkflowProgress,DocumentActivity} from './DocumentWorkflow';
 import "./documents.css";
 import { ShareDialog } from "@/features/sharing";
 import { date, time, money, actionLabel } from "@/utils/format";
@@ -91,12 +93,25 @@ export function DocumentDetail({
             summary: d.summary || "",
           });
         })
-        .catch((e) => setError(e.message)),
+        .catch((e) => { setDoc(undefined); setError(e.message); }),
     [id],
   );
   useEffect(() => {
-    load();
-  }, [load]);
+    let active = true;
+    setDoc(undefined);
+    setError("");
+    setEditing(false);
+    setConfirm(undefined);
+    setVerification(undefined);
+    api<DocumentRecord>(`/documents/${id}`)
+      .then((d) => {
+        if (!active) return;
+        setDoc(d);
+        setFields({title:d.title, supplier:d.supplier || '', expires_at:d.expires_at || '', value:d.value?.toString() || '', summary:d.summary || ''});
+      })
+      .catch((e) => { if (active) setError(e.message); });
+    return () => { active = false; };
+  }, [id, user.id]);
   const openedId = doc?.id;
   useEffect(() => {
     if (openedId) void api('/workspace/recent/' + encodeURIComponent(openedId), {method:'POST'}).catch(() => {});
@@ -119,10 +134,15 @@ export function DocumentDetail({
     setBusy(true);
     setError("");
     try {
+      const requestedAction=action==='review'?'submit':action;
+      if(action==='review'&&!doc?.validated){
+        const validated=await api<DocumentRecord>(`/documents/${id}/actions`,{method:'POST',body:JSON.stringify({action:'validate',version:doc?.version})});
+        setDoc(validated);
+      }
       const d = await api<DocumentRecord>(`/documents/${id}/actions`, {
         method: "POST",
         body: JSON.stringify({
-          action,
+          action:requestedAction,
           comment: reason,
           version: doc?.version,
         }),
@@ -130,10 +150,15 @@ export function DocumentDetail({
       setDoc(d);
       setConfirm(undefined);
       setReason("");
+      const assignee = d.workflow?.task?.assignee;
       notify(
+        (action === 'review' || action === 'submit') && assignee
+          ? `Documentul a fost trimis spre aprobare la ${assignee}. Sarcina apare în Aprobări → De rezolvat de mine.`
+          :
         (
           {
             validate: "Metadatele au fost validate.",
+            review: "Datele au fost confirmate. Documentul a fost trimis spre aprobare.",
             submit: "Documentul a fost trimis spre aprobare.",
             approve: "Documentul a fost aprobat.",
             reject: "Documentul a fost returnat pentru corectare.",
@@ -146,6 +171,7 @@ export function DocumentDetail({
       await load();
     } catch (e) {
       setError((e as Error).message);
+      if(action==='review')void api<DocumentRecord>(`/documents/${id}`).then(setDoc).catch(()=>{});
     } finally {
       setBusy(false);
     }
@@ -215,12 +241,17 @@ export function DocumentDetail({
       </button>
       {!doc ? (
         error ? (
-          <ErrorMessage message={error} retry={load} />
+          <>
+            <ErrorMessage message={error} retry={load} />
+            <p className="quiet-note">Aprobările sunt disponibile în contul responsabilului desemnat.</p>
+            <a className="button secondary" href="#approvals">Vezi aprobările mele <ArrowRight size={16} /></a>
+          </>
         ) : (
           <Loading />
         )
       ) : (
         <>
+          <DocumentWorkflowProgress doc={doc}/>
           <div className="detail-heading">
             <FileIcon category={doc.category} large />
             <div>
@@ -352,15 +383,15 @@ export function DocumentDetail({
                       {!doc.validated ? (
                         <button
                           className="button primary full-width"
-                          disabled={busy || !canValidate || editing}
-                          onClick={() => act("validate")}
+                          disabled={busy || !canValidate || editing || ['queued','processing','failed'].includes(doc.extraction_status||'')}
+                          onClick={() => act("review")}
                         >
                           {busy ? (
                             <LoaderCircle className="spin" size={17} />
                           ) : (
                             <Check size={17} />
                           )}
-                          Confirmă informațiile
+                          Confirmă și trimite spre aprobare
                         </button>
                       ) : (
                         <button
@@ -433,9 +464,11 @@ export function DocumentDetail({
               <div className="panel document-info">
                 <div className="detail-tabs">
                   {[
-                    ["details", "Informații", Info],
+                    ["details", "Date extrase", Info],
                     ["workflow", "Aprobări", FileCheck2],
                     ["history", "Istoric", History],
+                    ...(["Contract", "Referat de necesitate", "Caiet de sarcini", "Comandă", "Act adițional", "Proces-verbal", "Raport de mentenanță", "Factură"].includes(doc.category)
+                      ? [["procurement", "Avansat", FileCheck2]] : []),
                   ].map(([key, label, Icon]) => (
                     <button
                       key={key as string}
@@ -463,6 +496,7 @@ export function DocumentDetail({
                         </div>
                       )}
                       <ExtractedText doc={doc} canReadText={!user.roles.includes('technician')} onRetry={load} />
+                      {doc.metadata?.procurement ? <ProcurementDocumentPanel reviewOnly documentId={id} documentVersion={doc.version} extractionStatus={doc.extraction_status} notify={notify} onDirtyChange={setEditing} onChanged={()=>{setBusy(true);onChanged();void load().finally(()=>{setEditing(false);setBusy(false)})}}/> : <>
                       {editing ? (
                         <div className="edit-fields">
                           <label className="field">
@@ -648,8 +682,11 @@ export function DocumentDetail({
                           ) : null}
                         </>
                       )}
+                      </>}
                     </>
                   )}
+                  {tab === "procurement" && <ProcurementDocumentPanel documentId={id} documentVersion={doc.version} extractionStatus={doc.extraction_status}
+                    notify={notify} onChanged={() => {onChanged(); void load()}} />}
                   {tab === "workflow" && (
                     <>
                       <h2 className="tab-title">Traseu · versiunea {doc.version}</h2>
@@ -833,6 +870,7 @@ export function DocumentDetail({
                   )}
                 </div>
               </div>
+              <DocumentActivity doc={doc}/>
               {doc.related_documents && doc.related_documents.length > 0 && (
                 <div className="panel related-panel">
                   <h2>În același dosar <span className="count-badge">{doc.related_documents.length}</span></h2>

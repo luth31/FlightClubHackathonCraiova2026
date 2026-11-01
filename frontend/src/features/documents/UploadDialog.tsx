@@ -1,213 +1,31 @@
-import { useEffect, useState, useRef } from "react";
-import { UploadCloud, FileText, Check, LoaderCircle } from "lucide-react";
-import { Modal, ErrorMessage } from "@/components/ui";
-import { api } from "@/services/api-client";
-import type { DocumentRecord, User } from "@/types";
-export function UploadDialog({
-  onClose,
-  onCreated,
-  user,
-}: {
-  onClose: () => void;
-  onCreated: (d: DocumentRecord) => void;
-  user: User;
-}) {
-  const [file, setFile] = useState<File>(),
-    [title, setTitle] = useState(""),
-    [category, setCategory] = useState(
-      user.roles.includes("hr")
-        ? "Resurse umane"
-        : user.roles.includes("technician")
-          ? "Raport de mentenanță"
-          : "Contract",
-    ),
-    [department, setDepartment] = useState(
-      user.roles.includes("hr")
-        ? "Resurse umane"
-        : user.roles.includes("technician")
-          ? "Tehnic"
-          : user.department === "Conducere"
-            ? "Achiziții"
-            : user.business_area || user.department,
-    ),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [drag, setDrag] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
-  const choose = (f?: File) => {
-    if (f) {
-      if (!f.name.toLowerCase().endsWith(".pdf")) {
-        setError("Alege un fișier PDF.");
-        return;
-      }
-      if (f.size > 25 * 1024 * 1024) {
-        setError("Fișierul trebuie să fie mai mic de 25 MB.");
-        return;
-      }
-      setFile(f);
-      if (!title) setTitle(f.name.replace(/\.pdf$/i, "").replace(/[_-]/g, " "));
-      setError("");
-    }
-  };
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!file) return;
-    setBusy(true);
-    setError("");
-    const form = new FormData();
-    form.append("file", file);
-    form.append("title", title);
-    form.append("category", category);
-    form.append("department", department);
-    try {
-      const d = await api<DocumentRecord>("/documents", {
-        method: "POST",
-        body: form,
-      });
-      if (mounted.current) onCreated(d);
-    } catch (e) {
-      if (!mounted.current) return;
-      setError((e as Error).message);
-      setBusy(false);
-    }
-  }
-  return (
-    <Modal
-      title="Adaugă document"
-      subtitle="PDF · maximum 25 MB"
-      onClose={onClose}
-    >
-      <form onSubmit={submit} className="modal-body">
-        <input
-          ref={input}
-          type="file"
-          accept="application/pdf,.pdf"
-          className="sr-only"
-          aria-label="Fișier PDF"
-          onChange={(e) => choose(e.target.files?.[0])}
-        />
-        <button
-          type="button"
-          className={`dropzone ${drag ? "dragging" : ""} ${file ? "has-file" : ""}`}
-          onClick={() => input.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDrag(true);
-          }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDrag(false);
-            choose(e.dataTransfer.files[0]);
-          }}
-        >
-          {file ? (
-            <>
-              <FileText size={30} />
-              <strong>{file.name}</strong>
-              <span>
-                {(file.size / 1024).toFixed(0)} KB · Apasă pentru a schimba
-                fișierul
-              </span>
-              <Check className="file-check" size={19} />
-            </>
-          ) : (
-            <>
-              <UploadCloud size={32} />
-              <strong>Trage un PDF aici sau alege fișierul</strong>
-              <span>Alege fișierul de pe dispozitiv</span>
-            </>
-          )}
-        </button>
-        <label className="field">
-          Titlu document
-          <input
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex. Contract mentenanță echipamente"
-          />
-        </label>
-        <div className="form-grid">
-          <label className="field">
-            Tip document
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {(user.roles.includes("technician")
-                ? [
-                    "Raport de mentenanță",
-                    "Proces-verbal",
-                    "Procedură",
-                    "Instruire",
-                  ]
-                : [
-                    "Contract",
-                    "Referat de necesitate",
-                    "Caiet de sarcini",
-                    "Comandă",
-                    "Factură",
-                    "Proces-verbal",
-                    "Raport de mentenanță",
-                    "Act adițional",
-                    "Procedură",
-                    "Audit",
-                    "Resurse umane",
-                    "Instruire",
-                  ]
-              ).map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Departament
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-            >
-              {(user.roles.includes("hr")
-                ? ["Resurse umane"]
-                : user.roles.includes("technician")
-                  ? ["Tehnic"]
-                  : [
-                      "Achiziții",
-                      "Tehnic",
-                      "Financiar",
-                      "Operațiuni",
-                      "Resurse umane",
-                      "Conformitate",
-                    ].filter(d => d !== 'Resurse umane' && (user.roles.includes('director') || d === (user.business_area || user.department)))
-              ).map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <p className="quiet-note">
-          Se salvează ca ciornă. Verifici informațiile înainte de aprobare.
-        </p>
-        {error && <ErrorMessage message={error} />}
-        <div className="modal-footer">
-          <button type="button" className="button secondary" onClick={onClose}>
-            Renunță
-          </button>
-          <button className="button primary" disabled={!file || busy}>
-            {busy ? (
-              <LoaderCircle size={17} className="spin" />
-            ) : (
-              <UploadCloud size={17} />
-            )}{" "}
-            {busy ? "Se încarcă…" : "Înregistrează documentul"}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
+import {useEffect,useRef,useState} from 'react';
+import {UploadCloud,FileText,LoaderCircle,Check,ArrowRight,Trash2} from 'lucide-react';
+import {Modal,ErrorMessage} from '@/components/ui';
+import {api} from '@/services/api-client';
+import type {DocumentRecord,User} from '@/types';
+import './upload-dialog.css';
+
+export function UploadDialog({onClose,onCreated,user,destination,onFailure}:{onClose:()=>void;onCreated:(doc:DocumentRecord)=>void;user:User;destination?:{caseId:string;revision:number;templateId:string;label:string;caseTitle?:string;templateOptions?:{id:string;label:string}[]};onFailure?:()=>void}) {
+  const [file,setFile]=useState<File>(),[busy,setBusy]=useState(false),[error,setError]=useState(''),[drag,setDrag]=useState(false);
+  const multiple=!!destination?.templateOptions?.length;
+  const [templateId,setTemplateId]=useState(multiple?'':destination?.templateId||'');
+  const input=useRef<HTMLInputElement>(null),mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false}},[]);
+  function clear(){setFile(undefined);if(input.current)input.current.value=''}
+  function choose(files:FileList|null){if(!files?.length)return;const next=files[0];if(files.length>1){clear();setError('Alege un singur PDF pentru acest document.');return}if(!next.name.toLowerCase().endsWith('.pdf')){clear();setError('Fișierul nu este un PDF. Alege un document cu extensia .pdf.');return}if(next.size===0){clear();setError('Fișierul este gol. Alege un PDF care conține documentul.');return}if(next.size>25*1024*1024){clear();setError('Fișierul depășește 25 MB. Alege un PDF mai mic.');return}setFile(next);setError('')}
+  async function submit(event:React.FormEvent){event.preventDefault();if(!file||busy||(destination&&!templateId))return;setBusy(true);setError('');const body=new FormData();body.append('file',file);body.append('auto_extract','true');if(destination){body.append('revision',String(destination.revision));body.append('template_id',templateId)}try{const doc=await api<DocumentRecord>(destination?`/procurement/cases/${encodeURIComponent(destination.caseId)}/upload`:'/documents',{method:'POST',body});if(mounted.current)onCreated(doc)}catch(error){if(mounted.current){setError((error as Error).message);setBusy(false);onFailure?.()}}}
+  const department=user.department==='Conducere'?'Achiziții':user.business_area||user.department;
+  return <Modal title={destination&&!multiple?`Încarcă ${destination.label.toLocaleLowerCase('ro')}`:'Încarcă documentul'} subtitle="Adaugă PDF-ul. Verifici informațiile după încărcare." className="upload-dialog" onClose={()=>{if(!busy)onClose()}}><form className="modal-body upload-simple" onSubmit={submit} aria-busy={busy}>
+    {destination&&<div className="upload-context"><FileText size={18}/><div><strong>{multiple?'Document pentru dosar':destination.label}</strong><span>Se adaugă în dosarul {destination.caseTitle||'curent'}.</span></div></div>}
+    <input ref={input} className="sr-only" type="file" accept="application/pdf,.pdf" disabled={busy} tabIndex={-1} aria-label="Fișier PDF" onChange={event=>choose(event.target.files)}/>
+    {file?<div className="upload-selected-file"><span className="upload-file-icon"><FileText size={24}/></span><div><strong>{file.name}</strong><span>PDF · {file.size>=1024*1024?`${(file.size/(1024*1024)).toFixed(1)} MB`:`${Math.max(1,Math.round(file.size/1024))} KB`}</span><small><Check size={13}/>Pregătit pentru încărcare</small></div><button type="button" className="icon-button" disabled={busy} aria-label="Elimină fișierul selectat" onClick={()=>{clear();setError('')}}><Trash2 size={18}/></button><button type="button" className="text-button upload-change-file" disabled={busy} onClick={()=>input.current?.click()}>Schimbă fișierul</button></div>:<button type="button" className={`dropzone ${drag?'dragging':''}`} disabled={busy} onClick={()=>input.current?.click()} onDragOver={event=>{event.preventDefault();if(!busy)setDrag(true)}} onDragLeave={()=>setDrag(false)} onDrop={event=>{event.preventDefault();setDrag(false);if(!busy)choose(event.dataTransfer.files)}}>
+      <span className="upload-drop-icon"><UploadCloud size={26}/></span><strong>Trage PDF-ul aici</strong><span>sau <b>alege fișierul de pe dispozitiv</b></span><small>Un singur PDF · maximum 25 MB</small>
+    </button>}
+    {multiple&&<label className="field upload-document-type">Tipul documentului<select required value={templateId} disabled={busy} onChange={event=>setTemplateId(event.target.value)}><option value="">Alege tipul documentului</option>{destination?.templateOptions?.map(option=><option value={option.id} key={option.id}>{option.label}</option>)}</select></label>}
+    {error&&<ErrorMessage message={error}/>}
+    <div className="upload-next-steps"><span><Check size={16}/>Date extrase automat</span><ArrowRight size={14}/><span>Verifici și corectezi</span><ArrowRight size={14}/><span>Trimiți spre aprobare</span></div>
+    <p className="upload-department-note">Circuit: <strong>{department}</strong>{destination?' · Documentul va fi asociat automat dosarului.':' · Documentul va fi disponibil în registru.'}</p>
+    {busy&&<p className="upload-busy-note" role="status"><LoaderCircle size={16} className="spin"/>Se încarcă PDF-ul. Așteaptă deschiderea pasului de verificare.</p>}
+    <div className="modal-footer"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>Renunță</button><button className="button primary" disabled={!file||busy||(multiple&&!templateId)}>{busy?<LoaderCircle size={17} className="spin"/>:<ArrowRight size={17}/>} {busy?'Se încarcă…':'Încarcă și verifică'}</button></div>
+  </form></Modal>;
 }

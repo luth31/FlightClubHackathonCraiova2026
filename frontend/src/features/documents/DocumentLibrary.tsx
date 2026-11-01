@@ -4,10 +4,11 @@ import { api, download, getIdentity } from "@/services/api-client";
 import { Loading, ErrorMessage } from "@/components/ui";
 import { DocumentTable } from "./DocumentTable";
 import { DocumentFlow } from "./DocumentFlow";
-import type { DocumentRecord, DocumentFlowData } from "@/types";
+import { ProcurementWorkspace } from "@/features/procurement/ProcurementWorkspace";
+import type { DocumentRecord, DocumentFlowData, User } from "@/types";
 import "./documents.css";
 
-type LibraryView = "list" | "flow";
+type LibraryView = "list" | "flow" | "procurement";
 const PAGE_SIZE = 20;
 export function DocumentLibrary({
   onOpen,
@@ -17,6 +18,8 @@ export function DocumentLibrary({
   revision,
   preferredView,
   onViewChange,
+  onChanged,
+  user,
 }: {
   onOpen: (id: string) => void;
   onUpload: () => void;
@@ -25,11 +28,13 @@ export function DocumentLibrary({
   revision: number;
   preferredView?: LibraryView;
   onViewChange?: (view: LibraryView) => void;
+  onChanged?: () => void;
+  user: User;
 }) {
   const caseStorageKey = `flyleaf-document-case:${getIdentity()}`;
   const panelRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<LibraryView>(
-    () => preferredView || (sessionStorage.getItem("flyleaf-document-view") === "flow" ? "flow" : "list"),
+    () => preferredView || "list",
   ),
     [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
@@ -68,6 +73,7 @@ export function DocumentLibrary({
     panelRef.current?.scrollIntoView?.({block: "start"});
   };
   useEffect(() => {
+    if (view === "procurement") {setLoading(false); setError(""); return}
     let active = true;
     setLoading(true);
     setError("");
@@ -129,11 +135,11 @@ export function DocumentLibrary({
         <button aria-pressed={view === "list"} onClick={() => changeView("list")}>
           <List size={16} /> Registru
         </button>
-        <button aria-pressed={view === "flow"} onClick={() => changeView("flow")}>
-          <Workflow size={16} /> Flux achiziții
+        <button aria-pressed={view === "procurement"} onClick={() => changeView("procurement")}>
+          <Workflow size={16} /> Dosare achiziții
         </button>
       </div>
-        <div className="library-tabs">
+        {view !== "procurement" && <div className="library-tabs">
           {[
             ["", "Toate documentele"],
             ["in_review", "În aprobare"],
@@ -154,9 +160,9 @@ export function DocumentLibrary({
               )}
             </button>
           ))}
-        </div>
+        </div>}
       </div>
-        <div className="filters">
+        {view !== "procurement" && <div className="filters">
           <label className="search-input">
             <Search size={18} />
             <input
@@ -184,8 +190,11 @@ export function DocumentLibrary({
               ))}
             </select>
           </label>
-        </div>
-        {error ? (
+        </div>}
+        {view === "procurement" ? (
+          <ProcurementWorkspace user={user} onOpen={onOpen} notify={notify} revision={revision}
+            onChanged={() => {setReload(value => value + 1); onChanged?.()}} />
+        ) : error ? (
           <ErrorMessage message={error} retry={() => setReload((value) => value + 1)} />
         ) : loading ? (
           <Loading />
