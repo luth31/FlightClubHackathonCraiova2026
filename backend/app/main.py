@@ -19,10 +19,12 @@ from app.people.router import router as people_router
 from app.exchange.router import router as exchange_router
 from app.suppliers.router import router as suppliers_router
 from app.tasks.router import router as tasks_router
+from app.reports.router import router as reports_router
 from app.suppliers.catalog_router import router as catalog_router
 from app.suppliers.registration_router import router as registration_router
 from app.operations.router import router as operations_router
 from app.operations.map_config import router as operations_map_router
+from app.collaboration.router import router as collaboration_router
 
 @asynccontextmanager
 async def lifespan(app):
@@ -63,7 +65,7 @@ async def security_headers(request: Request,call_next):
     response.headers['Cache-Control']='no-store'
     return response
 
-for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router,catalog_router,registration_router,operations_map_router,operations_router):
+for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router,catalog_router,registration_router,operations_map_router,operations_router,reports_router,collaboration_router):
     app.include_router(router)
 
 @app.get('/api/health')

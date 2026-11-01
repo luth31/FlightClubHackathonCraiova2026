@@ -2,7 +2,8 @@ import {useEffect,useRef,useState} from 'react';
 import {Search,ArrowUpRight,ChevronLeft,ChevronRight} from 'lucide-react';
 import {api} from '@/services/api-client';
 import {Loading,ErrorMessage,Empty} from '@/components/ui';
-import {time,actionLabel,initials} from '@/utils/format';
+import {time,actionLabel} from '@/utils/format';
+import {PersonAvatar} from '@/components/people/PersonAvatar';
 import type {AuditEvent} from '@/types';
 import './audit.css';
 
@@ -31,7 +32,7 @@ export function AuditPage({onOpen,revision}:{onOpen:(id:string)=>void;revision:n
           <tbody>{visibleItems?.map(a=><tr key={a.id}>
             <td><strong>{actionLabel[a.action]||a.action}</strong>{typeof a.detail==='string'&&a.detail&&<details className="audit-event-details"><summary>Detalii</summary><p>{a.detail}</p></details>}</td>
             <td>{a.document_id?<button className="audit-link" onClick={()=>onOpen(a.document_id!)}>{a.document_title||a.document_id}<ArrowUpRight size={13}/></button>:<span className="muted">—</span>}</td>
-            <td><div className="person-inline"><span className="avatar small">{initials(a.actor)}</span>{a.actor}</div></td>
+            <td><div className="person-inline"><PersonAvatar name={a.actor} className="avatar small"/>{a.actor}</div></td>
             <td className="date-cell">{time(a.created_at)}</td>
           </tr>)}</tbody>
         </table></div>

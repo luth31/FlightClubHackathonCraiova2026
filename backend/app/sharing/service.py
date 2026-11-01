@@ -7,7 +7,7 @@ from sqlalchemy import select,desc
 from app.sharing.models import Share,SharePreview
 from app.documents.service import get_document,current_version,file_hash,DEPARTMENTS
 from app.core.audit import now,record
-from app.core.security import require_role,can_read
+from app.core.security import require_role,can_read,require_page,is_department_head,require_share_documents
 from app.core.exceptions import DomainError
 from app.config import settings
 
@@ -17,7 +17,8 @@ def preview(db,user,document_id,terms,word_ids=None,source_version=None,source_s
     if word_ids and (source_version is None or source_sha256 is None):
         raise DomainError('Selecția trebuie asociată versiunii originale.',422)
     checked_source(db,user,document_id,source_version,source_sha256)
-    require_role(user,'director','reviewer')
+    require_page(user,'sharing')
+    require_share_documents(user)
     doc=get_document(db,document_id,user)
     if doc.status not in ('approved','signed'): raise DomainError('Aprobă documentul înainte de pregătirea unei copii partajate.',409)
     if doc.department=='Resurse umane': raise DomainError('Documentele de personal nu se partajează între aeroporturi în acest prototip.',403)
@@ -73,7 +74,8 @@ def preview(db,user,document_id,terms,word_ids=None,source_version=None,source_s
     return {'preview_id':preview_id,'file_url':f'/api/share-previews/{preview_id}/file','redactions':redactions,'sha256':item.sha256,'source_version':doc.version}
 
 def create_share(db,user,document_id,body):
-    require_role(user,'director','reviewer')
+    require_page(user,'sharing')
+    require_share_documents(user)
     doc=get_document(db,document_id,user)
     preview=db.get(SharePreview,body.preview_id)
     if not preview or preview.document_id!=doc.id or preview.creator_id!=user.id: raise DomainError('Copia de partajare nu există.',404)
@@ -102,7 +104,9 @@ def share_file(db,user,share_id):
     item=db.get(Share,share_id)
     if not item: raise DomainError('Partajarea nu există.',404)
     doc=get_document(db,item.document_id,user)
-    require_role(user,'director','reviewer')
+    require_page(user,'sharing')
+    if not is_department_head(user):
+        require_role(user,'director','reviewer')
     state=serialize(item,db)['status']
     if state!='active': raise DomainError('Accesul a fost revocat, a expirat sau versiunea s-a schimbat.',403)
     preview=db.get(SharePreview,item.preview_id)

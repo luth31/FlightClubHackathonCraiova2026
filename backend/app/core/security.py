@@ -82,6 +82,16 @@ def is_department_head(user, department=None):
     return has_role(user, 'department_head') and (department is None or canonical_department(user.department) == canonical_department(department))
 
 
+def can_share_documents(user):
+    # Request coordination and publishing a document copy are separate powers.
+    return has_role(user, 'director') or (has_role(user, 'reviewer') and canonical_department(user.department) == 'Conformitate')
+
+
+def require_share_documents(user):
+    if not can_share_documents(user):
+        raise DomainError('Partajarea documentelor necesită directorul sau responsabilul de conformitate.', 403)
+
+
 def page_permissions(user):
     director = has_role(user, 'director')
     head = is_department_head(user)
@@ -89,10 +99,10 @@ def page_permissions(user):
     compliance = has_role(user, 'reviewer') and canonical_department(user.department) == 'Conformitate'
     procurement = head and canonical_department(user.department) == 'Achiziții'
     technician = has_role(user, 'technician') and not head and not director
-    return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True,
+    return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True, 'reports': True,
             'contracts': not technician and (director or finance or (head and not has_role(user, 'hr'))),
             'suppliers': director or finance or procurement,
-            'sharing': director or compliance,
+            'sharing': director or head or compliance,
             'audit': not technician and (director or head or has_role(user, 'hr') or compliance)}
 
 
@@ -143,6 +153,12 @@ def can_read(user, document, include_assignment=True):
             return leave.user_id == user.id or can_review_leave(db, user, leave)
         return has_role(user, 'hr') or is_department_head(user, 'Resurse umane') or document.owner_id == user.id or document.created_by == user.id
     if has_role(user, 'director'):
+        return True
+    # Approved operational procedures are internal reading material for all staff.
+    # Drafts and restricted procedures keep their normal departmental scope.
+    if (document.category == 'Procedură' and document.department == 'Conformitate'
+            and document.status in ('approved', 'signed') and document.confidentiality not in RESTRICTED
+            and (document.extra or {}).get('metadata', {}).get('sop_code')):
         return True
     head = is_department_head(user, document.department)
     if has_role(user, 'technician') and not head:

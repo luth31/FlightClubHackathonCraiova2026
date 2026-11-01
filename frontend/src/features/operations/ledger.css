@@ -1,0 +1,35 @@
+/* Stable columns keep the schedule and gate in place at every delay length. */
+.ops-ledger-flight>summary{display:grid;grid-template-columns:18px 34px minmax(160px,1fr) 86px 64px 132px 76px;gap:14px;padding:16px;min-height:84px}
+.ops-ledger-flight-name strong{font-size:16px;line-height:1.4}.ops-ledger-flight-name small{font-size:14px;line-height:1.5}
+.ops-ledger-flight-time,.ops-ledger-gate{display:grid;gap:4px;text-align:left;margin:0;min-width:0}
+.ops-ledger-flight-time strong,.ops-ledger-gate strong{font-size:16px;font-weight:650;color:#243b4b;font-variant-numeric:tabular-nums}
+.ops-ledger-flight-time small,.ops-ledger-gate small{font-size:12px;color:#526575}
+.ops-severity-badge{display:grid;align-content:center;gap:3px;min-height:44px;min-width:0;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.ops-severity-badge strong{font-size:14px;font-variant-numeric:tabular-nums}.ops-severity-badge small{font-size:12px;font-weight:400}
+.ops-ledger-count{font-size:13px;min-width:0;white-space:nowrap}
+.ops-day-title>strong{font-size:17px}.ops-day-title>small{font-size:13px}.ops-day-state{font-size:13px}
+.ops-ledger-evidence{padding:0 22px 12px;background:#f8fafb}
+.ops-ledger-columns,.ops-ledger-event{grid-template-columns:minmax(220px,1fr) 100px 100px 112px;gap:20px;align-items:start}
+.ops-ledger-columns{font-size:12px;padding:16px 0 12px;text-transform:uppercase;letter-spacing:.04em}
+.ops-ledger-event{padding:17px 0}.ops-ledger-event strong{font-size:15px;line-height:1.5}.ops-ledger-event small{font-size:13px;line-height:1.6}
+.ops-ledger-event time{font-size:15px;font-weight:550;padding-top:3px}.ops-ledger-event time small{font-size:12px;font-weight:400}
+.ops-event-dot{margin-top:9px;width:7px;height:7px}.ops-event-delta{font-size:13px;line-height:1.5;padding-top:4px;white-space:nowrap}
+.ops-event-note{font-size:14px;line-height:1.65;color:#405666;margin:7px 0 0;max-width:65ch}
+.ops-ledger-back{font-size:14px}.ops-ledger-foot{font-size:13px}.ops-day-flights{padding:0 12px 12px}
+.ops-ledger-flight>summary:focus-visible,.ops-ledger-day>summary:focus-visible{outline:3px solid #46877f;outline-offset:-3px}
+@media(max-width:1100px){
+ .ops-ledger-flight>summary{grid-template-columns:16px 30px minmax(110px,1fr) 74px 50px 112px;gap:10px}.ops-ledger-count{display:none}
+ .ops-ledger-columns,.ops-ledger-event{grid-template-columns:minmax(180px,1fr) 76px 76px 94px;gap:12px}
+}
+@media(max-width:650px){
+ .ops-ledger-flight>summary{grid-template-columns:18px minmax(0,1fr) 62px 112px;gap:12px;padding:14px}
+ .ops-ledger-icon{display:none}.ops-ledger-flight-name{grid-column:2/-1}.ops-ledger-flight>summary>.ops-expand{grid-column:1;grid-row:1}
+ .ops-ledger-flight-time{grid-column:2;grid-row:2}.ops-ledger-gate{grid-column:3;grid-row:2}.ops-severity-badge{grid-column:4;grid-row:2}
+ .ops-ledger-flight-name strong{font-size:16px}.ops-ledger-flight-name small{font-size:14px}.ops-ledger-gate strong,.ops-ledger-flight-time strong{font-size:16px}
+ .ops-ledger-evidence{padding:0 16px 10px}.ops-ledger-columns{display:none}
+ .ops-ledger-event{grid-template-columns:1fr 1fr 1fr;gap:10px;padding:18px 0}.ops-ledger-event>div{grid-column:1/-1}
+ .ops-ledger-event time{font-size:14px}.ops-ledger-event time:nth-child(2):before{content:'Planificat';display:block;font-size:11px;color:#526575;margin-bottom:4px;font-weight:400}
+ .ops-ledger-event time:nth-child(3):before{content:'Realizat';display:block;font-size:11px;color:#526575;margin-bottom:4px;font-weight:400}
+ .ops-event-delta{align-self:end;padding-bottom:2px;font-size:12px}.ops-day-title>strong{font-size:15px}.ops-day-title>small{font-size:12px}.ops-day-state{font-size:11px}
+ .ops-ledger-day>summary{padding:14px 10px}.ops-day-flights{padding:0 7px 7px}
+}

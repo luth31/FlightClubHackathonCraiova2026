@@ -11,7 +11,7 @@ from pypdf.generic import IndirectObject, DictionaryObject, ArrayObject
 from app.documents.models import Document, DocumentVersion
 from app.documents.classification import classify, case_id
 from app.core.models import AuditEvent
-from app.core.security import can_read, can_read_version, can_edit, require_role, has_role, page_permissions
+from app.core.security import can_read, can_read_version, can_edit, require_role, has_role, page_permissions, can_share_documents
 from app.core.exceptions import DomainError
 from app.core.audit import record, now, serialize as serialize_event
 from app.config import settings
@@ -79,7 +79,7 @@ def serialize(document, db=None, details=False, user=None):
         data['related_documents']=[serialize(d,user=user) for d in [db.get(Document,i) for i in data['related_ids']] if d and (user is None or can_read(user,d))]
     if user:
         from app.people.service import can_review_department
-        data['permissions']={'can_edit':can_edit(user,document),'can_review':can_review_department(db,user,document.department) if db else (has_role(user,'director') or (has_role(user,'reviewer','hr') and user.department==document.department)),'can_sign':has_role(user,'signer'),'can_share':page_permissions(user)['sharing'] and document.department!='Resurse umane'}
+        data['permissions']={'can_edit':can_edit(user,document),'can_review':can_review_department(db,user,document.department) if db else (has_role(user,'director') or (has_role(user,'reviewer','hr') and user.department==document.department)),'can_sign':has_role(user,'signer'),'can_share':can_share_documents(user) and document.department!='Resurse umane'}
         if db:
             from app.tasks import service as task_service
             for kind,key in [('approval','can_review'),('validation','can_validate'),('signature','can_sign')]:

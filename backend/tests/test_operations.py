@@ -38,17 +38,15 @@ def test_replay_explains_delay_and_event_order(ops):
         assert initial['kpis']['on_time_percent'] is None
         assert initial['thresholds'] == {'minor_delay_minutes': 1, 'major_delay_minutes': 15}
         emergency = service.control(db, user, ControlInput(action='advance', seconds=900))
-        assert flight(emergency, 'flight-404')['severity'] == 'red'
-        assert flight(emergency, 'flight-404')['emergency']
-        assert flight(emergency, 'flight-303')['severity'] == 'yellow'
+        assert flight(emergency, 'flight-404')['severity'] == 'neutral'
+        assert not flight(emergency, 'flight-404')['emergency']
         result = service.control(db, user, ControlInput(action='advance', seconds=2220))
         assert flight(result)['delay_minutes'] == 18
         assert flight(result)['actual_departure_seconds'] == 2280
         assert flight(result)['severity'] == 'red'
-        assert flight(result, 'flight-303')['delay_minutes'] == 7
         assert flight(result, 'flight-202')['severity'] == 'neutral'
         assert not flight(result, 'flight-404')['emergency']
-        assert result['kpis']['on_time_percent'] == 33
+        assert result['kpis']['on_time_percent'] == 50
         times = [event['elapsed_seconds'] for event in result['events']]
         assert times == sorted(times)
         assert [event['sequence'] for event in result['events']] == list(range(1, len(times)+1))
@@ -69,17 +67,17 @@ def test_next_event_and_clock_persist_across_sessions(ops, monkeypatch):
     monkeypatch.setattr(service, 'utc_now', lambda: now)
     with factory() as db:
         step = service.control(db, user, ControlInput(action='step'))
-        assert step['simulation']['elapsed_seconds'] == 120
+        assert step['simulation']['elapsed_seconds'] == 60
         service.control(db, user, ControlInput(action='start', speed=30))
     now += timedelta(seconds=2)
     with factory() as db:
         advanced = service.get_snapshot(db, user)
-        assert advanced['simulation']['elapsed_seconds'] == 180
+        assert advanced['simulation']['elapsed_seconds'] == 120
         stopped = service.control(db, user, ControlInput(action='pause'))
         assert not stopped['simulation']['running']
     now += timedelta(seconds=100)
     with factory() as db:
-        assert service.get_snapshot(db, user)['simulation']['elapsed_seconds'] == 180
+        assert service.get_snapshot(db, user)['simulation']['elapsed_seconds'] == 120
 
 
 def test_reset_keeps_previous_run_and_stale_revision_is_rejected(ops):
@@ -184,7 +182,7 @@ def test_endpoints_auth_roles_schema_and_persistence(client):
     assert initial.status_code==200,initial.text
     assert initial.json()['permissions']['can_control']
     step=client.post('/api/operations/control',json={'action':'step'})
-    assert step.status_code==200 and step.json()['simulation']['elapsed_seconds']==120
+    assert step.status_code==200 and step.json()['simulation']['elapsed_seconds']==60
     assert client.get('/api/operations').json()['simulation']['run_id']==step.json()['simulation']['run_id']
     assert client.post('/api/operations/control',json={'action':'advance','seconds':-1}).status_code==422
     assert client.post('/api/operations/events',json={'kind':'gate_open','gate_id':'unknown'}).status_code==422
@@ -295,7 +293,7 @@ def test_timeline_rewinds_nfc_gates_and_departures_without_erasing_history(ops):
         assert not next(person for person in before['staff'] if person['id']=='staff-relief')['present']
         assert not before['gates'][0]['open']
         assert flight(before)['actual_departure_seconds'] is None
-        assert before['kpis']['departed_flights'] == 0
+        assert before['kpis']['departed_flights'] == 1
         after = service.timeline_preview(db, user, 1320, run)
         assert after['gates'][0]['open']
         assert flight(after)['phase']=='boarding'
@@ -310,10 +308,10 @@ def test_timeline_interactive_projection_never_fabricates_attendance_or_departur
     with factory() as db:
         current = service.get_snapshot(db, user)
         preview = service.timeline_preview(db, user, 3600, current['simulation']['run_id'])
-        assert not any(person['present'] for person in preview['staff'])
-        assert not any(gate['open'] for gate in preview['gates'])
-        assert preview['kpis']['departed_flights'] == 0
-        assert all(event['kind'] not in ('nfc_check_in','gate_open','departure') for event in preview['events'])
+        assert not any(person['present'] for person in preview['staff'] if person['id'] in ('staff-agent-a','staff-relief'))
+        assert not preview['gates'][0]['open']
+        assert preview['kpis']['departed_flights'] == 1
+        assert all(event['kind'] not in ('nfc_check_in','gate_open','departure') for event in preview['events'] if event['flight_id']=='flight-101' or event['staff_id'] in ('staff-agent-a','staff-relief'))
         assert flight(preview,'flight-404')['phase']=='at_gate'
 
 

@@ -16,3 +16,10 @@
 .dashboard-home .attention-icon{color:#0f6e68;background:#e7f3f1}
 .dashboard-home .attention-icon.amber{color:#94520c;background:#fff4dd}
 @media(max-width:700px){.dashboard-home .home-heading{align-items:flex-start;gap:14px}.dashboard-home .stats-grid{gap:8px}.dashboard-home .stat-card{padding:13px;min-height:96px}.dashboard-home .stat-top{font-size:12px}.dashboard-home .stat-number{font-size:25px}.dashboard-home .home-heading .button{white-space:nowrap}}
+
+/* Put decisions first; aggregate counts remain available on demand. */
+.dashboard-home .home-overview{margin-top:24px;border-top:1px solid var(--border);padding-top:12px}
+.dashboard-home .home-overview>summary{font-size:16px;line-height:1.5;padding:12px 0;color:var(--primary);cursor:pointer}
+.dashboard-home .home-overview .stats-grid{margin-top:16px}
+.dashboard-home .attention-copy strong{font-size:16px;line-height:1.5}
+.dashboard-home .attention-copy small,.dashboard-home .attention-due{font-size:14px;line-height:1.5}

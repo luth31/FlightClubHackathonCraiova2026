@@ -3,8 +3,8 @@ import type {Page} from '@/types';
 
 export const pageLabels: Record<Page, string> = {
   home: 'Acasă', documents: 'Documente', contracts: 'Contracte', suppliers: 'Furnizori',
-  approvals: 'Aprobări', people: 'Echipă', sharing: 'Partajate cu aeroporturi', audit: 'Jurnal de activitate',
-  operations: 'Operațiuni la sol',
+  approvals: 'Aprobări', people: 'Echipă', sharing: 'Colaborare', audit: 'Jurnal de activitate',
+  operations: 'Operațiuni la sol', reports: 'Rapoarte',
 };
 type Route = {page: Page; doc?: string};
 type NavigationState = {userId?: string; origin: Page; documentDepth: number; scroll?: [number, number]};
@@ -12,6 +12,7 @@ const isPage = (value: string): value is Page => Object.hasOwn(pageLabels, value
 
 export function parseRoute(hash: string): Route {
   const [path, query = ''] = hash.replace(/^#/, '').split('?');
+  if (path.startsWith('reports/')) return {page: 'reports'};
   if (path === 'document') return {page: 'documents'};
   if (!path.startsWith('document/')) return {page: isPage(path) ? path : 'home'};
   const origin = new URLSearchParams(query).get('from') || 'documents';
@@ -53,9 +54,13 @@ export function useNavigation(userId: string | undefined, allowedPages: Record<P
   }, [userId]);
 
   function write(hash: string, state: NavigationState, replace = false) {
+    const oldURL = window.location.href;
     const method = replace ? 'replaceState' : 'pushState';
     window.history[method]({...window.history.state, flyleafNavigation: state}, '', hash);
     setRoute(parseRoute(hash));
+    // pushState does not notify nested views that read report/operations hashes.
+    if (oldURL !== window.location.href)
+      window.dispatchEvent(new window.HashChangeEvent('hashchange', {oldURL, newURL: window.location.href}));
   }
 
   function navigate(destination: Page) {
@@ -68,9 +73,10 @@ export function useNavigation(userId: string | undefined, allowedPages: Record<P
     let depth = 0;
     if (!route.doc) {
       // Canonicalize restricted/unknown list hashes before creating a return entry.
+      const originHash = parseRoute(window.location.hash).page === page ? window.location.hash : `#${page}`;
       window.history.replaceState({...window.history.state, flyleafNavigation: {
         userId, origin: page, documentDepth: 0, scroll: [window.scrollX, window.scrollY],
-      }}, '', `#${page}`);
+      }}, '', originHash);
       depth = 1;
     } else {
       const previous = readState();

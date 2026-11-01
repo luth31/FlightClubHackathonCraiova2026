@@ -1,5 +1,5 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
-import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane} from 'lucide-react';
+import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
 import {rememberNfcLink,pendingNfcCard,cardFromHash} from '@/features/operations/nfc-links';
@@ -10,10 +10,14 @@ import {DocumentLibrary,DocumentDetail,UploadDialog} from '@/features/documents'
 import {ContractsPage} from '@/features/contracts';
 import {ApprovalsPage} from '@/features/approvals';
 import {SharingPage} from '@/features/sharing';
+import {useCollaborationInbox} from '@/features/sharing/useCollaborationInbox';
 import {AuditPage} from '@/features/audit';
 import {SuppliersPage} from '@/features/suppliers';
 import {SupplierCatalogPage} from '@/features/suppliers/SupplierCatalogPage';
 import {PeoplePage} from '@/features/people';
+import {PersonAvatar} from '@/components/people/PersonAvatar';
+import {PersonDirectoryProvider} from '@/components/people/PersonDirectory';
+import {ReportsPage} from '@/features/reports';
 import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
 import {initials,roleLabel} from '@/utils/format';
@@ -27,8 +31,8 @@ function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:st
     <Suspense fallback={<Loading/>}><OperationsPage notify={notify}/></Suspense>
   </ViewActiveContext></div>;
 }
-const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound}];
-const secondNav=[{id:'sharing',label:'Partajate cu aeroporturi',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
+const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
+const secondNav=[{id:'sharing',label:'Colaborare',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
     [filter,setFilter]=useState(''), [upload,setUpload]=useState(false),
@@ -39,6 +43,7 @@ export function App() {
   const logoutPending = useRef(false);
   const sessionEpoch = useRef(0);
   const allowedPages = pagePermissions(session?.current_user);
+  const collaborationInbox = useCollaborationInbox(!!session?.current_user && allowedPages.sharing, session?.current_user?.id);
   const ownTasks = personalTasks(session?.current_user);
   const labels = {...pageLabels, approvals:ownTasks?'Sarcinile mele':pageLabels.approvals};
   const {page,doc,navigate:goToPage,openDocument,returnToOrigin} = useNavigation(session?.current_user?.id,allowedPages);
@@ -124,7 +129,7 @@ export function App() {
   if(!session)return <Loading/>;
   if(!session.current_user)return <LoginPage session={session} onLogin={s=>{setSession(s);setRevision(v=>v+1)}}/>;
   const user=session.current_user,airport=typeof session.airport==='string'?session.airport:session.airport?.name||'Aeroportul Craiova';
-  return <div className="app-shell">
+  return <PersonDirectoryProvider key={`${user.airport_id || ''}:${user.id}`} revision={revision}><div className="app-shell">
     {mobileOpen&&<div className="sidebar-overlay" onClick={()=>setMobileOpen(false)}/>}
     <aside className={`sidebar ${mobileOpen?'open':''}`}>
       <a href="#home" className="brand" onClick={event=>{
@@ -144,12 +149,12 @@ export function App() {
       {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">COLABORARE</div>}
       <nav aria-label="Colaborare și istoric">
         {secondNav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
-          <n.icon size={18}/><span>{n.label}</span>
+          <n.icon size={18}/><span>{n.label}</span>{n.id==='sharing'&&collaborationInbox.pendingCount>0&&<span className="collaboration-nav-count" aria-label={collaborationInbox.pendingCount===1?'1 cerere primită deschisă':`${collaborationInbox.pendingCount} cereri primite deschise`}>{collaborationInbox.pendingCount}</span>}
         </button>)}
       </nav>
       <div className="sidebar-bottom">
         <div className="user-switcher">
-          <button className="user-button" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span className="avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button>
+          <div className="user-profile-controls"><PersonAvatar userId={user.id} name={user.name}/><button className="user-button user-menu-trigger" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button></div>
           {userMenu&&<div className="user-menu">
             <div className="user-menu-heading">{session.auth?.mode==='oidc'?'Contul tău':'Schimbă contul'}</div>
             {session.auth?.mode!=='oidc'&&session.users.filter(u=>!u.roles.includes('employee')).map(u=><button disabled={switching||loggingOut} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
@@ -169,7 +174,7 @@ export function App() {
         </div>
         <div className="topbar-actions">
           <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
-          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button>
+          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button><PersonAvatar userId={user.id} name={user.name} className="avatar top-avatar"/>
           <button className="logout-button topbar-logout" disabled={loggingOut||switching} onClick={()=>void logout()} aria-label="Ieși din cont" title="Ieși din cont" aria-busy={loggingOut}>
             <LogOut size={17}/><span>{loggingOut?'Se deconectează…':'Ieși din cont'}</span>
           </button>
@@ -189,6 +194,7 @@ export function App() {
             ? <SuppliersPage revision={revision} notify={notify} onOpen={openDoc} user={user}/>
             : <SupplierCatalogPage revision={revision} onOpen={openDoc}/>)}
           {page==='people'&&<PeoplePage revision={revision} notify={notify}/>}
+          {page==='reports'&&<ReportsPage user={user} revision={revision} onOpen={openDoc} onNavigate={navigate} notify={notify}/>}
           {page==='audit'&&<AuditPage revision={revision} onOpen={openDoc}/>}
           </ViewActiveContext>
         </div>
@@ -201,5 +207,5 @@ export function App() {
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
     {assistant&&<AssistantDialog onClose={closeAssistant} onOpen={openDoc}/>}
     {toast&&<Toast message={toast}/>}
-  </div>;
+  </div></PersonDirectoryProvider>;
 }

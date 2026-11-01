@@ -24,6 +24,8 @@ Base `/api`. Authenticate with POST `/api/auth/login` JSON `{user_id:'admin',pas
 * POST `/shares/{id}/revoke` -> Share. GET `/shares/{id}/file` checks authorization, expiry, revocation and source version each time.
 * GET `/reports/register.csv` authorized register export.
 
+Reporting also exposes `GET /reports` (permission-filtered catalog), `GET /reports/briefing?department=` (current Europe/Bucharest daily KPIs, activity, priorities and real report previews), `GET /reports/{report_id}?days=90&department=&as_of=YYYY-MM-DD` and the corresponding `/reports/{report_id}/export.csv`. `as_of` is optional and defaults to the configured demonstration reference; the report UI supplies today's airport calendar date. Days must be 30, 90 or 365. All sources retain their feature-level airport and record permissions. See [report definitions and behavior](../docs/REPORTS.md).
+
 Document fields: `id,title,number,category,department,status,created_at,updated_at,expires_at,supplier,value,currency,owner,confidentiality,tags:string[],summary,filename,related_ids:string[],metadata:object,source_refs:array,version:number,validated:boolean,file_url,days_remaining,contract_status`. Canonical statuses `draft,in_review,approved,signed,archived`. All dates ISO. `workflow` is `{steps:[{label,status,actor?,at?}],current_step}`.
 
 Documents also include computed `flow:{stage,document_type,reason,source}|null` and `flow_case_id:string|null`. Classification uses document categories and explicit title or `metadata.document_type` labels, with Romanian diacritics normalized. It does not infer a document type from mentions in PDF body text. Contracts, needs, specifications, orders and addenda belong to purchasing; maintenance and service reports are supplier delivery evidence; reception and material records belong to inventory; invoices and credit notes belong to invoice verification. HR, procedure, audit and training records remain outside this procurement flow. Classification is independent of approval status and is recomputed after metadata changes without a migration.
@@ -84,6 +86,16 @@ Keycloak usernames are the normalized email local part; creation rejects duplica
 HR/admin: POST `/people/appointments` `{department_id,user_id,effective_date,reason}`. HR/admin/director: GET `/people/appointments` -> `{items}`. Independent director: POST `/people/appointments/{id}/decision` `{action:approve|reject,comment?}`; rejection requires a reason. States: pending, approved (scheduled), active, superseded, rejected, cancelled. Dates follow the application's reference date.
 
 Director: POST `/people/{id}/signing-authority` `{enabled,reason}`. Self-modification is forbidden. Head appointments and signing grants remain independent. Replacement/revocation flags existing tasks for explicit reassignment.
+
+## Personal status and profile photo
+
+Authenticated employees can change only their own personal settings. GET `/people/me/profile` returns `{presence,presence_expires_at,status_message,message_expires_at,photo_url}`; GET `/people` includes the same object as each person's `profile`.
+
+* PATCH `/people/me/presence` accepts `{status,duration_minutes?}`. Status is `automatic|available|busy|do_not_disturb|be_right_back|away|offline`. Optional duration is an integer from 1 to 10080 minutes; null keeps the choice until changed. `automatic` clears the manual override.
+* PATCH `/people/me/status-message` accepts `{message,duration_minutes?}`. Messages are trimmed, limited to 280 characters and visible to colleagues; an empty message clears it.
+* POST `/people/me/photo` accepts multipart `file` (JPG, PNG or WebP, at most 2 MiB and 16 megapixels). The image is oriented, center-cropped, resized to 256×256, stripped of metadata, and stored as PNG. DELETE `/people/me/photo` restores initials. GET `/people/{user_id}/photo` requires an authenticated account at the same airport; it returns PNG bytes or 404.
+
+Mutations return the updated personal profile. Presence and message expiry use actual UTC, independently of the demonstration reference date, and expire independently. Expired values read as `automatic` / empty. Personal presence does not alter approved leave, account activation, roles, task assignment or notification delivery; `do_not_disturb` communicates availability. The existing `availability` field remains the HR leave/account state. Photo URLs change on replacement. The frontend refreshes directory profiles every minute while visible and on window focus, and applies expiry locally to already-open cards.
 
 ## Airport operations and live traffic
 

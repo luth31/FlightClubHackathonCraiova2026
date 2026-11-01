@@ -5,7 +5,7 @@ its fixed HTTPS origin. Airport coordinates are public; user data is never sent.
 """
 from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import math
 import threading
@@ -15,7 +15,8 @@ import httpx
 
 from app.operations.service import airport_for
 
-CACHE_SECONDS = 30
+CACHE_SECONDS = 10
+FAILURE_BACKOFF_SECONDS = 10
 MAX_STALE_SECONDS = 300
 MAX_POSITION_AGE_SECONDS = 120
 MAX_AIRCRAFT = 200
@@ -134,14 +135,15 @@ class CacheEntry:
 _cache = {key: CacheEntry() for key in ('craiova', 'sibiu')}
 
 
-def _response(entry, now):
+def _response(entry, now, interval=CACHE_SECONDS):
     age = max(0, now-entry.fetched_monotonic) if entry.fetched_monotonic is not None else None
     usable = entry.aircraft is not None and age is not None and age <= MAX_STALE_SECONDS
     status = 'fresh' if usable and not entry.error and age <= CACHE_SECONDS else ('stale' if usable else 'unavailable')
     aircraft = deepcopy(entry.aircraft) if usable else []
     for item in aircraft:
+        item['observed_at'] = (datetime.fromisoformat(entry.fetched_at)-timedelta(seconds=item['position_age_seconds'])).isoformat()
         item['position_age_seconds'] += age
-        item['stale'] = status != 'fresh' or item['position_age_seconds'] > CACHE_SECONDS
+        item['stale'] = status != 'fresh' or item['position_age_seconds'] > 15
     notice = 'Poziții ADS-B publice. Sursa nu furnizează orare, întârzieri sau porți; acoperirea nu este completă.'
     if status == 'stale':
         notice = 'Sursa nu răspunde. Sunt afișate ultimele poziții cunoscute, fără extrapolare. ' + notice
@@ -149,18 +151,19 @@ def _response(entry, now):
         notice = 'Traficul live este indisponibil; absența pozițiilor nu înseamnă absența aeronavelor.'
     return {'source': 'adsb.lol', 'mode': 'live', 'simulated': False, 'status': status,
         'fetched_at': entry.fetched_at, 'age_seconds': round(age, 1) if age is not None else None,
-        'poll_after_seconds': max(1, math.ceil(entry.retry_at-now)), 'aircraft': aircraft,
+        'poll_after_seconds': max(1, math.ceil(max(entry.retry_at,(entry.fetched_monotonic or 0)+interval)-now)), 'aircraft': aircraft,
         'notice': notice, 'attribution': ATTRIBUTION, 'radius_nm': RADIUS_NM,
         'error': entry.error, 'schedule_data_available': False}
 
 
-def get_traffic(user):
+def get_traffic(user, tracking=False):
     airport = airport_for(user)
     entry = _cache[airport['id']]
+    interval = CACHE_SECONDS  # Camera tracking never increases provider demand.
     # Single-flight: simultaneous browsers share one provider request per cache period.
     with entry.lock:
         now = time.monotonic()
-        if now >= entry.retry_at:
+        if now >= entry.retry_at and (entry.fetched_monotonic is None or now-entry.fetched_monotonic >= interval):
             try:
                 aircraft = normalize_aircraft(fetch_payload(airport), airport)
                 now = time.monotonic()
@@ -168,9 +171,22 @@ def get_traffic(user):
                 entry.fetched_at = datetime.now(timezone.utc).isoformat()
                 entry.failures, entry.error = 0, None
                 entry.retry_at = now+CACHE_SECONDS
-            except (httpx.HTTPError, ValueError, TypeError, OverflowError):
+            except (httpx.HTTPError, ValueError, TypeError, OverflowError) as error:
                 now = time.monotonic()
                 entry.failures += 1
                 entry.error = 'provider_unavailable'
-                entry.retry_at = now+min(300, CACHE_SECONDS*2**min(entry.failures-1, 4))
-        return _response(entry, now)
+                backoff = min(300, FAILURE_BACKOFF_SECONDS*2**min(entry.failures-1, 5))
+                if isinstance(error, httpx.HTTPStatusError):
+                    retry = error.response.headers.get('retry-after', '')
+                    try:
+                        seconds = float(retry)
+                        if math.isfinite(seconds):
+                            backoff = max(backoff, seconds)
+                    except ValueError:
+                        from email.utils import parsedate_to_datetime
+                        try:
+                            backoff = max(backoff, (parsedate_to_datetime(retry)-datetime.now(timezone.utc)).total_seconds())
+                        except (ValueError, TypeError, OverflowError):
+                            pass
+                entry.retry_at = now+backoff
+        return _response(entry, now, interval)

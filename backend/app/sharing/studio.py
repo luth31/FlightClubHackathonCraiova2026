@@ -3,7 +3,7 @@ import re
 import fitz
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from app.documents.service import get_document, current_version, file_hash
-from app.core.security import require_role
+from app.core.security import require_share_documents
 from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.llm import service as llm
@@ -13,7 +13,7 @@ from app.sharing.legal import LEGAL_BASES
 def source(db, user, document_id, version=None, sha256=None):
     if not user.active:
         raise DomainError('Contul nu mai este activ.', 403)
-    require_role(user, 'director', 'reviewer')
+    require_share_documents(user)
     doc = get_document(db, document_id, user)
     if doc.department == 'Resurse umane':
         raise DomainError('Documentele de personal nu se partajează între aeroporturi.', 403)

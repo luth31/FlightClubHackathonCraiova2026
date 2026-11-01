@@ -1,0 +1,169 @@
+/* Report workspace: readable controls, consistent panels and presentation output. */
+.rp-page .bi-report { --bi-muted: #647369; --bi-grid: #dfe7dd; --bi-background: #f1f4ee; border-radius: 13px; box-shadow: 0 3px 18px #193c2a05; }
+.bi-report-header { padding: 26px 26px 24px; align-items: flex-start; }
+.bi-report h1 { font-size: 29px; font-weight: 650; letter-spacing: -1px; margin-block: 9px; }
+.bi-report-header p { font-size: 12px; line-height: 1.8; }
+.bi-eyebrow { font-size: 9px; letter-spacing: 1.4px; }
+.bi-toolbar { gap: 6px; }
+.bi-toolbar button { min-height: 37px; padding: 9px; font-size: 11px; border-radius: 7px; }
+.bi-toolbar button:hover { border-color: #89a994; background: #eef5eb; }
+.bi-toolbar .bi-export-button { padding-inline: 13px; background: #195240; }
+.bi-toolbar .bi-export-button:hover { background: #123e31; }
+.bi-report button:disabled { opacity: .5; cursor: not-allowed; }
+.bi-columns button:disabled, .bi-horizontal-bars button:disabled { opacity: 1; cursor: default; }
+.bi-view-nav { display: flex; justify-content: space-between; gap: 15px; align-items: center; background: white; border-bottom: 1px solid var(--bi-grid); padding: 0 24px; }
+.bi-view-nav>div { display: flex; gap: 24px; }
+.bi-view-nav>div>button { display: flex; align-items: center; gap: 7px; font-size: 12px; min-height: 52px; padding: 0 0 2px; border-bottom: 2px solid transparent; color: #62746a; white-space: nowrap; }
+.bi-view-nav>div>button.active { color: var(--forest); border-bottom-color: var(--forest); font-weight: 650; }
+.bi-view-nav>div>button>span { font-size: 10px; padding: 3px 6px; border-radius: 4px; background: #edf2e8; }
+.bi-filter-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--forest); padding: 8px 10px; border: 1px solid #dce5d9; border-radius: 6px; }
+.bi-filter-toggle[aria-expanded=true] { background: #eaf3e6; border-color: #adc5af; }
+.bi-filter-toggle b { font-size: 10px; background: var(--forest); color: white; border-radius: 3px; padding: 1px 4px; }
+.bi-selection-bar { padding: 12px 24px; font-size: 11px; min-height: 54px; align-items: center; }
+.bi-selection-bar>div:first-child { flex-wrap: wrap; }
+.bi-period { display: flex; gap: 3px; align-items: center; white-space: nowrap; }
+.bi-period>span { margin-right: 7px; font-size: 10px; }
+.bi-period button { padding: 6px 9px; border-radius: 5px; font-size: 11px; color: #5c7061; }
+.bi-period button[aria-pressed=true] { background: #e8efdf; color: var(--forest); font-weight: 650; }
+.bi-active-filters { padding: 11px 24px; gap: 7px; }
+.bi-active-filters button { border-radius: 5px; font-size: 11px; padding: 6px 9px; }
+.bi-workspace.with-filters { grid-template-columns: minmax(0, 1fr) 230px; }
+.bi-canvas { padding: 22px; min-height: 380px; }
+.bi-brief { display: flex; align-items: center; gap: 12px; background: #e7eedf; border: 1px solid #d5e1cc; border-radius: 8px; padding: 15px 17px; color: #365d40; margin-bottom: 20px; }
+.bi-brief.attention { background: #fbf5e7; border-color: #ece1c7; color: #8d662c; }
+.bi-brief>div>span { display: block; font-size: 8px; letter-spacing: 1px; font-weight: 700; margin-bottom: 5px; }
+.bi-brief p { font-size: 12px; line-height: 1.7; }
+.bi-brief p strong { font-weight: 750; }
+.bi-brief button { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 11px; white-space: nowrap; color: inherit; }
+.bi-filter-pane { padding: 20px 17px; }
+.bi-filter-pane header { font-size: 12px; }
+.bi-filter-pane>p { font-size: 11px; line-height: 1.7; margin: 15px 0 22px; }
+.bi-filter-pane label { font-size: 11px; margin-bottom: 20px; }
+.bi-filter-pane select { padding: 10px 7px; font-size: 11px; background: white; }
+.bi-clear-filters { border-radius: 6px; padding: 10px; font-size: 11px !important; }
+.bi-filter-note { font-size: 10px; }
+.bi-report-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 16px 24px; background: white; border-top: 1px solid var(--bi-grid); font-size: 10px; color: var(--bi-muted); }
+.bi-report-footer>span { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bi-report-footer strong { font-weight: 500; }
+.bi-report-footer i { width: 5px; height: 5px; background: #5c8d67; border-radius: 50%; }
+.bi-demo-badge { color: #7a6a3e; background: #f5f0df; padding: 3px 6px; border-radius: 4px; margin-left: 5px; }
+.bi-panel { padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px #254d3003; }
+.bi-panel>header { margin-bottom: 20px; }
+.bi-panel h3 { font-size: 14px; font-weight: 650; letter-spacing: -.2px; }
+.bi-panel header p { font-size: 11px; line-height: 1.7; max-width: 560px; }
+.bi-panel-tag { font-size: 9px; white-space: normal; max-width: 110px; text-align: right; line-height: 1.6; padding: 4px 7px; border-radius: 4px; }
+.bi-grid-two, .bi-executive-main, .bi-documents-grid, .bi-contracts-grid, .bi-approvals-grid, .bi-procurement-grid, .bi-people-main, .bi-sharing-grid, .bi-maintenance-grid, .bi-control-grid, .bi-risk-lower { gap: 18px; }
+.bi-quality-strip, .bi-contract-strip, .bi-risk-score, .bi-control-metrics { gap: 12px; background: transparent; }
+.bi-executive-grid { grid-template-columns: 215px minmax(0, 1fr); gap: 18px; }
+.bi-scorecard { background: #193f32; color: #fff; border-color: #193f32; padding: 23px; border-radius: 11px; }
+.bi-scorecard>.bi-eyebrow { color: #c7d9b6; font-size: 8px; }
+.bi-scorecard>h2 { color: #fff; font-weight: 550; font-size: 25px; line-height: 1.3; }
+.bi-scorecard .bi-tile { background: transparent; padding: 20px 0; border-left: 0; border-top: 1px solid #ffffff24; }
+.bi-scorecard .bi-tile>span, .bi-scorecard .bi-tile>small { color: #c6d4c9; font-size: 11px; }
+.bi-scorecard .bi-tile>strong { color: #fff; font-size: 46px; font-weight: 500; margin: 8px 0; }
+.bi-scorecard .bi-tile.amber>strong { color: #e5d4a2; }
+.bi-scorecard-foot { color: #c6d4c9; font-size: 11px; line-height: 1.8; }
+.bi-tile { border-radius: 7px; border-left-width: 3px; padding: 15px 18px; }
+.bi-tile>span { font-size: 11px; }
+.bi-tile>strong { font-size: 32px; font-weight: 600; }
+.bi-tile>small { font-size: 10px; line-height: 1.6; }
+.bi-legend { font-size: 10px; gap: 12px; line-height: 1.5; }
+.bi-legend i { width: 7px; height: 7px; border-radius: 2px; }
+.bi-stacked button { font-size: 11px; grid-template-columns: 105px minmax(0, 1fr) 25px; gap: 10px; }
+.bi-stacked button>div { height: 24px; border-radius: 3px; }
+.bi-stacked i { font-size: 10px; }
+.bi-stacked strong { font-size: 11px; }
+.bi-horizontal-bars button { font-size: 11px; grid-template-columns: minmax(85px, 35%) minmax(0, 1fr); }
+.bi-horizontal-bars strong { font-size: 10px; }
+.bi-horizontal-bars button>div { margin-right: 52px; }
+.bi-horizontal-bars i { border-radius: 2px; height: 13px; }
+.bi-columns button>span { font-size: 10px; min-height: 35px; }
+.bi-columns button>strong { font-size: 11px; }
+.bi-columns button>div { border-radius: 4px 4px 0 0; }
+.bi-gauge>span { font-size: 11px; line-height: 1.7; }
+.bi-treemap { gap: 4px; }
+.bi-treemap button { border-radius: 4px; color: #153b29; min-width: 95px; overflow-wrap: anywhere; }
+.bi-treemap button:nth-child(8n+1), .bi-treemap button:nth-child(8n+5) { color: white; }
+.bi-treemap span { font-size: 11px; }
+.bi-treemap small { font-size: 10px; }
+.bi-matrix { font-size: 11px; border-spacing: 4px; }
+.bi-matrix thead th, .bi-matrix th button { font-size: 10px; }
+.bi-matrix button { font-size: 11px; border-radius: 3px; }
+.bi-timeline button { font-size: 11px; grid-template-columns: 115px minmax(0, 1fr) 14px; min-height: 35px; }
+.bi-timeline button>div { height: 35px; }
+.bi-deadline-point { top: 14px; }
+.bi-timeline-axis { font-size: 10px; position: relative; display: block; height: 24px; margin-right: 24px; padding: 0; }
+.bi-timeline-axis>span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.bi-timeline-axis>span:first-child { transform: none; }
+.bi-timeline-axis>span:last-child { transform: translateX(-100%); }
+.bi-timeline small { font-size: 9px; }
+.bi-deadline-list strong { font-size: 12px; }
+.bi-deadline-list small { font-size: 10px; }
+.bi-quality-banner, .bi-finance-hero, .bi-risk-banner { padding: 24px; border-radius: 10px; }
+.bi-quality-banner h2, .bi-finance-hero h2, .bi-risk-banner h2, .bi-chain-heading h2, .bi-network-top h2, .bi-ops-heading h2 { font-size: 27px; font-weight: 600; letter-spacing: -.8px; }
+.bi-currency-heroes strong { font-weight: 600; }
+.bi-workboard { gap: 14px; }
+.bi-task-card>strong { font-size: 12px; line-height: 1.6; }
+.bi-task-card>small, .bi-task-card footer { font-size: 10px; }
+.bi-workboard-head { font-size: 12px; }
+.bi-task-card { padding: 16px; }
+.bi-availability { font-size: 10px; }
+.bi-roster strong { font-size: 12px; }
+.bi-roster small { font-size: 10px; }
+.bi-context { max-width: none; grid-template-columns: 1fr 1fr; align-items: start; gap: 18px; }
+.bi-context>.bi-panel:last-child { grid-column: 1/-1; }
+.bi-context h2 { font-size: 22px; margin-bottom: 15px; }
+.bi-context p { margin: 10px 0; }
+.bi-context button { border-radius: 6px; margin-top: 7px; }
+.bi-canvas .rp-register { border-radius: 10px; }
+.bi-print-context { display: none; }
+@media (max-width: 1250px) { .bi-report-header { flex-wrap: wrap; gap: 20px; } .bi-workspace.with-filters { grid-template-columns: minmax(0, 1fr) 210px; } .bi-workspace.with-filters .bi-executive-grid { grid-template-columns: 1fr; } .bi-workspace.with-filters .bi-scorecard { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; } .bi-workspace.with-filters .bi-scorecard>h2, .bi-workspace.with-filters .bi-scorecard>.bi-eyebrow { grid-column: 1/-1; margin: 0; } .bi-workspace.with-filters .bi-scorecard-foot { display: none; } }
+@media (max-width: 1000px) { .bi-workspace.with-filters { grid-template-columns: 1fr; } .bi-filter-pane { grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 17px; border-left: 0; border-bottom: 1px solid var(--bi-grid); } .bi-filter-pane header, .bi-filter-pane>p, .bi-filter-note { grid-column: 1/-1; } .bi-filter-pane>p, .bi-filter-pane label, .bi-filter-note { margin: 0; } .bi-brief { flex-wrap: wrap; } .bi-brief button { margin-left: 33px; } .bi-panel-tag { display: none; } .bi-executive-grid { grid-template-columns: 1fr; } .bi-scorecard { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; } .bi-scorecard>h2, .bi-scorecard>.bi-eyebrow { grid-column: 1/-1; margin: 0; } .bi-scorecard-foot { display: none; } .bi-scorecard .bi-tile { margin: 0; padding: 15px 0 0; } .bi-scorecard .bi-tile>strong { font-size: 35px; } }
+@media (max-width: 760px) { .bi-view-nav { padding-inline: 16px; gap: 10px; } .bi-view-nav>div { gap: 15px; } .bi-view-nav>div>button { font-size: 11px; gap: 5px; } .bi-view-nav>div>button:first-child { max-width: 145px; white-space: normal; text-align: left; } .bi-view-nav>div>button>span { display: none; } .bi-canvas { padding: 15px; } .bi-report-header { padding: 22px 18px; } .bi-selection-bar { padding: 12px 17px; flex-wrap: wrap; } .bi-brief>div { flex: 1; min-width: 180px; } .bi-grid-two, .bi-risk-lower, .bi-context { grid-template-columns: 1fr; } .bi-context>.bi-panel:last-child { grid-column: auto; } .bi-panel { padding: 18px; } .bi-active-filters { padding-inline: 16px; } .bi-report-footer { padding: 16px; } .bi-tile>span { font-size: 10px; } .bi-report h1 { font-size: 26px; } .bi-context p { font-size: 12px; } }
+@media (max-width: 520px) { .bi-view-nav { flex-wrap: wrap; gap: 0; padding-bottom: 10px; } .bi-view-nav>div { width: 100%; gap: 0; justify-content: space-between; } .bi-view-nav>div>button { max-width: 130px; font-size: 10px; gap: 5px; } .bi-view-nav>div>button:first-child { max-width: 115px; } .bi-view-nav>div>button>svg { width: 14px; } .bi-filter-toggle { margin-top: 7px; font-size: 11px; padding: 6px 9px; } .bi-canvas { padding: 11px; } .bi-panel { padding: 15px; } .bi-panel h3 { font-size: 13px; } .bi-scorecard, .bi-workspace.with-filters .bi-scorecard { gap: 8px; padding: 19px 16px; } .bi-scorecard .bi-tile>strong { font-size: 31px; } .bi-scorecard .bi-tile>span, .bi-scorecard .bi-tile>small { font-size: 9px; } .bi-scorecard>h2 { font-size: 24px; } .bi-brief { padding: 13px; gap: 9px; } .bi-brief p { font-size: 11px; } .bi-brief button { margin-left: 30px; font-size: 10px; } .bi-period { gap: 1px; } .bi-filter-pane { padding: 16px; gap: 15px 10px; } .bi-filter-pane select { font-size: 10px; } .bi-filter-pane header { font-size: 12px; } .bi-quality-banner h2, .bi-finance-hero h2, .bi-risk-banner h2, .bi-chain-heading h2 { font-size: 23px; } .bi-stacked button { grid-template-columns: 80px minmax(0, 1fr) 20px; font-size: 10px; gap: 6px; } .bi-stacked i { font-size: 9px; } .bi-timeline button { grid-template-columns: 75px minmax(0, 1fr) 12px; font-size: 9px; gap: 6px; } .bi-timeline-axis { margin-left: 81px; font-size: 8px; } .bi-timeline small { font-size: 8px; } .bi-tile { padding: 13px; } }
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  body:has(.bi-report) { background: white; }
+  body:has(.bi-report) .sidebar, body:has(.bi-report) .topbar, body:has(.bi-report) .workspace-footer, body:has(.bi-report) .mobile-demo-banner, .rp-report-navigation, .bi-toolbar, .bi-view-nav, .bi-filter-pane, .bi-selection-bar, .bi-active-filters, .bi-brief button, .rp-table-controls, .rp-panel-title>.rp-secondary-button, .rp-table-footer, .rp-row-open { display: none !important; }
+  body:has(.bi-report) .app-shell, body:has(.bi-report) .app-main { display: block; margin: 0; width: 100%; padding: 0; }
+  body:has(.bi-report) .main-content { padding: 0; max-width: none; margin: 0; }
+  .rp-page { max-width: none; padding: 0; }
+  .rp-page .bi-report { border: 0; box-shadow: none; border-radius: 0; background: white; overflow: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .bi-report-header { padding: 0 0 15px; }
+  .bi-print-context { display: block; font-size: 10px; line-height: 1.8; padding: 10px 0; border-bottom: 1px solid #ccc; margin-bottom: 15px; }
+  .bi-workspace, .bi-workspace.with-filters { display: block; }
+  .bi-canvas { padding: 0; min-height: 0; }
+  .bi-brief, .bi-panel, .bi-tile, .bi-scorecard, .bi-report-header, .bi-task-card, .bi-quality-banner, .bi-finance-hero, .bi-risk-banner { break-inside: avoid; box-shadow: none; }
+  .bi-grid-two { grid-template-columns: 1fr 1fr; }
+  .bi-executive-grid { display: block; }
+  .bi-executive-main, .bi-documents-grid, .bi-contracts-grid, .bi-approvals-grid, .bi-procurement-grid, .bi-suppliers-grid, .bi-people-main, .bi-sharing-grid, .bi-maintenance-grid { display: block; }
+  .bi-executive-main>*, .bi-documents-grid>*, .bi-contracts-grid>*, .bi-approvals-grid>*, .bi-procurement-grid>*, .bi-suppliers-grid>*, .bi-people-main>*, .bi-sharing-grid>*, .bi-maintenance-grid>* { margin-bottom: 14px; }
+  .bi-panel { padding: 13px; }
+  .bi-panel>header { margin-bottom: 13px; }
+  .bi-executive-main>.bi-panel:first-child { min-height: 0; }
+  .bi-scorecard { padding: 15px 20px; }
+  .bi-scorecard>h2 { font-size: 20px; }
+  .bi-scorecard .bi-tile { padding: 10px 0 0; }
+  .bi-scorecard .bi-tile>strong { font-size: 30px; margin: 4px 0; }
+  .bi-scorecard { display: grid; grid-template-columns: repeat(3, 1fr); margin-bottom: 18px; }
+  .bi-scorecard>h2, .bi-scorecard>.bi-eyebrow { grid-column: 1/-1; }
+  .bi-scorecard-foot { display: none; }
+  .bi-matrix-scroll, .rp-table-scroll { max-height: none; overflow: visible; }
+  .bi-matrix { white-space: normal; }
+  .bi-matrix thead th { position: static; }
+  .bi-context, .bi-control-grid, .bi-people-grid { display: block; }
+  .bi-context>.bi-panel, .bi-control-grid>.bi-panel { margin-bottom: 15px; }
+  .rp-print-row { display: table-row; }
+  .rp-table-print-note { display: block; padding: 0 20px 15px; font-size: 10px; }
+  .rp-register table { table-layout: fixed; }
+  .rp-register th, .rp-register td { padding: 6px 9px; font-size: 9px; overflow-wrap: anywhere; white-space: normal; }
+  .rp-register th button { display: none !important; }
+  .rp-print-heading { display: inline; }
+  .rp-register th button svg { display: none; }
+  .rp-register { overflow: visible; }
+  .rp-register th:first-child { width: 27%; }
+  .rp-row-title { min-width: 0; font-size: 10px; }
+  .rp-register tr { break-inside: avoid; }
+  .rp-register thead { display: table-header-group; }
+  .bi-report-footer { margin-top: 8px; padding: 8px 0; }
+}

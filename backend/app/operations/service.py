@@ -13,7 +13,7 @@ from app.core.audit import record
 from app.core.exceptions import DomainError
 from app.core.security import has_role
 from app.operations.models import OperationEvent, OperationSimulation
-from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, TIMELINE, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, gates, position
+from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, TIMELINE, ROUTINE_TIMELINE, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, AIRCRAFT_DISPLAY_SCALE, gates, position, motion_path
 
 
 KINDS = {
@@ -106,19 +106,18 @@ def boarding_progress(flight, events, elapsed):
 
 def pending_events(events, scenario_mode='interactive'):
     keys = {e.event_key for e in events}
-    if scenario_mode == 'replay':
-        result = [(seconds, f'scenario-{index}', kind, payload, title, detail)
-            for index, (seconds, kind, payload, title, detail) in enumerate(TIMELINE)
-            if f'scenario-{index}' not in keys]
-    else:
-        result = []
+    scripted = TIMELINE if scenario_mode == 'replay' else ROUTINE_TIMELINE
+    result = []
+    for seconds, kind, payload, title, detail in scripted:
+        subject = payload.get('flight_id') or payload.get('staff_id') or 'shift'
+        key = f'presentation-v2:{kind}:{subject}:{seconds}'
+        legacy_exists = any(e.kind == kind and e.elapsed_seconds == seconds
+            and e.flight_id == payload.get('flight_id') and e.staff_id == payload.get('staff_id') for e in events)
+        if key not in keys and not legacy_exists:
+            result.append((seconds, key, kind, payload, title, detail))
+    if scenario_mode != 'replay':
         for flight in FLIGHTS:
-            if flight['direction'] == 'arrival':
-                key = flight['id']+':arrival'
-                if key not in keys:
-                    result.append((flight['scheduled_arrival_seconds'], key, 'arrival',
-                        {'flight_id':flight['id'], 'gate_id':flight['gate_id']},
-                        flight['callsign']+' · aterizare', 'Sosire demonstrativă programată; nu reprezintă trafic ADS-B.'))
+            if flight.get('automatic'):
                 continue
             due = flight['scheduled_departure_seconds']-flight['turnaround_seconds']
             for seconds, kind in [(due, 'gate_due'), (flight['scheduled_departure_seconds'], 'departure_due')]:
@@ -275,6 +274,7 @@ def snapshot(db, state, user, events):
             phase = 'at_gate' if not opened else ('ready' if remaining == 0 else 'boarding' if gate_rows[definition['gate_id']]['open'] else 'waiting_gate')
         flights.append({**definition, 'origin': definition.get('origin', airport['name']),
             'destination': definition.get('destination', airport['name']), 'position': point, 'phase': phase,
+            'trajectory': motion_path(airport, gate_rows[definition['gate_id']], definition, actual if actual is not None else estimated),
             'actual_departure_seconds': actual, 'estimated_departure_seconds': estimated,
             'delay_minutes': delay, 'delay_basis': 'actual' if actual is not None else 'projected',
             'status': 'departed' if actual is not None else ('arriving' if planned is None else 'blocked' if estimated is None else 'ready' if remaining == 0 else 'boarding'),
@@ -290,6 +290,7 @@ def snapshot(db, state, user, events):
         'airport': {key: airport[key] for key in ('id','name','icao','lat','lon','elevation_m')},
         'mode': 'simulation', 'simulated': True,
         'model': {'departure_basis': 'open_gate_boarding_then_offblock_then_taxi', 'gate_reclosures_affect_departure': True,
+            'aircraft_display_scale': AIRCRAFT_DISPLAY_SCALE, 'interactive_flight_id': 'flight-101',
             'notice': 'Pontaj → deschidere poartă → 16 min îmbarcare → plecare de la stand → 3 min rulaj. Închiderea porții întrerupe îmbarcarea. Durate demonstrative, fără autorizare ATC.'},
         'simulation': {'scenario_mode':state.scenario_mode, 'run_id': state.run_id, 'revision': state.revision, 'running': state.running, 'speed': state.speed,
             'elapsed_seconds': round(state.elapsed_seconds, 2), 'duration_seconds': DURATION_SECONDS,
@@ -452,6 +453,8 @@ def input_event(db, user, body):
                 if not staff[body.staff_id]['present']:
                     raise DomainError('Agentul trebuie să fie pontat înainte de acțiunea la poartă.', 409)
                 assigned = next(f for f in FLIGHTS if f['gate_id']==body.gate_id)
+                if assigned.get('automatic'):
+                    raise DomainError('Acest zbor este gestionat automat. Intervențiile prezentării se fac la G1 / FL101.', 409)
                 if body.flight_id and body.flight_id != assigned['id']:
                     raise DomainError('Zborul nu este alocat acestei porți.', 422)
                 if assigned['direction'] != 'departure':
