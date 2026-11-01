@@ -143,6 +143,21 @@ def assigned_access(user, document):
     return False
 
 
+def reviewed_access(user, document):
+    """An actual approver can read the published version they personally approved."""
+    db = object_session(user) if isinstance(user, User) else None
+    if not db or document.status not in PUBLISHED: return False
+    from app.documents.models import DocumentVersion
+    from app.tasks.models import WorkflowTask
+    return db.scalar(select(DocumentVersion.id).join(WorkflowTask,
+        (WorkflowTask.document_id == DocumentVersion.document_id) &
+        (WorkflowTask.document_version == DocumentVersion.version)).where(
+        DocumentVersion.document_id == document.id, DocumentVersion.version == document.version,
+        DocumentVersion.approved_by == user.id, DocumentVersion.approved_at.is_not(None),
+        WorkflowTask.type == 'approval', WorkflowTask.status == 'completed',
+        WorkflowTask.completed_by == user.id)) is not None
+
+
 def can_read(user, document, include_assignment=True):
     if not document or not user.active or document.airport_id != user.airport_id:
         return False
@@ -172,6 +187,8 @@ def can_read(user, document, include_assignment=True):
     if document.created_by == user.id or document.owner_id == user.id:
         return True
     if include_assignment and assigned_access(user, document):
+        return True
+    if reviewed_access(user, document):
         return True
     if has_role(user, 'finance'):
         return document.department == 'Financiar' or (document.category in ('Contract','Act adițional') and document.status in PUBLISHED and document.confidentiality not in RESTRICTED)

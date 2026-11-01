@@ -62,6 +62,14 @@ TYPE_RULES = (
 )
 
 EXCLUDED_CATEGORIES = {'procedura', 'audit', 'resurse umane', 'instruire'}
+PROCUREMENT_TEMPLATE_TYPES = {
+    'necessity': 'Referat de necesitate', 'specifications': 'Caiet de sarcini',
+    'contract': 'Contract', 'purchase_order': 'Comandă de achiziție', 'addendum': 'Act adițional',
+    'inbound_delivery': 'Livrare de intrare', 'service_report': 'Raport de prestare',
+    'acceptance': 'Proces-verbal de recepție', 'invoice': 'Factură', 'credit_note': 'Notă de credit',
+    'return_order': 'Comandă de retur', 'replacement_order': 'Comandă de înlocuire',
+    'outbound_delivery': 'Livrare de ieșire',
+}
 
 
 def match_type(value, prefix=False):
@@ -77,8 +85,11 @@ def classify(document):
     if category in EXCLUDED_CATEGORIES or normalize(document.department) == 'resurse umane':
         return None
     metadata = (document.extra or {}).get('metadata', {})
+    procurement = metadata.get('procurement', {}) if isinstance(metadata, dict) else {}
+    template_type = PROCUREMENT_TEMPLATE_TYPES.get(procurement.get('template_id')) if isinstance(procurement, dict) else None
     explicit = match_type(document.category)
     candidates = (
+        ('template', match_type(template_type)),
         ('metadata', match_type(metadata.get('document_type')) if isinstance(metadata, dict) else None),
         ('title', match_type(document.title, prefix=True)),
     )
@@ -87,7 +98,8 @@ def classify(document):
         if candidate and (not explicit or candidate[0] == explicit[0]):
             if not explicit or candidate[1] != explicit[1]:
                 return {'stage': candidate[0], 'document_type': candidate[1],
-                    'reason': 'Tipul documentului este indicat în metadate' if source == 'metadata'
+                    'reason': 'Șablon de achiziții predefinit' if source == 'template'
+                        else 'Tipul documentului este indicat în metadate' if source == 'metadata'
                         else 'Tipul documentului este indicat în titlu', 'source': source}
     if explicit:
         return {'stage': explicit[0], 'document_type': explicit[1],

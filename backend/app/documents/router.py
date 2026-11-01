@@ -1,10 +1,11 @@
 from pathlib import Path
+import json
 from fastapi import APIRouter, Depends, File, Form, UploadFile, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.database import get_db
-from app.core.security import current_user,can_read,can_read_version
+from app.core.security import current_user,can_read,can_read_version,has_role
 from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.core.signing import verify_file
@@ -41,9 +42,22 @@ def flow(q: str=Query('',max_length=200),category: str='',status: str='',departm
     return document_flow(db,user,q,category,status,department,case_id)
 
 @router.post('',status_code=201)
-def upload(file: UploadFile=File(...),title: str=Form(''),category: str=Form('Contract'),department: str=Form('Achiziții'),supplier: str=Form(''),expires_at: str=Form(''),db: Session=Depends(get_db),user=Depends(current_user)):
+def upload(file: UploadFile=File(...),title: str=Form(''),category: str=Form('Contract'),department: str=Form('Achiziții'),supplier: str=Form(''),expires_at: str=Form(''),procurement_template: str=Form(''),procurement_fields: str=Form('{}'),auto_extract: bool=Form(False),db: Session=Depends(get_db),user=Depends(current_user)):
+    if len(procurement_fields) > 100000:
+        raise DomainError('Datele șablonului sunt prea lungi.', 422)
+    try:
+        fields = json.loads(procurement_fields)
+    except (ValueError, TypeError):
+        raise DomainError('Datele șablonului nu sunt valide.', 422)
+    if not isinstance(fields, dict) or (fields and not procurement_template):
+        raise DomainError('Selectează un șablon de achiziții pentru câmpurile introduse.', 422)
     content=file.file.read(25*1024*1024+1)
-    doc=service.create_document(db,user,content,file.filename or 'document.pdf',title,category,department,supplier,expires_at)
+    if auto_extract:
+        department='Achiziții' if canonical_department(user.department)=='Conducere' else canonical_department(user.department)
+        category='Resurse umane' if has_role(user,'hr') else 'Raport de mentenanță' if has_role(user,'technician') else 'Contract'
+        title='';supplier='';expires_at='';procurement_template='';fields={}
+    doc=service.create_document(db,user,content,file.filename or 'document.pdf',title,category,department,supplier,expires_at,
+                                procurement_template=procurement_template, procurement_fields=fields,auto_extract=auto_extract)
     return detail(db,user,doc)
 
 @router.get('/{document_id}')

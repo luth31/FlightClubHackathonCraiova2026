@@ -30,6 +30,7 @@ from app.equipment.router import router as equipment_router
 from app.renewals.router import router as renewals_router
 from app.workspace.router import router as workspace_router
 from app.documents.followup import router as document_followup_router
+from app.procurement.router import router as procurement_router
 
 @asynccontextmanager
 async def lifespan(app):
@@ -43,6 +44,8 @@ async def lifespan(app):
     from app.renewals.service import sync_all, monitor
     await asyncio.to_thread(sync_all)
     from app.database import SessionLocal
+    from app.procurement.service import import_legacy_cases
+    with SessionLocal() as db: import_legacy_cases(db)
     from app.extraction.service import backfill
     from app.extraction.worker import start
     with SessionLocal() as db: backfill(db)
@@ -76,7 +79,7 @@ async def security_headers(request: Request,call_next):
     response.headers['Cache-Control']='no-store'
     return response
 
-for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router,catalog_router,registration_router,operations_map_router,operations_router,reports_router,collaboration_router,equipment_router,renewals_router,workspace_router,document_followup_router):
+for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router,catalog_router,registration_router,operations_map_router,operations_router,reports_router,collaboration_router,equipment_router,renewals_router,workspace_router,document_followup_router,procurement_router):
     app.include_router(router)
 
 @app.get('/api/health')

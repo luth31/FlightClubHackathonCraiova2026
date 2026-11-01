@@ -74,7 +74,7 @@ command.upgrade(config, 'head')
 seed()
 with engine.connect() as connection:
     assert connection.execute(text('select version_num from alembic_version')).scalars().all() == [ScriptDirectory.from_config(config).get_current_head()]
-assert {'user_profiles', 'collaboration_threads', 'collaboration_sync'} <= set(inspect(engine).get_table_names())
+assert {'user_profiles', 'collaboration_threads', 'collaboration_sync', 'procurement_cases', 'procurement_payments'} <= set(inspect(engine).get_table_names())
 assert {column['name'] for column in inspect(engine).get_columns('collaboration_mailbox_state')} == {
     'airport_id', 'user_id', 'thread_id', 'read_sequence', 'starred', 'archived',
 }
