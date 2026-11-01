@@ -47,7 +47,8 @@ test('ordinary users can open a read-only organigram including active support st
   assert.match(organization.textContent,/Daniel Ilie Voicu/);
   assert.doesNotMatch(organization.textContent,/Coordonator:/);
   assert.doesNotMatch(organization.textContent,/Former Support/);
-  assert.equal(organization.querySelectorAll('button,input').length,0);
+  assert.equal(organization.querySelectorAll('input').length,0);
+  assert.ok([...organization.querySelectorAll('button')].every(button=>button.getAttribute('aria-haspopup')==='dialog'),'read-only profiles do not expose management controls');
   assert.equal(organization.textContent.split('Sorin Demo').length-1,1);
   assert.equal(organization.textContent.split('Daniel Ilie Voicu').length-1,1);
   assert.equal(organization.querySelectorAll('[data-department-id]').length,4);

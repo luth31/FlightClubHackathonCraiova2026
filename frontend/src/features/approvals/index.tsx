@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
@@ -186,7 +187,7 @@ export function ApprovalsPage({
                   <h2>{t.title}</h2>
                   <p>
                     <UserRound size={13} />
-                    {t.assignee || "Responsabil de stabilit"}
+                    <PersonReference name={t.assignee || "Responsabil de stabilit"} userId={t.assigned_to} embedded/>
                     <span className="meta-dot">·</span>
                     {taskLabels[t.type] || t.type || "Verificare document"}
                   </p>
@@ -195,7 +196,7 @@ export function ApprovalsPage({
                       <ArrowRightLeft size={12} />
                       Delegare activă
                       {t.delegated_from
-                        ? ` · în locul lui ${t.delegated_from}`
+                        ? <> · în locul lui <PersonReference name={t.delegated_from} embedded/></>
                         : ""}
                     </span>
                   )}
@@ -291,7 +292,7 @@ export function ApprovalsPage({
                 <summary>Istoricul sarcinii</summary>
                 {selected.history.map((event, i) => (
                   <div key={i}>
-                    <strong>{event.actor}</strong>
+                    <strong><PersonReference name={event.actor}/></strong>
                     <p>{event.comment || event.action}</p>
                     <small>{time(event.created_at)}</small>
                   </div>

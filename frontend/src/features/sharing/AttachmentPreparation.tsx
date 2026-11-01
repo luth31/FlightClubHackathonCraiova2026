@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import {useEffect,useState} from 'react';
 import {Check,ArrowRight,RefreshCw} from 'lucide-react';
 import {api} from '@/services/api-client';
@@ -42,7 +43,7 @@ export function AttachmentPreparation({initial,onClose,onReady,onOpen}:{initial:
     <ReadOnlyPdf source={`${doc.file_url}?version=${doc.version}`} title={doc.title} word={false}/>
     {error&&<ErrorMessage message={error}/>}
     <p className="quiet-note">Fișierul este înregistrat în biblioteca aeroportului. Va ajunge la destinatar după pregătirea copiei și trimiterea mesajului.</p>
-    {task&&!approved&&<p className="quiet-note">Responsabil: <strong>{task.assignee}</strong></p>}
+    {task&&!approved&&<p className="quiet-note">Responsabil: <strong><PersonReference name={task.assignee}/></strong></p>}
     <div className="attachment-preparation-actions"><button className="text-button" disabled={busy} onClick={()=>void act('refresh')}><RefreshCw size={15}/>Actualizează starea</button><button className="text-button" disabled={busy} onClick={()=>onOpen(doc.id)}>Vezi metadatele și fluxul</button>
       {doc.status==='draft'&&!doc.validated&&doc.permissions?.can_validate&&<button className="button primary" disabled={busy} onClick={()=>void act('validate')}><Check size={16}/>Confirm informațiile documentului</button>}
       {doc.status==='draft'&&doc.validated&&doc.permissions?.can_submit&&<button className="button primary" disabled={busy} onClick={()=>void act('submit')}>Trimite spre avizare<ArrowRight size={16}/></button>}

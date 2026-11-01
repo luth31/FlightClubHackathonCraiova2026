@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import {useState, type ReactNode} from 'react';
 import {ArrowUpRight, ChartNoAxesCombined} from 'lucide-react';
 import type {ReportRow} from './types';
@@ -75,5 +76,5 @@ export function StatusChart({rows,onPick}:{rows:ReportRow[];onPick:(value:string
 
 export function RankingChart({items,onPick,unit='înregistrări'}:{items:{name:string;value:number}[];onPick:(value:string)=>void;unit?:string}){
   if(!items.length)return <EmptyChart/>;const max=Math.max(1,...items.map(i=>i.value));
-  return <div className="px-ranking">{items.slice(0,7).map((item,i)=><button key={item.name} onClick={()=>onPick(item.name)}><div><span><small>{String(i+1).padStart(2,'0')}</small>{label(item.name)}</span><b>{number(item.value)} <small>{unit}</small></b></div><i><span style={{width:`${item.value/max*100}%`,background:i===0?BLUE:i===1?'#7db8e4':'#a4cbe9'}}/></i></button>)}</div>;
+  return <div className="px-ranking">{items.slice(0,7).map((item,i)=><button key={item.name} onClick={()=>onPick(item.name)}><div><span><small>{String(i+1).padStart(2,'0')}</small><PersonReference name={label(item.name)} embedded/></span><b>{number(item.value)} <small>{unit}</small></b></div><i><span style={{width:`${item.value/max*100}%`,background:i===0?BLUE:i===1?'#7db8e4':'#a4cbe9'}}/></i></button>)}</div>;
 }

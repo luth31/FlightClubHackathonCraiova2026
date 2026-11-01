@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {Building2, Check, ChevronDown, Copy, LogOut, Mail, UserRound, X} from 'lucide-react';
+import {ArrowLeft, Building2, Check, ChevronDown, Copy, LogOut, Mail, UserRound, X} from 'lucide-react';
 import {date, initials, roleLabel} from '@/utils/format';
 import {usePersonDirectory, type Person} from './PersonDirectory';
 import {OwnProfileControls} from './OwnProfileControls';
@@ -21,7 +21,7 @@ export function PersonStatus({person}: {person: Person}) {
   return <span className={`availability availability-${status}`}><i aria-hidden="true"/>{status === 'offline' ? 'Offline' : presenceLabels[status]}</span>;
 }
 
-export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled, openOnFocus = true, children, fallbackDetails, action}: {
+export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled, openOnFocus = true, children, fallbackDetails, action, embedded = false}: {
   userId?: string;
   name: string;
   person?: Person;
@@ -35,13 +35,18 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
   children?: ReactNode;
   fallbackDetails?: {title?: string; fields: {label: string; value: string}[]};
   action?: {label: string; onSelect: () => void};
+  /** A name inside an existing button/link uses its parent's keyboard target. */
+  embedded?: boolean;
 }) {
   const directory = usePersonDirectory();
   // Audit entries can contain names rather than IDs. Ambiguous names stay unresolved.
-  const personId = userId || person?.id;
+  const [viewedPersonId,setViewedPersonId] = useState<string>();
+  const personId = viewedPersonId || userId || person?.id;
   const matches = externalAirport ? undefined : directory.data?.items.filter(item => personId ? item.id === personId : item.name === name);
   const match = matches?.length === 1 ? matches[0] : undefined;
-  const profile = person ? {...person, profile: match?.profile || person.profile} : match;
+  const profile = viewedPersonId ? match : person ? {...person, profile: match?.profile || person.profile} : match;
+  const managers = externalAirport ? [] : directory.data?.items.filter(item => profile?.manager_id ? item.id === profile.manager_id : item.name === profile?.manager_name) || [];
+  const manager = managers.length === 1 ? managers[0] : undefined;
   const personal = liveProfile(profile?.profile, directory.now);
   const status = displayedPresence(profile, directory.now);
   const statusLabel = status === 'offline' ? 'Offline' : presenceLabels[status];
@@ -49,7 +54,8 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
     (directory.account?.userId || directory.data?.current_user_id) === (profile?.id || personId);
   const [open, setOpen] = useState(false);
   const [copyState,setCopyState] = useState<'idle'|'copied'|'failed'>('idle');
-  const trigger = useRef<HTMLButtonElement>(null);
+  const trigger = useRef<HTMLElement>(null);
+  const focusTarget = useCallback(() => embedded ? trigger.current?.parentElement?.closest<HTMLElement>('button,a[href],[tabindex]') || trigger.current : trigger.current, [embedded]);
   const card = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const suppressFocus = useRef(false);
@@ -73,18 +79,19 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
   const close = useCallback((restoreFocus = false) => {
     clearTimeout(timer.current);
     setOpen(false);
+    setViewedPersonId(undefined);
     if (restoreFocus) {
       suppressFocus.current = true;
-      trigger.current?.focus({preventScroll: true});
+      focusTarget()?.focus({preventScroll: true});
       suppressFocus.current = false;
     }
-  }, []);
+  }, [focusTarget]);
   function scheduleClose() {
     clearTimer();
     if (editing.current) return;
     timer.current = setTimeout(() => {
       const active = document.activeElement;
-      if (!card.current?.contains(active) && active !== trigger.current) setOpen(false);
+      if (!card.current?.contains(active) && active !== focusTarget()) close();
     }, 250);
   }
   function blur(event: FocusEvent) {
@@ -94,6 +101,28 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
   }
 
   useEffect(() => () => clearTimeout(timer.current), []);
+
+  useEffect(() => {
+    if (!embedded) return;
+    const anchor = focusTarget();
+    if (!anchor || anchor === trigger.current) return;
+    // A row may name both an assignee and a delegator. Its keyboard focus opens
+    // the primary reference; hovering either name still opens that person's card.
+    const focus = () => {if (openOnFocus && !suppressFocus.current && anchor.querySelector('.person-avatar-trigger') === trigger.current) setOpen(true);};
+    const blur = (event: globalThis.FocusEvent) => {
+      if (event.relatedTarget && !card.current?.contains(event.relatedTarget as Node)) close();
+    };
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Tab' && !event.shiftKey && card.current) {
+        const first = card.current.querySelector<HTMLElement>(focusable);
+        if (first) {event.preventDefault(); first.focus();}
+      }
+    };
+    anchor.addEventListener('focus', focus);
+    anchor.addEventListener('blur', blur);
+    anchor.addEventListener('keydown', key);
+    return () => {anchor.removeEventListener('focus', focus); anchor.removeEventListener('blur', blur); anchor.removeEventListener('keydown', key);};
+  }, [embedded, focusTarget, openOnFocus, close]);
 
   useLayoutEffect(() => {
     if (!open || !card.current || !trigger.current) return;
@@ -111,12 +140,12 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
       panel.style.top = `${Math.max(margin, Math.min(top, window.innerHeight - height - margin))}px`;
     }
     position();
-    const observer = new ResizeObserver(position);
-    observer.observe(panel);
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(position);
+    observer?.observe(panel);
     window.addEventListener('resize', position);
     window.addEventListener('scroll', position, true);
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
       window.removeEventListener('resize', position);
       window.removeEventListener('scroll', position, true);
     };
@@ -138,7 +167,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
     function otherCard(event: Event) {
       if ((event as CustomEvent<string>).detail !== id) close();
     }
-    document.dispatchEvent(new CustomEvent('person-card-open', {detail: id}));
+    document.dispatchEvent(new window.CustomEvent('person-card-open', {detail: id}));
     document.addEventListener('person-card-open', otherCard);
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', escape, true);
@@ -152,13 +181,14 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
     };
   }, [open, id, close]);
 
+  const Trigger = embedded ? 'span' : 'button';
   return <>
-    <button
-      ref={trigger}
-      type="button"
+    <Trigger
+      ref={node => {trigger.current = node;}}
+      type={embedded ? undefined : 'button'}
       className={`person-avatar-trigger ${accountRole ? 'person-account-trigger' : ''} ${className}`}
       style={style}
-      disabled={disabled}
+      disabled={embedded ? undefined : disabled}
       aria-label={`${action?.label || 'Vezi profilul'}: ${name}`}
       aria-haspopup="dialog"
       aria-expanded={open}
@@ -171,7 +201,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
       onPointerLeave={scheduleClose}
       onFocus={() => { if (openOnFocus && !suppressFocus.current) show(); }}
       onBlur={blur}
-      onClick={event => { event.preventDefault(); event.stopPropagation(); if (action) {close(); action.onSelect();} else show(); }}
+      onClick={event => {if (embedded) {close(); return;} event.preventDefault(); event.stopPropagation(); if (action) {close(); action.onSelect();} else show(); }}
       onKeyDown={event => {
         if (event.key === 'Tab' && open && !event.shiftKey) {
           const first = card.current?.querySelector<HTMLElement>(focusable);
@@ -190,7 +220,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         <ProfileImage url={personal.photo_url} name={name}/>
         {profile && !externalAirport && <span className={`person-presence person-presence-${status}`} aria-hidden="true"/>}
       </>)}
-    </button>
+    </Trigger>
     {open && createPortal(
       <div
         ref={card}
@@ -198,6 +228,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         className={`person-profile ${own ? 'person-profile-own' : ''}`}
         role="dialog"
         aria-label={`Profil: ${profile?.name || name}`}
+        onClick={event => event.stopPropagation()}
         onPointerEnter={clearTimer}
         onPointerLeave={scheduleClose}
         onFocus={clearTimer}
@@ -208,7 +239,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
           if (!controls?.length) return;
           if (event.shiftKey && document.activeElement === controls[0]) {
             event.preventDefault();
-            trigger.current?.focus();
+            focusTarget()?.focus();
           } else if (!event.shiftKey && document.activeElement === controls[controls.length - 1]) {
             // Resume the page's natural tab order after the avatar.
             close(true);
@@ -216,6 +247,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         }}
       >
         <button type="button" className="person-profile-close" aria-label="Închide profilul" onClick={() => close(true)}><X size={17}/></button>
+        {viewedPersonId && <button type="button" className="person-profile-back" onClick={() => setViewedPersonId(undefined)}><ArrowLeft size={14}/>Înapoi la {name}</button>}
         <div className="person-profile-header">
           <span className="person-profile-avatar" aria-hidden="true"><ProfileImage url={personal.photo_url} name={profile?.name || name}/></span>
           <div>
@@ -230,7 +262,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
           <dl className="person-profile-details">
             <div><dt><Mail size={16}/>Email</dt><dd className="person-email-copy">{profile.email ? <><a href={`mailto:${profile.email}`}>{profile.email}</a><button type="button" aria-label="Copiază emailul" title="Copiază emailul" onClick={()=>void copyEmail()}>{copyState==='copied'?<Check size={15}/>:<Copy size={15}/>}</button></> : 'Nespecificat'}</dd></div>
             <div><dt><Building2 size={16}/>Departament</dt><dd>{profile.department || 'Nespecificat'}</dd></div>
-            {!externalAirport && <div><dt><UserRound size={16}/>Manager</dt><dd>{profile.manager_name || 'Nespecificat'}</dd></div>}
+            {!externalAirport && <div><dt><UserRound size={16}/>Manager</dt><dd>{manager?<button type="button" className="person-profile-manager" onClick={() => setViewedPersonId(manager.id)} onPointerEnter={event => {if(event.pointerType!=='touch'){clearTimer();timer.current=setTimeout(()=>setViewedPersonId(manager.id),180);}}} onPointerLeave={clearTimer}>{manager.name}</button>:profile.manager_name || 'Nespecificat'}</dd></div>}
           </dl>
           {copyState!=='idle'&&<p className="person-copy-status" role="status">{copyState==='copied'?'Email copiat.':'Copierea nu este disponibilă. Selectează și copiază adresa afișată.'}</p>}
           {((!own && profile.email) || profile.availability === 'away') && <div className="person-profile-footer">
@@ -242,7 +274,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         </dl> : <div className="person-profile-message" role="status">
           {directory.error ? <>Profilul nu a putut fi încărcat.<button type="button" onClick={directory.refresh}>Încearcă din nou</button></> : !directory.data ? 'Se încarcă profilul…' : 'Informațiile acestei persoane nu sunt disponibile în directorul echipei.'}
         </div>}
-        {action && <div className="person-profile-footer"><button type="button" className="person-profile-email" onClick={() => {close(); action.onSelect();}}>{action.label}</button></div>}
+        {action && !viewedPersonId && <div className="person-profile-footer"><button type="button" className="person-profile-email" onClick={() => {close(); action.onSelect();}}>{action.label}</button></div>}
         {own && directory.account && <div className="person-profile-signout">
           <button type="button" className="logout-button person-signout-button" disabled={directory.account.signingOut} aria-busy={directory.account.signingOut} onClick={() => {close(true); void directory.account?.signOut();}}>
             <LogOut size={17}/>{directory.account.signingOut ? 'Se deconectează…' : 'Ieși din cont'}

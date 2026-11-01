@@ -3,14 +3,15 @@ import {UsersRound} from 'lucide-react';
 import {Tree, TreeNode} from 'react-organizational-chart';
 import {organizationTree, type OrganizationNode} from './organization-tree';
 import type {Directory} from './types';
+import {PersonReference} from '@/components/people/PersonReference';
 
 function OrganizationCard({node,leadership=false}:{node:OrganizationNode;leadership?:boolean}) {
   return <article className={`organization-card ${node.departmentId?'organization-card-department':''} ${leadership?'organization-card-leadership':''}`}
     data-person-id={node.personId} data-department-id={node.departmentId}>
     {node.departmentLabel&&<h3>{node.departmentLabel}</h3>}
-    <strong>{node.name}</strong>
+    <strong>{node.personId?<PersonReference userId={node.personId} name={node.name}/>:node.name}</strong>
     {node.jobTitle&&<span>{node.jobTitle}</span>}
-    {node.managerUnavailable&&<small>Coordonator indisponibil{node.managerName?`: ${node.managerName}`:''}</small>}
+    {node.managerUnavailable&&<small>Coordonator indisponibil{node.managerName&&<>: <PersonReference userId={node.managerId} name={node.managerName}/></>}</small>}
   </article>;
 }
 
