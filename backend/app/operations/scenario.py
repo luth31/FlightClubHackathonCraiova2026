@@ -63,6 +63,32 @@ TIMELINE = [
 # Routine traffic is automatic in both modes; only G1 needs the presenter.
 ROUTINE_TIMELINE = [event for event in TIMELINE if event[2].get('staff_id') == 'staff-agent-b' or event[2].get('flight_id') == 'flight-404']
 
+# Small automatic presentation scenarios, all using the same aircraft and routes.
+SCENARIOS = [
+    {'id':'normal','name':'Tură normală','description':'Echipa este pregătită. Ambele plecări sunt la timp.'},
+    {'id':'delayed','name':'Poartă deschisă târziu','description':'Agentul lipsește; înlocuirea târzie întârzie FL101 cu 18 minute.'},
+    {'id':'recovery','name':'Înlocuire rapidă','description':'Rezerva intervine devreme. Întârzierea FL101 se reduce la 3 minute.'},
+]
+NORMAL_TIMELINE = ROUTINE_TIMELINE + [
+    (0,'nfc_check_in',{'staff_id':'staff-agent-a'},'Mara Stoica · prezentă','Agentul G1 este pregătit la începutul turei.'),
+    (0,'nfc_check_in',{'staff_id':'staff-supervisor'},'Coordonator prezent','Echipa este confirmată.'),
+    (240,'gate_open',{'gate_id':'G1','staff_id':'staff-agent-a','flight_id':'flight-101'},'Poarta G1 deschisă la timp','Agentul alocat începe îmbarcarea la 08:04.'),
+]
+RECOVERY_TIMELINE = ROUTINE_TIMELINE + [
+    (0,'nfc_check_in',{'staff_id':'staff-supervisor'},'Coordonator prezent','Echipa este verificată.'),
+    (240,'staff_absent',{'gate_id':'G1','staff_id':'staff-agent-a','flight_id':'flight-101'},'Agentul G1 lipsește','Coordonatorul activează imediat rezerva.'),
+    (240,'nfc_check_in',{'staff_id':'staff-relief'},'Rezervă disponibilă','Alexandru Marin este pregătit pentru intervenție.'),
+    (300,'staff_substitution',{'gate_id':'G1','staff_id':'staff-relief','flight_id':'flight-101'},'Înlocuitor repartizat la G1','Rezerva este trimisă la poartă în primul minut.'),
+    (420,'gate_open',{'gate_id':'G1','staff_id':'staff-relief','flight_id':'flight-101'},'Poarta G1 deschisă de rezervă','Îmbarcarea începe la 08:07, cu trei minute întârziere.'),
+]
+
+def scenario_timeline(mode):
+    events = {'normal': NORMAL_TIMELINE, 'delayed': TIMELINE, 'recovery': RECOVERY_TIMELINE, 'replay': TIMELINE}.get(mode, ROUTINE_TIMELINE)
+    if mode in {'normal','delayed','recovery'}:
+        return [(at,kind,payload,title.replace('Card NFC ·','Prezență ·'),detail.replace('cardul agentului nu a fost citit','prezența agentului nu este confirmată').replace('Citire demonstrativă de pontaj.','Prezență înregistrată în scenariu.')) for at,kind,payload,title,detail in events]
+    return events
+
+
 def gates(airport):
     assigned = {'G1': 'staff-agent-a', 'G2': 'staff-agent-b', 'G3': 'staff-supervisor'}
     return [{'id': f'G{i+1}', 'name': f'Poarta demo {i+1}', 'assigned_staff_id': assigned.get(f'G{i+1}'),

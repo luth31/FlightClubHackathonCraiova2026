@@ -193,12 +193,20 @@ def metrics(groups):
             'projected_delay_minutes':sum(g['delay_minutes'] or 0 for g in flights if g['actual_at'] is None and g['status']!='scheduled')}
 
 
-def get_ledger(db,user,day=None,status='all',search=''):
-    seed_history(db,user)
+def get_ledger(db,user,day=None,status='all',search='',scope='all',run_id=None,at_seconds=None):
+    if scope == 'all':
+        seed_history(db,user)
     snapshot=service.get_snapshot(db,user)
+    if run_id and snapshot['simulation']['run_id'] != run_id:
+        from app.core.exceptions import DomainError
+        raise DomainError('Scenariul s-a schimbat. Reîncarcă registrul.',409)
+    if at_seconds is not None and run_id:
+        snapshot=service.timeline_preview(db,user,at_seconds,run_id)
     stored=list(db.scalars(select(OperationLedgerGroup).where(OperationLedgerGroup.airport_id==user.airport_id,
         OperationLedgerGroup.operational_date >= (settings.reference_date-timedelta(days=7)).isoformat(),
         OperationLedgerGroup.operational_date <= (settings.reference_date+timedelta(days=3)).isoformat())))
+    if scope == 'current':
+        stored=[]
     groups=[row.data for row in stored]+active_groups(snapshot)
     all_metrics=metrics(groups)
     selected=[]
@@ -210,7 +218,7 @@ def get_ledger(db,user,day=None,status='all',search=''):
         selected.append(group)
     days=defaultdict(list)
     for group in selected: days[group['scheduled_at'][:10]].append(group)
-    return {'days':[{'date':key,'severity':worst(items),'flights':sorted(items,key=lambda g:g['scheduled_at']),
+    return {'scope':scope,'scenario_mode':snapshot['simulation']['scenario_mode'],'days':[{'date':key,'severity':worst(items),'flights':sorted(items,key=lambda g:g['scheduled_at']),
                      'event_count':sum(g['event_count'] for g in items),'metrics':metrics(items)} for key,items in sorted(days.items(),reverse=True)],
             'metrics':all_metrics,'filtered_metrics':metrics(selected),
             'period':{'from':(settings.reference_date-timedelta(days=7)).isoformat(),'to':(settings.reference_date+timedelta(days=3)).isoformat()},

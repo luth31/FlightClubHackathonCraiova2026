@@ -26,7 +26,7 @@ function mesh(geometry: THREE.BufferGeometry, mat: THREE.Material, x:number,y:nu
 export function createAircraft(status: SceneStatus, displayScale=1) {
   const group=new THREE.Group();
   group.scale.setScalar(displayScale);
-  const accent=material(status==='critical'?'#e85f52':status==='caution'?'#edb63e':'#3c5558', .32,.3);
+  const accent=material(status==='critical'?'#dc2626':status==='caution'?'#edb63e':'#3c5558', .32,.3);
   const fuselageMaterial=white.clone();
   if(status!=='neutral')fuselageMaterial.color.set(status==='critical'?'#f5ada4':'#f3d88e');
   const body=new THREE.Mesh(new THREE.LatheGeometry([
@@ -85,7 +85,7 @@ export function disposeObject(object:THREE.Object3D,disposeMaterials=true){
 /** Status updates must not recreate a moving aircraft at the next snapshot. */
 export function setAircraftStatus(group:THREE.Group,status:SceneStatus){
   const [accent,fuselage]=group.userData.ownedMaterials as THREE.MeshStandardMaterial[];
-  accent.color.set(status==='critical'?'#e85f52':status==='caution'?'#edb63e':'#3c5558');
+  accent.color.set(status==='critical'?'#dc2626':status==='caution'?'#edb63e':'#3c5558');
   fuselage.color.set(status==='critical'?'#f5ada4':status==='caution'?'#f3d88e':'#eef1ed');
   group.userData.status=status;
 }

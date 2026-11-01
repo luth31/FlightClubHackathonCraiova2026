@@ -24,9 +24,10 @@ export interface OperationEvent {
   elapsed_seconds?:number;
 }
 export interface OperationsData {
+  scenarios?:{id:string;name:string;description:string}[];
   airport:{id:'craiova'|'sibiu';name:string;icao:string;lat:number;lon:number;elevation_m:number};
   simulation:{run_id:string;revision:number;running:boolean;speed:number;elapsed_seconds:number;
-    duration_seconds:number;clock_time:string;scenario_mode?:'interactive'|'replay'};
+    duration_seconds:number;clock_time:string;scenario_mode?:'interactive'|'replay'|'normal'|'delayed'|'recovery'};
   flights:Flight[];gates:Gate[];staff:Staff[];events:OperationEvent[];
   kpis:Record<string,number|null>;
   thresholds:{minor_delay_minutes:number;major_delay_minutes:number};

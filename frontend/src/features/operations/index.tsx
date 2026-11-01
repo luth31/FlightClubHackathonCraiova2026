@@ -1,20 +1,22 @@
 import {useCallback,useContext,useEffect,useRef,useState} from 'react';
-import {ArrowRight,BookOpen,ChevronDown,ClipboardList,Clock3,CreditCard,DoorOpen,LoaderCircle,Map,Pause,Plane,Play,RotateCcw,SkipForward,Smartphone,Users} from 'lucide-react';
+import {AlertTriangle,ArrowRight,BookOpen,ClipboardList,Clock3,LoaderCircle,Map,Pause,Play,RotateCcw,SkipForward,X} from 'lucide-react';
 import {api} from '@/services/api-client';
-import {ErrorMessage,Loading,Modal,ViewActiveContext} from '@/components/ui';
+import {ErrorMessage,Loading,ViewActiveContext} from '@/components/ui';
 import {FlightMap} from './FlightMap';
 import {SimulationTimeline,useSimulationTimeline} from './SimulationTimeline';
 import {OperationsLedger} from './Ledger';
 import {Strategies} from './Strategies';
-import {NfcStation} from './NfcStation';
-import {clock,eventTime} from './format';
+import {eventTime} from './format';
 import type {LiveTraffic,MapConfig,OperationsData} from './types';
 import './operations.css';
 import './workspace.css';
 import './ledger.css';
 import './procedures.css';
-type View='shift'|'ledger'|'strategies'|'station';
-function viewFromHash():View {const view=new URLSearchParams(window.location.hash.split('?')[1]||'').get('view');return view==='ledger'||view==='strategies'||view==='station'?view:'shift'}
+import './compact.css';
+
+type View='shift'|'ledger'|'strategies';
+function viewFromHash():View {const view=new URLSearchParams(window.location.hash.split('?')[1]||'').get('view');return view==='ledger'||view==='strategies'?view:'shift'}
+const presets=[{id:'normal',name:'Tură normală',description:'Echipa este pregătită. Ambele plecări sunt la timp.'},{id:'delayed',name:'Poartă deschisă târziu',description:'FL101 pleacă cu 18 minute întârziere.'},{id:'recovery',name:'Înlocuire rapidă',description:'Intervenția rezervei limitează întârzierea la 3 minute.'}];
 
 export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   const viewActive=useContext(ViewActiveContext);
@@ -24,15 +26,14 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   const [mapMode,setMapMode]=useState<'model'|'photorealistic'>('model'),[mapConfig,setMapConfig]=useState<MapConfig>();
   const [traffic,setTraffic]=useState<LiveTraffic>(),[trafficError,setTrafficError]=useState('');
   const [selected,setSelected]=useState<string|null>('flight-101'),[focusLedger,setFocusLedger]=useState<string|null>(null);
-  const [showNfc,setShowNfc]=useState(false),[confirmReset,setConfirmReset]=useState(false);
-  const [resetMode,setResetMode]=useState<'interactive'|'replay'>('interactive');
-  const dataRef=useRef<OperationsData|undefined>(undefined),pending=useRef(false);
+  const [alert,setAlert]=useState<{runId:string;id:string;text:string}>();
+  const announced=useRef(new Set<string>()),dataRef=useRef<OperationsData|undefined>(undefined),pending=useRef(false);
   const active=viewActive&&visible;
   const timeline=useSimulationTimeline(liveData,active&&view==='shift'&&mode==='simulation');
-  const previewing=timeline.previewing&&view==='shift'&&mode==='simulation';
+  const previewing=timeline.previewing&&mode==='simulation';
   const data=previewing&&timeline.frame?timeline.frame:liveData;
-  const accept=useCallback((value:OperationsData)=>{if(dataRef.current?.simulation.run_id===value.simulation.run_id&&value.simulation.revision<dataRef.current.simulation.revision)return;dataRef.current=value;setData(value);setError('')},[]);
-  useEffect(()=>{const change=()=>setVisible(!document.hidden);document.addEventListener('visibilitychange',change);const route=()=>{if(window.location.hash.startsWith('#operations'))setView(current=>window.location.hash.includes('view=')?viewFromHash():current==='station'?'shift':current)};window.addEventListener('hashchange',route);return()=>{document.removeEventListener('visibilitychange',change);window.removeEventListener('hashchange',route)}},[]);
+  const accept=useCallback((value:OperationsData)=>{if(dataRef.current&&value.simulation.revision<dataRef.current.simulation.revision)return;dataRef.current=value;setData(value);setError('')},[]);
+  useEffect(()=>{const change=()=>setVisible(!document.hidden);const route=()=>{if(window.location.hash.startsWith('#operations'))setView(viewFromHash())};document.addEventListener('visibilitychange',change);window.addEventListener('hashchange',route);return()=>{document.removeEventListener('visibilitychange',change);window.removeEventListener('hashchange',route)}},[]);
   useEffect(()=>{let disposed=false;const controller=new AbortController();let timer:ReturnType<typeof setTimeout>;
     async function poll(){try{const value=await api<OperationsData>('/operations',{signal:controller.signal});if(!disposed)accept(value)}catch(e){if(!disposed)setError((e as Error).message)}if(!disposed)timer=setTimeout(poll,dataRef.current?.simulation.running?1000:2500)}
     if(active)void poll();return()=>{disposed=true;controller.abort();clearTimeout(timer)};
@@ -41,57 +42,50 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   useEffect(()=>{if(mode!=='live'||!active||view!=='shift')return;let disposed=false;const controller=new AbortController();let timer:ReturnType<typeof setTimeout>;
     async function poll(){let interval=10;try{const result=await api<LiveTraffic>('/operations/traffic',{signal:controller.signal});if(!disposed){setTraffic(result);setTrafficError('');interval=Math.max(10,result.poll_after_seconds)}}catch(e){if(!disposed)setTrafficError((e as Error).message)}if(!disposed)timer=setTimeout(poll,interval*1000)}void poll();return()=>{disposed=true;controller.abort();clearTimeout(timer)};
   },[mode,active,view]);
-  function navigate(next:View){timeline.reset();setView(next);setShowNfc(false);const hash=`#operations${next==='shift'?'':`?view=${next}`}`;window.history.replaceState(window.history.state,'',hash)}
-  async function mutate(path:string,body:Record<string,unknown>):Promise<OperationsData|null>{if(pending.current)return null;pending.current=true;setBusy(true);try{const next=await api<OperationsData>(path,{method:'POST',body:JSON.stringify(body)});accept(next);return next}catch(e){notify((e as Error).message);return null}finally{pending.current=false;setBusy(false)}}
-  async function control(action:string,extra:Record<string,unknown>={}){const next=await mutate('/operations/control',{action,...extra});if(next)setConfirmReset(false)}
-  async function logEvent(kind:string,extra:Record<string,unknown>={}){if(await mutate('/operations/events',{kind,...extra,request_id:crypto.randomUUID()}))notify('Acțiune înregistrată.')}
-  async function scan(card_id:string,action:'check_in'|'check_out'){return mutate('/operations/nfc',{card_id,action,request_id:crypto.randomUUID()})}
+  useEffect(()=>{
+    if(!active||mode!=='simulation'||!data)return;
+    for(const flight of data.flights){
+      const key=`${data.simulation.run_id}:${flight.id}`;
+      if(flight.severity!=='red'||announced.current.has(key))continue;
+      announced.current.add(key);
+      const text=flight.emergency?`${flight.callsign}: incident raportat. Consultă registrul pentru detalii.`:`${flight.callsign}: întârziere ${flight.actual_departure_seconds==null?'estimată':'înregistrată'} de ${Math.round(flight.delay_minutes||0)} minute. Consultă registrul pentru detalii.`;
+      setAlert({runId:data.simulation.run_id,id:flight.id,text});notify(text);
+    }
+  },[active,mode,data,notify]);
+  function navigate(next:View){setView(next);window.history.replaceState(window.history.state,'',`#operations${next==='shift'?'':`?view=${next}`}`)}
+  async function control(action:string,extra:Record<string,unknown>={}){
+    if(pending.current)return false;pending.current=true;setBusy(true);
+    try{const next=await api<OperationsData>('/operations/control',{method:'POST',body:JSON.stringify({action,...extra})});accept(next);return true}catch(e){notify((e as Error).message);return false}finally{pending.current=false;setBusy(false)}
+  }
+  async function chooseScenario(id:string){if(await control('reset',{scenario_mode:id,expected_revision:liveData?.simulation.revision})){setMode('simulation');setSelected('flight-101');setFocusLedger(null);setAlert(undefined)}}
   function investigate(id:string){setFocusLedger(id);navigate('ledger')}
   function seek(seconds:number){timeline.seek(seconds);if(dataRef.current?.simulation.running&&!pending.current&&dataRef.current.permissions.can_control)void control('pause')}
-  function togglePlayback(){
-    if(timeline.previewing||!liveData?.permissions.can_control||(liveData.simulation.elapsed_seconds>=liveData.simulation.duration_seconds))timeline.togglePlayback();
-    else void control(liveData.simulation.running?'pause':'start',{speed:liveData.simulation.speed||1});
-  }
-  async function applyTime(){if(await mutate('/operations/control',{action:'advance_to',target_seconds:timeline.seconds,expected_revision:liveData?.simulation.revision}))timeline.reset()}
+  function togglePlayback(){if(timeline.previewing||!liveData?.permissions.can_control||liveData.simulation.elapsed_seconds>=liveData.simulation.duration_seconds)timeline.togglePlayback();else void control(liveData.simulation.running?'pause':'start',{speed:liveData.simulation.speed||30})}
+  async function applyTime(){if(await control('advance_to',{target_seconds:timeline.seconds,expected_revision:liveData?.simulation.revision}))timeline.reset()}
   if(!data||!liveData)return error?<ErrorMessage message={error}/>:<Loading/>;
-  const isInteractive=data.simulation.scenario_mode!=='replay';
+  const scenarios=data.scenarios||presets,scenario=scenarios.find(item=>item.id===liveData.simulation.scenario_mode);
   const playbackMode=previewing||!liveData.permissions.can_control||liveData.simulation.elapsed_seconds>=liveData.simulation.duration_seconds;
   const playing=playbackMode?timeline.playing:liveData.simulation.running;
   const atEnd=timeline.seconds>=liveData.simulation.duration_seconds;
-  const staff=data.staff.filter(person=>person.present),gateCount=data.gates.filter(gate=>gate.open||gate.is_open).length;
-  const risks=data.flights.filter(flight=>flight.direction==='departure'&&flight.actual_departure_seconds==null&&flight.severity!=='neutral').length;
-  const actualDelay=data.flights.filter(flight=>flight.actual_departure_seconds!=null).reduce((sum,flight)=>sum+(flight.delay_minutes||0),0);
-  const chosen=data.flights.find(flight=>flight.id===selected)||data.flights[0];
-  const gate=data.gates.find(item=>item.id===chosen?.gate_id),assigned=data.staff.find(person=>person.id===gate?.assigned_staff_id),openedBy=data.staff.find(person=>person.id===gate?.opened_by);
-  return <section className={`operations-page ${view==='station'&&viewActive?'ops-station-mode':''}`}>
-    {view==='station'&&<>{error&&<ErrorMessage message={error}/>}<NfcStation data={liveData} busy={busy} onScan={scan} onBack={()=>navigate('shift')}/></>}
-    <div hidden={view==='station'} inert={view==='station'}>
-    <header className="ops-heading"><div><h1>Operațiuni</h1></div><div className="ops-heading-actions"><button className="ops-phone-link" onClick={()=>navigate('station')}><Smartphone size={16}/>Stație mobilă</button><div className="ops-clock"><Clock3 size={17}/><div><strong>{eventTime(data.simulation.clock_time)}</strong><span>Ora turei · {previewing?'redare':isInteractive?'interactivă':'replay'}</span></div></div></div></header>
-    <nav className="ops-tabs" aria-label="Vizualizări operaționale">{([{id:'shift',label:'Tura curentă',icon:Map},{id:'ledger',label:'Registru operațional',icon:ClipboardList},{id:'strategies',label:'Proceduri SOP',icon:BookOpen}] as const).map((tab,index)=><button key={tab.id} className={view===tab.id?'active':''} aria-current={view===tab.id?'page':undefined} onClick={()=>{setFocusLedger(null);navigate(tab.id)}}><span className="ops-tab-step">{index+1}</span><tab.icon size={17}/>{tab.label}</button>)}<span className="ops-demo-indicator"><i/>Demo</span></nav>
-    {error&&<div className="ops-inline-error" role="alert">{error} Ultima stare este păstrată.</div>}
-    {view==='ledger'&&<OperationsLedger revision={data.simulation.revision} focusFlight={focusLedger} onInvestigate={id=>{setSelected(id);navigate('shift')}}/>}
+  const delay=data.flights.filter(flight=>flight.actual_departure_seconds!=null).reduce((sum,flight)=>sum+(flight.delay_minutes||0),0);
+  const severe=data.flights.filter(flight=>flight.severity==='red').length;
+  return <section className="operations-page ops-compact">
+    <header className="ops-heading"><h1>Operațiuni de sol</h1><div className="ops-clock"><Clock3 size={17}/><strong>{eventTime(data.simulation.clock_time)}</strong><span>Demo</span></div></header>
+    <div className="ops-scenario-bar"><label>Scenariu<select aria-label="Scenariu operațional" value={scenario?.id||''} disabled={busy||!liveData.permissions.can_control} onChange={event=>void chooseScenario(event.target.value)}><option value="" disabled>Alege un scenariu</option>{scenarios.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><p>{scenario?.description||'Alege unul dintre cele trei scenarii automate.'}</p></div>
+    <nav className="ops-tabs" aria-label="Vizualizări operaționale">{([{id:'shift',label:'Simulare',icon:Map},{id:'ledger',label:'Registru',icon:ClipboardList},{id:'strategies',label:'Proceduri SOP',icon:BookOpen}] as const).map(tab=><button key={tab.id} className={view===tab.id?'active':''} aria-current={view===tab.id?'page':undefined} onClick={()=>{setFocusLedger(null);navigate(tab.id)}}><tab.icon size={16}/>{tab.label}</button>)}</nav>
+    {error&&<div className="ops-inline-error" role="alert">{error}</div>}
+    {alert&&alert.runId===data.simulation.run_id&&<div className="ops-critical-alert" role="alert"><AlertTriangle size={20}/><p>{alert.text}</p><button onClick={()=>investigate(alert.id)}>Vezi registrul<ArrowRight size={15}/></button><button aria-label="Închide alerta" onClick={()=>setAlert(undefined)}><X size={17}/></button></div>}
+    {view==='ledger'&&<OperationsLedger key={data.simulation.run_id} revision={data.simulation.revision} runId={data.simulation.run_id} atSeconds={previewing?timeline.seconds:undefined} scenarioName={scenario?.name} focusFlight={focusLedger} onInvestigate={id=>{setSelected(id);navigate('shift')}}/>}
     {view==='strategies'&&<Strategies revision={data.simulation.revision} onEvidence={investigate} notify={notify}/>}
     <div hidden={view!=='shift'} inert={view!=='shift'}>
-      <div className="ops-shift-metrics"><div><span><Plane size={15}/>Plecări la timp</span><strong>{data.kpis.on_time_percent==null?'—':`${data.kpis.on_time_percent}%`}</strong><small>{data.kpis.on_time_percent==null?'Nicio plecare încheiată':'Plecări încheiate'}</small></div><div><span><Clock3 size={15}/>Întârziere totală</span><strong className={actualDelay?'ops-tone-amber':''}>{Math.round(actualDelay)}<small> min</small></strong><small>{risks?`${risks} zboruri de urmărit`:'Niciun zbor de urmărit'}</small></div><div><span><Users size={15}/>Echipă prezentă</span><strong>{staff.length}<small> / {data.staff.length}</small></strong><small>Pontaje confirmate</small></div><div><span><DoorOpen size={15}/>Porți deschise</span><strong>{gateCount}<small> / {data.gates.filter(gate=>gate.assigned_staff_id).length}</small></strong><small>Porți alocate turei</small></div></div>
-      <section className="ops-shift-control" aria-label="Controlul turei">
-        <div className="ops-control-actions">
-          <button className="ops-primary" disabled={busy} onClick={togglePlayback}>{busy?<LoaderCircle size={16} className="spin"/>:playing?<Pause size={16}/>:<Play size={16}/>} {playing?'Pauză':atEnd?'Reia redarea':playbackMode?'Redă de aici':'Rulează timpul'}</button>
-          <button disabled={busy||atEnd} onClick={()=>playbackMode?timeline.step():void control('step')}><SkipForward size={16}/>Următorul eveniment</button>
-          <button className="ops-primary-light" disabled={busy||!liveData.permissions.can_control} onClick={()=>{timeline.reset();setShowNfc(true)}}><CreditCard size={16}/>Pontaj NFC</button>
-        <details className="ops-rehearsal"><summary>Repetiție<ChevronDown size={15}/></summary><div className="ops-rehearsal-body">
-          <label>Viteză<select aria-label="Viteza simulării" value={playbackMode?timeline.speed:liveData.simulation.speed} disabled={busy} onChange={event=>playbackMode?timeline.setSpeed(Number(event.target.value)):void control(liveData.simulation.running?'start':'pause',{speed:Number(event.target.value)})}>{[1,10,30,60,120].map(speed=><option value={speed} key={speed}>{speed}×</option>)}</select></label>
-          <button aria-label="Reia scenariul" disabled={busy||!liveData.permissions.can_control} onClick={()=>{if(previewing)timeline.seek(timeline.seconds);setConfirmReset(true)}}><RotateCcw size={16}/>Reia scenariul</button>
-          <div className="ops-milestones"><span>Salt la moment</span>{[{at:240,label:'08:04 · poartă'},{at:1200,label:'08:20 · plecare planificată'},{at:1320,label:'08:22 · intervenție'},{at:2700,label:'08:45 · rezultat'}].map(item=><button key={item.at} disabled={busy||(!playbackMode&&liveData.simulation.elapsed_seconds>=item.at)} onClick={()=>playbackMode?timeline.seek(item.at):void control('advance_to',{target_seconds:item.at})}>{item.label}</button>)}</div>
-        </div></details>
-        </div>
-        {mode==='simulation'&&<SimulationTimeline live={liveData} frame={timeline.frame} seconds={timeline.seconds} previewing={previewing} loading={timeline.loading} error={timeline.error} selected={selected} onSeek={seek} onReturn={timeline.reset} onApply={()=>void applyTime()} busy={busy}/>}
-      </section>
-      {chosen&&mode==='simulation'&&chosen.direction!=='arrival'&&<section className={`ops-causal-chain severity-${chosen.severity}`} aria-label="Firul evenimentelor operaționale"><div className="ops-chain-heading"><strong>{chosen.callsign} <span>→ {chosen.destination}</span></strong><button onClick={()=>investigate(chosen.id)}>Vezi evenimentele<ArrowRight size={14}/></button></div><div className="ops-chain-steps"><div className={assigned?.present?'complete':'waiting'}><span><CreditCard size={17}/></span><div><small>1 · Echipă</small><strong>{assigned?.name||'Echipă alocată'}</strong><p>{assigned?.present?`Pontaj la ${clock(assigned.actual_arrival_seconds)}`:`Fără pontaj · plan ${clock(assigned?.expected_seconds)}`}</p></div></div><Chevron/><div className={gate?.open?'complete':'waiting'}><span><DoorOpen size={17}/></span><div><small>2 · Poartă</small><strong>{gate?.id} · {gate?.open?`deschisă la ${clock(gate.opened_at_seconds)}`:`planificată ${clock(gate?.planned_open_seconds)}`}</strong><p>{openedBy?`De ${openedBy.name}${openedBy.id!==assigned?.id?' · înlocuitor':''}`:'Așteaptă un operator prezent'}</p></div></div><Chevron/><div className={chosen.actual_departure_seconds!=null?'complete':'waiting'}><span><Plane size={17}/></span><div><small>3 · Plecare</small><strong>{clock(chosen.actual_departure_seconds??chosen.estimated_departure_seconds)} <em>{chosen.actual_departure_seconds!=null?'realizat':'estimat'}</em></strong><p>Plan: {clock(chosen.scheduled_departure_seconds)}{chosen.delay_minutes?` · +${Math.round(chosen.delay_minutes)} min`:''}</p></div></div></div></section>}
-      <FlightMap simulationSpeed={previewing?timeline.speed:data.simulation.speed} animateFlights={mode==='live'||timeline.playing||(!previewing&&!!liveData?.simulation.running)} data={previewing?{...data,permissions:{can_control:false}}:data} mode={mode} onMode={next=>{timeline.reset();setMode(next);setSelected(next==='simulation'?'flight-101':null)}} mapConfig={mapConfig} mapMode={mapMode} onMapMode={setMapMode} traffic={traffic} trafficError={trafficError} selected={selected} onSelect={setSelected} active={active&&view==='shift'} busy={busy} onEvent={(kind,extra)=>void logEvent(kind,extra)} onInvestigate={investigate} notify={notify}/>
-    </div>
-    {showNfc&&<Modal title="Pontaj NFC" onClose={()=>setShowNfc(false)} className="ops-nfc-modal"><NfcStation data={liveData} busy={busy} onScan={scan} onBack={()=>setShowNfc(false)}/></Modal>}
-    {confirmReset&&<Modal title="O nouă repetiție" onClose={()=>setConfirmReset(false)}><div className="ops-reset-body"><p>Tura revine la 08:00. Istoricul rămâne în registru.</p><label><input type="radio" name="scenario" checked={resetMode==='interactive'} onChange={()=>setResetMode('interactive')}/><span><strong>Interactivă</strong><small>FL101 controlat prin NFC și poartă. Celelalte două zboruri rulează automat.</small></span></label><label><input type="radio" name="scenario" checked={resetMode==='replay'} onChange={()=>setResetMode('replay')}/><span><strong>Replay automat</strong><small>Evenimente redate automat.</small></span></label><button className="ops-primary" disabled={busy} onClick={()=>void control('reset',{scenario_mode:resetMode})}><RotateCcw size={16}/>Începe o tură nouă</button></div></Modal>}
+      <div className="ops-metric-strip"><span>Plecări la timp <strong>{data.kpis.on_time_percent==null?'—':`${data.kpis.on_time_percent}%`}</strong></span><span>Întârziere înregistrată <strong className={delay>=15?'ops-tone-red':''}>{delay} min</strong></span><span>Abateri majore <strong className={severe?'ops-tone-red':''}>{severe}</strong></span></div>
+      {mode==='simulation'&&<section className="ops-shift-control" aria-label="Controlul scenariului"><div className="ops-control-actions">
+        <button className="ops-primary" disabled={busy||!scenario} onClick={togglePlayback}>{busy?<LoaderCircle size={16} className="spin"/>:playing?<Pause size={16}/>:<Play size={16}/>} {playing?'Pauză':atEnd?'Reia redarea':'Pornește'}</button>
+        <button title="Următorul eveniment" aria-label="Următorul eveniment" disabled={busy||atEnd||!scenario} onClick={()=>playbackMode?timeline.step():void control('step')}><SkipForward size={16}/></button>
+        <label className="ops-speed">Viteză<select aria-label="Viteza simulării" value={playbackMode?timeline.speed:liveData.simulation.speed} disabled={busy} onChange={event=>playbackMode?timeline.setSpeed(Number(event.target.value)):void control(liveData.simulation.running?'start':'pause',{speed:Number(event.target.value)})}>{[1,10,30,60,120].map(speed=><option value={speed} key={speed}>{speed}×</option>)}</select></label>
+        <button className="ops-restart" title="Reia scenariul de la zero" aria-label="Reia scenariul" disabled={busy||!scenario||!liveData.permissions.can_control} onClick={()=>scenario&&void chooseScenario(scenario.id)}><RotateCcw size={15}/></button>
+      </div><SimulationTimeline live={liveData} frame={timeline.frame} seconds={timeline.seconds} previewing={previewing} loading={timeline.loading} error={timeline.error} selected={selected} onSeek={seek} onReturn={timeline.reset} onApply={()=>void applyTime()} busy={busy}/></section>}
+      <FlightMap simulationSpeed={previewing?timeline.speed:data.simulation.speed} animateFlights={mode==='live'||timeline.playing||(!previewing&&!!liveData.simulation.running)} data={{...data,permissions:{can_control:false}}} mode={mode} onMode={next=>{setMode(next);setSelected(next==='simulation'?'flight-101':null)}} mapConfig={mapConfig} mapMode={mapMode} onMapMode={setMapMode} traffic={traffic} trafficError={trafficError} selected={selected} onSelect={setSelected} active={active&&view==='shift'} busy={busy} onEvent={()=>{}} onInvestigate={investigate} notify={notify}/>
     </div>
   </section>;
 }
-function Chevron(){return <ArrowRight className="ops-chain-arrow" size={18}/>}

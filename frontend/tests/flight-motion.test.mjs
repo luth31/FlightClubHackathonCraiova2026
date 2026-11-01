@@ -68,7 +68,7 @@ test('severity changes preserve aircraft geometry, transform and animation ident
   const plane=createAircraft('neutral');plane.position.set(100,200,300);plane.rotation.y=1;
   const children=[...plane.children];setAircraftStatus(plane,'critical');
   assert.deepEqual(plane.children,children);assert.deepEqual(plane.position.toArray(),[100,200,300]);assert.equal(plane.rotation.y,1);
-  assert.equal(plane.userData.ownedMaterials[0].color.getHexString(),'e85f52');
+  assert.equal(plane.userData.ownedMaterials[0].color.getHexString(),'dc2626');
 });
 
 const {LiveMotionBuffer}=await load('../src/features/operations/live-motion.ts');

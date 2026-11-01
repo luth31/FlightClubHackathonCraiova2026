@@ -13,7 +13,7 @@ from app.core.audit import record
 from app.core.exceptions import DomainError
 from app.core.security import has_role
 from app.operations.models import OperationEvent, OperationSimulation
-from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, TIMELINE, ROUTINE_TIMELINE, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, AIRCRAFT_DISPLAY_SCALE, gates, position, motion_path
+from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, AIRCRAFT_DISPLAY_SCALE, gates, position, motion_path, scenario_timeline, SCENARIOS
 
 
 KINDS = {
@@ -66,7 +66,7 @@ def initial_state(db, user):
     if state is None:
         now = utc_now().isoformat()
         state = OperationSimulation(airport_id=user.airport_id, run_id=str(uuid4()), elapsed_seconds=0,
-            running=False, scenario_mode='interactive', speed=1, updated_at=now, created_at=now, next_sequence=1)
+            running=False, scenario_mode='normal', speed=30, updated_at=now, created_at=now, next_sequence=1)
         db.add(state)
         db.flush()
         append_event(db, state, user, 'simulation_initialized', 0, 'Tura este pregătită',
@@ -106,7 +106,7 @@ def boarding_progress(flight, events, elapsed):
 
 def pending_events(events, scenario_mode='interactive'):
     keys = {e.event_key for e in events}
-    scripted = TIMELINE if scenario_mode == 'replay' else ROUTINE_TIMELINE
+    scripted = scenario_timeline(scenario_mode)
     result = []
     for seconds, kind, payload, title, detail in scripted:
         subject = payload.get('flight_id') or payload.get('staff_id') or 'shift'
@@ -115,7 +115,7 @@ def pending_events(events, scenario_mode='interactive'):
             and e.flight_id == payload.get('flight_id') and e.staff_id == payload.get('staff_id') for e in events)
         if key not in keys and not legacy_exists:
             result.append((seconds, key, kind, payload, title, detail))
-    if scenario_mode != 'replay':
+    if scenario_mode == 'interactive':
         for flight in FLIGHTS:
             if flight.get('automatic'):
                 continue
@@ -292,6 +292,7 @@ def snapshot(db, state, user, events):
         'model': {'departure_basis': 'open_gate_boarding_then_offblock_then_taxi', 'gate_reclosures_affect_departure': True,
             'aircraft_display_scale': AIRCRAFT_DISPLAY_SCALE, 'interactive_flight_id': 'flight-101',
             'notice': 'Pontaj → deschidere poartă → 16 min îmbarcare → plecare de la stand → 3 min rulaj. Închiderea porții întrerupe îmbarcarea. Durate demonstrative, fără autorizare ATC.'},
+        'scenarios': SCENARIOS,
         'simulation': {'scenario_mode':state.scenario_mode, 'run_id': state.run_id, 'revision': state.revision, 'running': state.running, 'speed': state.speed,
             'elapsed_seconds': round(state.elapsed_seconds, 2), 'duration_seconds': DURATION_SECONDS,
             'clock_time': clock_time(state.elapsed_seconds), 'created_at': state.created_at, 'updated_at': state.updated_at},
@@ -389,7 +390,7 @@ def control(db, user, body):
                     'Istoricul acestei rulări rămâne în jurnal.', source='control')
                 state.run_id, state.elapsed_seconds, state.running, state.next_sequence = str(uuid4()), 0, False, 1
                 state.scenario_mode = body.scenario_mode or 'interactive'
-                state.speed = 30 if state.scenario_mode == 'replay' else 1
+                state.speed = 30 if state.scenario_mode != 'interactive' else 1
                 state.created_at = utc_now().isoformat()
                 append_event(db, state, user, 'simulation_initialized', 0, 'Tura este pregătită',
                     'Rulare nouă; evenimentele anterioare au fost păstrate.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode})

@@ -2,16 +2,18 @@
 
 All routes are under `/api/operations` and require a signed-in user in the configured airport. Each airport has its own clock, cards, ledger and history. Director, technician, and Technical/Operations/Compliance reviewers can control the demonstration. HR and finance can read it. SOP proposals require director or Compliance authority. Requests never grant real airside access or ATC clearance.
 
-## Interactive scenario
+## Presentation scenarios and legacy controls
 
-`GET /operations` returns `airport`, `simulation`, `flights`, `gates`, `staff`, `events`, `kpis`, `thresholds`, `model` and `permissions`.
+`GET /operations` returns `airport`, `simulation`, `flights`, `gates`, `staff`, `events`, `kpis`, `thresholds`, `model`, `scenarios` and `permissions`.
 
-`simulation` includes `scenario_mode: interactive|replay`, `run_id`, `revision`, `running`, `speed`, `elapsed_seconds`, `duration_seconds`, `clock_time`, and recorded UTC creation/update times. Interactive runs start paused at 1×; replay resets to 30×. The demonstration starts at 08:00 on the application's reference date. FL101 is interactive: its NFC and gate actions are never invented. FL202 and FL404 have `automatic=true`; their routine events are materialized with scenario provenance in both modes. FL202 departs at 08:18 and FL404 arrives at 08:12. Departures still require enough recorded boarding time with an open gate.
+`simulation` includes `scenario_mode: normal|delayed|recovery|interactive|replay`, `run_id`, `revision`, `running`, `speed`, `elapsed_seconds`, `duration_seconds`, `clock_time`, and recorded UTC creation/update times. A fresh airport starts with `normal`, paused at 08:00 and 30×. `scenarios` lists the three presentation choices and their labels/descriptions. Normal operations produce no departure delay; delayed produces an 18-minute FL101 delay; recovery produces a 3-minute FL101 delay. FL202 departs at 08:18 and FL404 arrives at 08:12 in each preset. Boarding prerequisites still determine departure outcomes.
+
+Legacy interactive runs start at 1× and never invent FL101 scans or gate actions; replay reproduces the delayed script. Reset without an explicit mode retains the legacy interactive default. The presentation UI always sends an explicit preset and removes the NFC station/manual controls.
 
 `POST /control` accepts:
 
 ```json
-{"action":"reset","scenario_mode":"interactive"}
+{"action":"reset","scenario_mode":"normal"}
 {"action":"start","speed":30}
 {"action":"pause"}
 {"action":"step"}
@@ -19,7 +21,7 @@ All routes are under `/api/operations` and require a signed-in user in the confi
 {"action":"advance_to","target_seconds":1320}
 ```
 
-`advance_to` must not move backwards; reset creates a fresh run while preserving earlier events. `step` stops at the next scheduled check or causal milestone. `scenario_mode` is accepted only with reset; replay is an explicit prerecorded alternative. Existing sessions use interactive controls after upgrading; reset before a new pitch to start from a clean run.
+`advance_to` must not move backwards; reset creates a fresh run while preserving earlier events. `step` stops at the next scheduled check or causal milestone. `scenario_mode` is accepted only with reset. Pass `expected_revision` to reject a stale scenario switch. Existing runs retain their mode until explicitly reset.
 
 `GET /timeline?run_id=<current-run>&at_seconds=1320` returns the same snapshot reconstructed at any second from 0 to 3600, plus `timeline: {current_seconds, at_seconds, projected, events}`. Earlier moments include only events that had occurred; future moments apply the existing scenario rules to recorded interventions in memory. Timeline event markers include a `projected` flag. Interactive projections do not invent the presenter’s FL101 NFC scans or gate actions; the two routine flights remain automatic. This endpoint never updates the stored clock, events or audit log, and its snapshot has `permissions.can_control=false`. A stale run ID returns 409. The UI pauses a running shift before an authorized operator scrubs, labels historical/projected views, and requires an explicit `advance_to` with a revision precondition to apply a future time.
 
@@ -43,7 +45,9 @@ Snapshot KPIs separate `actual_delay_minutes` and `projected_delay_minutes`; `on
 
 ## Grouped airport ledger
 
-`GET /ledger?date=2026-10-30&status=all|attention&search=G1` returns:
+`GET /ledger?scope=current&run_id=<selected-run>&status=all|attention&search=G1` is used by the presentation. It includes only the selected run and returns 409 if that run has changed. Optional `at_seconds` with `run_id` reconstructs the inspected timeline frame without advancing stored state. `scope=all` (API default) retains the historical fixture plus the current run; optional `date=2026-10-30` filters by day.
+
+The response includes `scope`, `scenario_mode` and:
 
 - `days[]`: `date`, worst `severity`, `event_count`, daily `metrics`, and `flights[]` (the common group collection).
 - Each group: `id`, `category: flight|airport`, `callsign` or operational group title, `route`, `gate_id`, `scheduled_at`, `actual_at`, `status`, `severity`, `delay_minutes`, `cause`, `event_count`, `source`, `synthetic` and `events[]`.

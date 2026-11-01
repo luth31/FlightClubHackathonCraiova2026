@@ -23,6 +23,11 @@ def ops(tmp_path, monkeypatch):
         table.create(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     user = SimpleNamespace(id='test-operator', name='Operator', airport_id='craiova', roles=['director'])
+    # These tests exercise the retained manual API, not presentation presets.
+    with factory() as db:
+        state = service.initial_state(db, user)
+        state.scenario_mode = 'interactive'
+        db.commit()
     yield factory, user
     engine.dispose()
 

@@ -51,8 +51,9 @@ def scan_card(body: NfcInput, user=Depends(current_user), db: Session=Depends(ge
 
 @router.get('/ledger')
 def operational_ledger(date: Date | None=Query(default=None), status: Literal['all','attention']='all',
-                       search: str=Query(default='', max_length=120), user=Depends(current_user), db: Session=Depends(get_db)):
-    return ledger.get_ledger(db,user,date,status,search)
+                       search: str=Query(default='', max_length=120), scope: Literal['all','current']='all',
+                       run_id: str | None=Query(default=None,max_length=100), at_seconds: int | None=Query(default=None,ge=0,le=3600), user=Depends(current_user), db: Session=Depends(get_db)):
+    return ledger.get_ledger(db,user,date,status,search,scope,run_id,at_seconds)
 
 
 @router.get('/strategies')
