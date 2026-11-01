@@ -1,51 +1,29 @@
 # FlyLeaf operations showcase
 
-## The five-minute story
+## Three presentation scenarios
 
-Use **Operațiuni la sol → Tura curentă**. The displayed clock is the demonstration's airport-local time; event records also retain the real UTC recording time. The default interactive mode never invents scans or opens G1 for the presenter. FL202 (08:18 departure) and FL404 (08:12 arrival) run automatically; only FL101 needs intervention. Real ADS-B traffic is a separate, read-only map mode.
+Open **Operațiuni la sol → Tura curentă**. Select a scenario; every selection creates a new run paused at 08:00 and 30×. Previous runs remain in **Registru → Arhiva turelor**. The presentation has two departures and one arrival, so only FL101 needs attention.
 
-1. **Before the pitch:** sign in on the presentation laptop and iPhone to the same airport. Reset to **Interactivă** and keep the clock paused. Prepare the card links below.
-2. **Stage entrance:** the on-time staff scan their cards. Use the mobile confirmation to log the entry. The assigned G1 employee, Mara Stoica, has not arrived. The laptop receives the entries automatically.
-3. **Reveal the problem:** advance to 08:04. G1 should open, but the assigned worker is absent. Advance to 08:22. Scan Alexandru Marin's reserve card and confirm entry. Select FL101 and open G1 with Alexandru as the operator. The other two aircraft require no presenter actions. FL202 supplies the on-time baseline automatically.
-4. **Show the consequence:** advance to 08:45. Boarding takes 16 modeled minutes from gate opening. FL101 leaves the stand at 08:38, 18 minutes after its 08:20 plan. Taxi follows departure from the stand; takeoff is a separate event. Closing the gate before boarding finishes pauses its progress.
-5. **Explain and improve:** select **Vezi firul evenimentelor**. The expanded ledger shows scheduling, assignment, attendance, operator identity, planned/actual milestones and delay. Open **Proceduri SOP → Strategii și optimizare** to inspect the saved Luna analysis, supporting events, proposed steps and pilot. **Creează ciornă SOP** creates a full procedure document for review. After normal approval, use the existing controlled airport-sharing workflow.
+| Scenario | FL101 result | Other aircraft |
+| --- | --- | --- |
+| Tură normală | G1 opens at 08:04; departure at 08:20, on time | FL202 departs on time; FL404 arrives normally |
+| Poartă deschisă târziu | The assigned agent is absent; a substitute opens G1 at 08:22; departure at 08:38, 18 minutes late | Same normal baseline |
+| Înlocuire rapidă | A reserve opens G1 at 08:07; departure at 08:23, 3 minutes late | Same normal baseline |
 
-Rehearse a second run with the assigned worker or a reserve present and G1 opened by 08:04. The departure can be on time. This is a causal demonstration, not a fixed animation.
+1. Start **Poartă deschisă târziu** with **Pornește**. Use 30×–120×, the next-event button or the draggable timeline to control the pace.
+2. When projected delay reaches 15 minutes, FL101 turns red. A notification and persistent alert offer **Vezi registrul**, opening that flight's event chain.
+3. Explain the chain: allocation → absent agent → substitute → late gate opening → boarding → delayed departure. Actual punctuality changes only after departure; a projected risk is not a completed delay.
+4. Open **Proceduri SOP** to inspect saved analysis, supporting evidence and a reviewable procedure proposal. Approved documents can continue through controlled airport sharing.
+5. Select **Înlocuire rapidă** to demonstrate the earlier reserve intervention. The clock and ledger reset together; the result is a modeled comparison, not a claim of measured real-world improvement.
 
-**Replay automat** is a separate reset option for hands-free rehearsal. Never describe replay-generated scans as live card readings.
+## Compact controls
 
-The draggable time axis spans 08:00–09:00. Drag its handle or use arrow keys for one-second inspection; event markers and previous/next buttons jump to milestones for the selected flight, including the substitute's NFC check-in. The map, staffing, gate state and KPIs follow the inspected time. **Istoric** reviews recorded events and **Proiecție** previews existing scenario rules. **Revino la tură** restores the active shift; **Avansează tura aici** explicitly applies a future time. Scrubbing preserves recorded history and pauses a running shift for authorized operators. The axis is separate from live ADS-B traffic.
+**Tura curentă**, **Registru** and **Proceduri SOP** are the three workspace views. The ledger shows only the selected run, including the inspected timeline frame; historical seeded flights do not dilute its KPIs. Expanding an individual flight reveals its expected/actual milestones.
 
-**Camera lock:** click **Urmărește** beside the selected aircraft's details, or **Urmărește aeronava** in the map controls, once to follow it. **Urmărire activă**, the **Urmărire · FL101** badge and the highlighted lock show that following is active. Zoom and orbit remain available; selecting another flight transfers the lock. Click the active follow button/lock/badge again, use the airport overview, or press Escape to release it and pan freely. The lock survives map-style changes and timeline inspection; switching traffic source or losing the tracked ADS-B aircraft releases it. The details control is disabled when the aircraft has no mapped position.
+NFC attendance is available under **Echipă → ⋯ (Mai multe opțiuni) → Pontaj NFC** for the director and authorized operations staff. The three automatic scenarios still generate their own attendance. For a card-driven shift, expand **Opțiuni tură → Pornește tură cu pontaj**; this starts a paused shift at 08:00 and archives the preceding shift. Start the clock there or in Operațiuni de sol. Confirm arrivals on the station, then select a present operator to open G1 from the flight panel. Those events drive the ledger and departure timing.
 
-After dragging, **Redă de aici** plays from the selected moment; **Pauză**, playback speed and next-event stepping remain available. Opening a completed run starts its viewer at 08:00, ready to replay at 30×, without resetting recorded events. Reaching the end while watching keeps the final state visible and offers **Reia redarea**. NFC opens the actual shift's station, using its recorded clock rather than the historical playback cursor.
+On iOS, use NFC Tools to write each colleague's **Copiază linkul NFC** URL as a URL record. The phone opens `#people?tab=attendance&card=…`; after login, explicitly confirm **Intrare** or **Ieșire**. Opening a URL never records attendance by itself. Existing `#operations?view=station&card=…` cards still work. Copy links from the hostname the phone will use (including the Tailscale airport hostname). The station also accepts card codes through its input for a keyboard reader or rehearsal.
 
-## iPhone cards with NFC Tools
+**Opțiuni hartă** contains the simulation/ADS-B switch and the map style. Live traffic retains its shared ten-second cache and 15-second playback buffer; it does not drive simulated delay metrics. Click **Urmărește** once to lock onto an aircraft, again to release. Map styles and camera state remain mounted when moving between workspace tabs.
 
-The station works in the browser; no native iOS application is claimed. iOS can open a supported NFC tag's URL. Safari does not expose the Android Web NFC scanning API. See [Apple background tag reading](https://developer.apple.com/documentation/corenfc/adding-support-for-background-tag-reading) and [NFC Tools URL-writing instructions](https://www.wakdev.com/en/knowledge-base/how-to-guides/how-to-write-a-link-url-on-an-nfc-chip.html).
-
-1. Open FlyLeaf at the HTTPS presentation address on the iPhone and sign in with an operations-enabled account.
-2. On **Stație mobilă → Cardurile echipei**, prepare Mara’s `DEMO-NFC-101` and Alexandru’s `DEMO-NFC-104`. Ioana’s `DEMO-NFC-103` is optional for an on-time entrance; Vlad’s G2 attendance is automatic.
-3. In NFC Tools choose **Write → Add a record → URL / URI**, paste the link, then write the card. The link identifies a demonstration card, not an authentication credential. Use the presentation hostname, not localhost.
-4. Tap the card with the iPhone, open its notification, then press **Confirmă intrarea**. Opening a link alone never records attendance. If sign-in is required, the pending card survives the same-tab login round trip for up to 30 minutes.
-5. The receipt shows the server's scenario timestamp. The laptop updates on its next poll. **Ieșire** is explicit; repeated taps never silently toggle the person's presence.
-
-Card labels: Mara `DEMO-NFC-101`; Vlad `DEMO-NFC-102` (automatic routine flight); Ioana `DEMO-NFC-103`; Alexandru `DEMO-NFC-104`. A keyboard-style reader can enter the same label into the station. The preparation panel also supports rehearsal without hardware. Physical NFC hardware must still be rehearsed on the actual iPhone/tag combination; desktop mobile emulation checks the web flow only.
-
-## Evidence and metrics
-
-The ledger seeds seven historical days and three days of future plans, including scheduling three days ahead, staff/gate allocation, check-in, equipment/fuel readiness, boarding, off-block, takeoff, runway inspections, maintenance, handovers and SOP review. All of this history is explicitly synthetic. Current interactive events are persisted and update the same view.
-
-Expand day → flight/airport activity → individual actions. Search people, actions, gates or flight numbers; filter a date or exceptions. Severity propagates to its flight and day. Forecast delays are marked as estimates; KPI totals count completed departures only. The home page uses the same metrics as the operational ledger.
-
-The document/personnel audit remains separately permission-filtered in **Jurnal de activitate**; the operations ledger does not grant access to confidential leave records. Generated leave PDFs follow the leave workflow, retain previous versions and link back to **Echipă → Concedii**.
-
-Luna proposals distinguish observed delay from hypothetical improvement. Observed delay is deduplicated by completed departure; pilot benefits remain unmeasured until tested. Each draft preserves the evidence and pilot plan used to generate it. The older deterministic `/strategies` endpoints remain for compatibility and are not the current UI.
-
-## Deployment
-
-Default development and the Tailscale presentation deployment remain separate. No global development hosts, ports or authentication mode are changed by this feature. The shared optional Google key remains available in either environment. See [TAILSCALE.md](TAILSCALE.md) for the presentation setup.
-
-## SOP and optimization story
-
-Open **Proceduri SOP** to browse twelve complete working procedures. Use **Analizează cu Luna** before rehearsal to prepare a saved analysis; a fresh analysis may take about a minute. In **Strategii și optimizare**, follow a citation back to its exact flight group, review the proposed steps and pilot, then create the SOP draft. Validate and obtain approval in the document workflow. Return to the procedure's local documents and choose **Partajează** to review the copy and send it to the partner airport. That action is available to the director or Conformitate reviewer only. An ordinary employee can read approved internal SOPs but cannot distribute them.
+The timeline spans 08:00–09:00. Scrubbing pauses a running scenario and inspects history or projection without rewriting recorded events. **Revino la tură** returns to the stored clock; **Avansează tura aici** explicitly applies a future point. **Pornește** plays from the cursor, and **Reia redarea** replays a completed run. The restart icon creates a fresh instance of the same preset.

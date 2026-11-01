@@ -21,7 +21,7 @@ export function PersonStatus({person}: {person: Person}) {
   return <span className={`availability availability-${status}`}><i aria-hidden="true"/>{status === 'offline' ? 'Offline' : presenceLabels[status]}</span>;
 }
 
-export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled}: {
+export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled, openOnFocus = true}: {
   userId?: string;
   name: string;
   person?: Person;
@@ -31,6 +31,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
   externalAirport?: string;
   accountRole?: string;
   disabled?: boolean;
+  openOnFocus?: boolean;
 }) {
   const directory = usePersonDirectory();
   // Audit entries can contain names rather than IDs. Ambiguous names stay unresolved.
@@ -165,7 +166,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         timer.current = setTimeout(() => setOpen(true), 180);
       }}
       onPointerLeave={scheduleClose}
-      onFocus={() => { if (!suppressFocus.current) show(); }}
+      onFocus={() => { if (openOnFocus && !suppressFocus.current) show(); }}
       onBlur={blur}
       onClick={event => { event.stopPropagation(); show(); }}
       onKeyDown={event => {
@@ -237,7 +238,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
           {directory.error ? <>Profilul nu a putut fi încărcat.<button type="button" onClick={directory.refresh}>Încearcă din nou</button></> : !directory.data ? 'Se încarcă profilul…' : 'Informațiile acestei persoane nu sunt disponibile în directorul echipei.'}
         </div>}
         {own && directory.account && <div className="person-profile-signout">
-          <button type="button" className="logout-button person-signout-button" disabled={directory.account.signingOut} aria-busy={directory.account.signingOut} onClick={() => void directory.account?.signOut()}>
+          <button type="button" className="logout-button person-signout-button" disabled={directory.account.signingOut} aria-busy={directory.account.signingOut} onClick={() => {close(true); void directory.account?.signOut();}}>
             <LogOut size={17}/>{directory.account.signingOut ? 'Se deconectează…' : 'Ieși din cont'}
           </button>
           {directory.account.signOutError && <p className="own-profile-error">{directory.account.signOutError}</p>}

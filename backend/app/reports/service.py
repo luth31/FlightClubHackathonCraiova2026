@@ -12,6 +12,7 @@ from app.config import settings
 from app.contracts.service import safe_cell
 from app.core.exceptions import DomainError
 from app.core.models import AuditEvent
+from app.core.presentation import operational_text
 from app.core.security import has_role
 from app.documents.classification import STAGES
 from app.documents.service import serialize, visible_documents
@@ -43,8 +44,8 @@ def permitted(user, definition):
     return not definition['roles'] or has_role(user, *definition['roles'])
 
 
-def catalog(db, user):
-    documents = visible_documents(db, user)
+def catalog(db, user, *, _documents=None):
+    documents = visible_documents(db, user) if _documents is None else _documents
     return {'items': [d for d in DEFINITIONS if permitted(user, d)],
             'visible_documents': len(documents), 'roles': user.roles,
             'reference_date': str(settings.reference_date), 'refresh_seconds': 60}
@@ -110,7 +111,16 @@ def activity_series(rows, days):
                       for i, value in enumerate(buckets)], 'total': sum(buckets)}
 
 
-def report(db, user, report_id, days=90, department='', reference_date=None):
+def document_snapshot(db, user, reference_date):
+    """Request-local, permission-filtered rows shared by the dashboard's report cards."""
+    documents = [serialize(d, user=user, include_permissions=False) for d in visible_documents(db, user)]
+    for document in documents:
+        expiry = parse_date(document.get('expires_at'))
+        document['days_remaining'] = (expiry - reference_date).days if expiry else None
+    return documents
+
+
+def report(db, user, report_id, days=90, department='', reference_date=None, *, _documents=None):
     reference_date = reference_date or settings.reference_date
     definition = next((d for d in DEFINITIONS if d['id'] == report_id), None)
     if not definition:
@@ -119,10 +129,8 @@ def report(db, user, report_id, days=90, department='', reference_date=None):
         raise DomainError('Rolurile contului nu permit accesul la acest raport.', 403)
     if days not in (30, 90, 365):
         raise DomainError('Perioada raportului nu este validă.', 422)
-    docs = [serialize(d, user=user) for d in visible_documents(db, user)]
-    for document in docs:
-        expiry = parse_date(document.get('expires_at'))
-        document['days_remaining'] = (expiry - reference_date).days if expiry else None
+    # The briefing passes its own snapshot; no rows are retained across users or requests.
+    docs = document_snapshot(db, user, reference_date) if _documents is None else _documents
     selected = [d for d in docs if not department or d['department'] == department]
     rows = [document_row(d) for d in selected]
     breakdowns = []
@@ -269,7 +277,7 @@ def report(db, user, report_id, days=90, department='', reference_date=None):
     permitted_ids = {d['id'] for d in selected}
     events = [e for e in db.scalars(select(AuditEvent).where(AuditEvent.airport_id == user.airport_id).order_by(desc(AuditEvent.created_at), desc(AuditEvent.id)))
               if e.document_id in permitted_ids or (not department and e.actor_id == user.id)]
-    recent_activity = [dict(id=e.id, action=e.action, actor=e.actor, document_id=e.document_id if e.document_id in permitted_ids else None,
+    recent_activity = [dict(id=e.id, action=operational_text(e.action), actor=operational_text(e.actor), document_id=e.document_id if e.document_id in permitted_ids else None,
                             title=e.document_title if e.document_id in permitted_ids else '', created_at=e.created_at) for e in events[:8]]
     series_rows = [dict(created_at=e.created_at) for e in events] if report_id == 'people' else rows
     return dict(report=definition, metrics=metrics, breakdowns=breakdowns, highlights=highlights,

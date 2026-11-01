@@ -17,7 +17,7 @@ export function downloadRows(rows: ReportRow[], reportId: string) {
   const url = URL.createObjectURL(new Blob([reportCsv(rows)], {type: 'text/csv;charset=utf-8'}));
   const link = document.createElement('a');
   link.href = url;
-  link.download = `aerodesk-${reportId}-selectie.csv`;
+  link.download = `flyleaf-${reportId}-selectie.csv`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

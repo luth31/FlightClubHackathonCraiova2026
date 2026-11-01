@@ -100,7 +100,7 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/audit')body={items:[{id:'audit-demo',document_id:documentRecord.id,document_title:documentRecord.title,
       actor:user.name,action:'Demo action',created_at:'2026-10-01'}]};
     else if(path==='/api/people')return peopleResponse?await peopleResponse():Response.json({items:[],total:0,departments:[],delegations:[],leaves:[],current_user_id:currentUser.id,
-      can_manage_accounts:false,can_manage_delegations:false,reference_date:'2026-10-30'});
+      can_manage_accounts:false,can_manage_delegations:false,can_record_attendance:true,reference_date:'2026-10-30'});
     else if(path.startsWith('/api/documents/')) {
       if(documentError)return Response.json({detail:'Document unavailable'},{status:404});
       body=path.endsWith('/doc-related')?related:{...documentRecord,related_documents:[related],
@@ -124,7 +124,8 @@ async function setInput(input,value){assert.ok(input);await act(async()=>{
   input.dispatchEvent(new window.Event('input',{bubbles:true}));
 });await settle(280);}
 async function signInAnotherAccount(){
-  await click(find('.topbar button','Ieși din cont'));
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   await setInput(document.querySelector('.login-page input[name=username]'),technician.name);
   await setInput(document.querySelector('.login-page input[type=password]'),'typed-demo-password');
   await click(find('.login-page button','Intră în spațiul de lucru'));
@@ -168,15 +169,14 @@ test('a refreshed dashboard dismisses stale source rows before they can be expor
   assert.equal(find('.px-kpi','Total documente').querySelector('strong').textContent,'0');
 });
 
-test('leaving the retained mobile NFC station restores the normal application shell',async t=>{
-  await setup(t,'#operations?view=station');
-  assert.ok(document.querySelector('.ops-station-mode'));
-  await click(find('aside button','Acasă'));
+test('obsolete NFC session links do not redirect the user away from their work',async t=>{
+  await setup(t,'#home',{sessionResponse:response=>{
+    sessionStorage.setItem('flyleaf.pendingNfc',JSON.stringify({card:'DEMO-NFC-101',at:Date.now()}));
+    return response;
+  }});
   assert.equal(heading(),'Bine ai venit, Ana.');
-  const retained=document.querySelector('.operations-page');
-  assert.ok(retained?.closest('[hidden]'),'The operations page remains mounted for session state');
-  assert.equal(document.querySelector('.ops-station-mode'),null,
-    'A hidden station must not trigger the CSS rule that hides the global sidebar and topbar');
+  assert.equal(location.hash,'#home');
+  assert.equal(document.querySelector('.ops-station-mode'),null);
 });
 
 test('technician sidebar contains only personal work and forbidden hashes do not fetch sections',async t=>{
@@ -238,6 +238,7 @@ test('sidebar name and chevron open the same full profile card as avatar hover',
   assert.ok(document.querySelector('.person-profile .own-profile'));
   assert.ok(document.querySelector('.person-signout-button'));
   await click(document.querySelector('.person-signout-button'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(document.querySelector('.login-page'));
   assert.equal(document.querySelector('.person-profile'),null);
   assert.equal(localStorage.getItem('flyleaf-user'),null);
@@ -248,16 +249,17 @@ test('profile card logout prevents duplicate requests and retries a failed logou
   const pending=new Promise(resolve=>{finish=resolve});
   await setup(t,'#home',{logoutResponse:()=>++requests===1?pending:Response.json({ok:true,redirect_url:null})});
   await click(document.querySelector('.user-menu-trigger'));
-  const button=document.querySelector('.person-signout-button');
+  await click(document.querySelector('.person-signout-button'));
+  const button=find('.logout-confirmation button','Ieși din cont');
   await click(button);
   assert.equal(button.disabled,true);
   assert.equal(button.getAttribute('aria-busy'),'true');
   await click(button);
-  await click(document.querySelector('.topbar-logout'));
+  await click(document.querySelector('.sidebar-logout'));
   assert.equal(requests,1);
   await act(async()=>finish(Response.json({detail:'Logout temporarily unavailable'},{status:503})));
   await settle();
-  assert.match(document.querySelector('.person-profile-signout').textContent,/Logout temporarily unavailable/);
+  assert.match(document.querySelector('.logout-confirmation').textContent,/Logout temporarily unavailable/);
   assert.equal(button.disabled,false);
   assert.equal(localStorage.getItem('flyleaf-user'),'admin');
   await click(button);
@@ -271,10 +273,48 @@ test('profile card can sign out even when the people directory cannot load',asyn
   await click(document.querySelector('.user-menu-trigger'));
   assert.match(document.querySelector('.person-profile-message').textContent,/Profilul nu a putut fi/);
   await click(document.querySelector('.person-signout-button'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(document.querySelector('.login-page'));
 });
 
-test('logout is available without opening the account menu and clears the workspace',async t=>{
+test('logout is in the top-right profile popup and cancel preserves the document and session',async t=>{
+  let requests=0;
+  await setup(t,'#document/doc-contract?from=suppliers',{authMode:'oidc',logoutResponse:()=>{requests++;return Response.json({ok:true});}});
+  assert.equal(!!find('.topbar button','Ieși din cont'),false);
+  const avatar=document.querySelector('.topbar .person-avatar-trigger');
+  await click(avatar);
+  await click(find('.person-profile button','Ieși din cont'));
+  assert.ok(document.querySelector('.logout-confirmation'));
+  assert.equal(document.querySelector('.person-profile'),null);
+  assert.equal(requests,0,'Opening confirmation must not end the session');
+  const cancel=find('.logout-confirmation button','Rămâi conectat');
+  assert.equal(document.activeElement,cancel,'The safe action receives initial focus');
+  await click(cancel);
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+  assert.equal(document.activeElement,avatar);
+  assert.equal(document.querySelector('.person-profile'),null,'Restoring focus should not reopen the popup');
+  assert.equal(location.hash,'#document/doc-contract?from=suppliers');
+  assert.equal(localStorage.getItem('flyleaf-user'),'admin');
+  assert.match(document.querySelector('main').textContent,/Contract Demo Navigation/);
+  assert.equal(requests,0);
+});
+
+test('Escape and backdrop dismiss logout confirmation without ending the session',async t=>{
+  let requests=0;
+  await setup(t,'#home',{logoutResponse:()=>{requests++;return Response.json({ok:true});}});
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.ok(document.querySelector('.logout-confirmation'));
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await act(async()=>document.querySelector('.modal-backdrop').dispatchEvent(new MouseEvent('mousedown',{bubbles:true})));
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+  assert.equal(requests,0);
+  assert.equal(localStorage.getItem('flyleaf-user'),'admin');
+  assert.ok(document.querySelector('.app-shell'));
+});
+
+test('confirmed logout clears the workspace without another session request',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
   assert.equal(localStorage.getItem('flyleaf-user'),'admin');
   const originalFetch=globalThis.fetch;
@@ -282,7 +322,8 @@ test('logout is available without opening the account menu and clears the worksp
     if(String(input)==='/api/session')throw new Error('Session refresh unavailable');
     return originalFetch(input,options);
   };
-  await click(find('.topbar button','Ieși din cont'));
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(document.querySelector('.login-page'),'Successful logout should show login without another session request');
   assert.equal(document.querySelector('.app-shell'),null);
   assert.equal(localStorage.getItem('flyleaf-user'),null);
@@ -303,10 +344,16 @@ test('logout prevents repeated requests while the session is being revoked',asyn
   await setup(t,'#home',{logoutResponse:()=>{requests++;return response;}});
   const button=find('.sidebar-bottom button','Ieși din cont');
   await click(button);
+  assert.equal(requests,0);
+  const confirm=find('.logout-confirmation button','Ieși din cont');
+  await click(confirm);
   assert.equal(button.disabled,true);
-  assert.equal(document.querySelector('.topbar [aria-label="Ieși din cont"]').disabled,true);
+  assert.equal(confirm.disabled,true);
+  assert.equal(find('.logout-confirmation button','Rămâi conectat').disabled,true);
   assert.equal(document.querySelector('.user-button').disabled,true);
-  await click(button);
+  await click(confirm);
+  await act(async()=>document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
+  assert.ok(document.querySelector('.logout-confirmation'),'A pending logout cannot be canceled');
   assert.equal(requests,1);
   await act(async()=>finish(Response.json({ok:true,redirect_url:null})));
   await settle();
@@ -317,12 +364,13 @@ test('failed logout keeps the account active and offers a retry',async t=>{
   let fail=true;
   await setup(t,'#home',{logoutResponse:()=>Response.json(fail?{detail:'Logout temporarily unavailable'}:{ok:true,redirect_url:null},{status:fail?503:200})});
   await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(find('[role="alert"]','Logout temporarily unavailable'));
   assert.ok(find('.user-button',user.name));
   assert.equal(localStorage.getItem('flyleaf-user'),'admin');
-  assert.equal(find('.sidebar-bottom button','Ieși din cont').disabled,false);
+  assert.equal(find('.logout-confirmation button','Ieși din cont').disabled,false);
   fail=false;
-  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.ok(document.querySelector('.login-page'));
 });
 
@@ -332,6 +380,8 @@ test('OIDC logout clears local content before navigating to the provider',async 
   const destinations=[];
   globalThis.location={search:'',assign:url=>destinations.push(url)};
   await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.deepEqual(destinations,[]);
+  await click(find('.logout-confirmation button','Ieși din cont'));
   assert.deepEqual(destinations,[redirect]);
   assert.equal(document.querySelector('.app-shell'),null);
   assert.ok(document.querySelector('.login-page a.login-button'));
@@ -351,7 +401,8 @@ for (const lateResult of ['success','error'])
       return response;
     }});
     assert.equal(requests,2);
-    await click(find('.topbar button','Ieși din cont'));
+    await click(find('.sidebar-bottom button','Ieși din cont'));
+    await click(find('.logout-confirmation button','Ieși din cont'));
     assert.ok(document.querySelector('.login-page'));
     await act(async()=>finish());
     await settle();
@@ -369,7 +420,8 @@ test('successful logout clears a startup error received while logout was pending
     if(++requests===2){await pendingSession;throw new Error('Startup session failed');}
     return response;
   },logoutResponse:()=>pendingLogout});
-  await click(find('.topbar button','Ieși din cont'));
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  await click(find('.logout-confirmation button','Ieși din cont'));
   await act(async()=>finishSession());
   await settle();
   await act(async()=>finishLogout(Response.json({ok:true,redirect_url:null})));
@@ -428,7 +480,7 @@ test('supplier contract returns to the registry with its query and scroll positi
   assert.equal(browser.scrollY,650);
 });
 
-for(const [page,label] of [['documents','Documente'],['contracts','Contracte'],['approvals','Aprobări'],
+for(const [page,label] of [['documents','Documente'],['approvals','Aprobări'],
   ['sharing','Colaborare'],['audit','Jurnal de activitate'],['home','Acasă']])
   test(`document return preserves ${page} origin`,async t=>{
     await setup(t,`#${page}`);
@@ -516,8 +568,9 @@ test('malformed encoded document links recover without crashing',async t=>{
 
 test('sidebar still navigates away from document detail',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
-  await click(find('nav button','Contracte'));
-  assert.equal(heading(),'Contracte');
+  await click(find('nav button','Documente'));
+  assert.equal(heading(),'Documente');
+  await settle(230);
   await click(find('button',documentRecord.title));
   await click(find('nav button','Furnizori'));
   assert.equal(heading(),'Furnizori');
@@ -612,7 +665,7 @@ for (const [hash,pageHeading] of [['#document','Documente'],['#document/','Docum
 
 test('every sidebar section works and mobile navigation closes its drawer',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
-  for (const [page,label] of [['home','Acasă'],['documents','Documente'],['contracts','Contracte'],
+  for (const [page,label] of [['home','Acasă'],['documents','Documente'],
     ['suppliers','Furnizori'],['approvals','Aprobări'],['people','Echipă'],
     ['sharing','Colaborare'],['audit','Jurnal de activitate']]) {
     await click(document.querySelector('.mobile-menu'));
@@ -637,7 +690,7 @@ for (const dismiss of ['cancel','navigate','back','account change'])
     await click(find('[role="dialog"] button','Înregistrează documentul'));
     assert.ok(find('button','Se încarcă'));
     if(dismiss==='cancel')await click(find('[role="dialog"] button','Renunță'));
-    else if(dismiss==='navigate')await click(find('nav button','Contracte'));
+    else if(dismiss==='navigate')await click(find('nav button','Acasă'));
     else if(dismiss==='back'){await act(async()=>window.history.back());await settle(70);}
     else {
       await signInAnotherAccount();
@@ -660,4 +713,79 @@ test('a completed active upload opens its document and returns to its origin',as
   assert.equal(location.hash,'#document/doc-contract?from=documents');
   await click(document.querySelector('.back-button'));
   assert.equal(heading(),'Documente');
+});
+
+test('expired session leaves the workspace for login instead of rendering request errors',async t=>{
+  let expired=false;
+  await setup(t,'#reports',{authMode:'oidc',briefingResponse:()=>Response.json(
+    expired?{detail:'Conectează-te pentru a continua.'}:briefingFixture,{status:expired?401:200})});
+  expired=true;
+  await act(async()=>window.dispatchEvent(new window.Event('focus')));
+  await settle();
+  assert.ok(document.querySelector('.login-page'),'Expired session must show login');
+  assert.equal(document.querySelector('.app-shell'),null);
+  assert.equal(document.querySelector('.toast'),null);
+  assert.equal(location.hash,'#reports','Keep the destination for the next sign-in');
+});
+
+test('session expiry dismisses logout confirmation before the next sign-in',async t=>{
+  let expired=false;
+  await setup(t,'#reports',{briefingResponse:()=>Response.json(
+    expired?{detail:'Conectează-te pentru a continua.'}:briefingFixture,{status:expired?401:200})});
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.ok(document.querySelector('.logout-confirmation'));
+  expired=true;
+  await act(async()=>window.dispatchEvent(new window.Event('focus')));
+  await settle();
+  assert.ok(document.querySelector('.login-page'));
+  expired=false;
+  await setInput(document.querySelector('.login-page input[name=username]'),technician.name);
+  await setInput(document.querySelector('.login-page input[type=password]'),'typed-demo-password');
+  await click(find('.login-page button','Intră în spațiul de lucru'));
+  assert.ok(document.querySelector('.app-shell'));
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+});
+
+
+test('legacy contracts routes open the document library and preserve contract documents',async t=>{
+  await setup(t,'#contracts');
+  assert.equal(find('nav button','Contracte'),undefined);
+  assert.ok(find('nav [aria-current="page"]','Documente'));
+  await click(find('button',documentRecord.title));
+  assert.equal(location.hash,'#document/doc-contract?from=documents');
+  await click(document.querySelector('.back-button'));
+  assert.ok(document.querySelector('.document-library') || find('nav [aria-current="page"]','Documente'));
+});
+
+test('permission denial does not log the user out',async t=>{
+  await setup(t,'#reports',{briefingResponse:()=>Response.json({detail:'Acces restricționat.'},{status:403})});
+  assert.ok(document.querySelector('.app-shell'));
+  assert.equal(document.querySelector('.login-page'),null);
+});
+
+test('the home expiry metric opens its filtered documents without a Contracts section',async t=>{
+  await setup(t,'#home');
+  await click(find('button','Expiră în 60 zile'));
+  await settle(230);
+  assert.equal(location.hash,'#documents');
+  assert.ok(find('.library-tabs .active','Expiră în 60 zile'));
+  assert.equal(find('nav button','Contracte'),undefined);
+});
+
+
+test('NFC card survives login callback at the root and opens attendance under Team',async t=>{
+  await setup(t,'',{sessionResponse:response=>{
+    sessionStorage.setItem('flyleaf.pendingNfc',JSON.stringify({card:'DEMO-NFC-101',at:Date.now()}));
+    return response;
+  }});
+  assert.equal(location.hash,'#people?tab=attendance&card=DEMO-NFC-101');
+  assert.equal(heading(),'Pontajul echipei');
+  assert.equal(document.querySelector('#nfc-card').value,'DEMO-NFC-101');
+});
+
+test('previously written station cards open the restored attendance page',async t=>{
+  await setup(t,'#operations?view=station&card=DEMO-NFC-104');
+  assert.equal(heading(),'Pontajul echipei');
+  assert.equal(document.querySelector('#nfc-card').value,'DEMO-NFC-104');
+  assert.equal(document.querySelector('.operations-page'),null);
 });

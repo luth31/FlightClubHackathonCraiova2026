@@ -1,49 +1,16 @@
-# FlyLeaf: Craiova and Sibiu over Tailscale
+# FlyLeaf over Tailscale: the same application and data
 
-Craiova is the main airport and owns the demonstration corpus. Sibiu is the partner airport. Airport names are real; the people, contracts and operational scenarios remain synthetic demonstration data.
+Tailscale is an additional entrance to the **`flyleaf`** Docker installation. For each airport, local and HTTPS access use the **same API, database, documents, Keycloak realm and user accounts**. Craiova and Sibiu still have their own airport databases and permissions. No database synchronization or duplicate corpus is involved.
 
-The opt-in `compose.tailscale.yaml` overlay uses project **`flyleaf-presentation`**, separate databases/identity volumes, and separate loopback ports. The normal `./scripts/start-demo.sh`, `./scripts/dev.sh`, root `.env`, and local login flow remain unchanged apart from the airport names. Both deployments can run simultaneously. Presentation fixtures start with `FlyLeaf2026!`; existing local passwords stay unchanged.
-
-| Development path | Command | Application URLs | Identity URLs / ports |
-|---|---|---|---|
-| Native local development | `./scripts/dev.sh` | Vite on `http://127.0.0.1:5173`, API on port 8000 | Existing local demo login |
-| Local Docker development | `./scripts/start-demo.sh` | `http://127.0.0.1:8080` and `:8081` | Local Keycloak on ports 8180 / 8181 |
-| Optional presentation | `./scripts/start-tailscale.sh` | Tailscale HTTPS service origins; upstream ports 18080 / 18081 | Same HTTPS origin under `/auth`; maintenance ports 18180 / 18181 |
-
-Neither normal development path requires Tailscale. Both local and presentation deployments use `GOOGLE_MAPS_API_KEY` from the root `.env` for photorealistic maps when configured; without a key they use the bundled model. Presentation origins belong in `.env.tailscale`; do not replace developers' root `.env` with that file.
-
-In the presentation deployment, each airport has one HTTPS origin for its website, API, PDFs, and Keycloak login. Tailscale terminates HTTPS and forwards to the airport's loopback web port. Nginx routes `/api/` to FastAPI and `/auth/realms/<airport>/` plus `/auth/resources/` to Keycloak. Administration and `/api/exchange/` remain unavailable through the web entry point. The two gateways continue their separate mutually authenticated Docker connection.
-
-## 1. Define the Services
-
-Use these entries in the **Define a Service** form from the screenshot:
-
-| Field | Main airport | Partner airport |
+| Access | Command | Addresses |
 |---|---|---|
-| Service name | `aeroport-craiova` | `aeroport-sibiu` |
-| Display name | `FlyLeaf · Craiova` | `FlyLeaf · Sibiu` |
-| Description | `FlyLeaf Craiova: documente, API si autentificare` | `FlyLeaf Sibiu: documente, API si autentificare` |
-| Ports | **`tcp:443`** | **`tcp:443`** |
-| Service tags | Optional; may be left blank | Optional; may be left blank |
-| Local forwarding target | `http://127.0.0.1:18080` | `http://127.0.0.1:18081` |
+| Native development | `./scripts/dev.sh` | Existing Vite/API and local login; unchanged |
+| Local Docker | `./scripts/start-demo.sh` | Applications 8080/8081, Keycloak 8180/8181 |
+| Local Docker + Tailscale | `./scripts/start-tailscale.sh` | All local addresses above, plus HTTPS entrances via 18080/18081 |
 
-The port in this form is the port clients connect to. The local upstream port belongs in the Serve command. See [Tailscale Services](https://tailscale.com/docs/features/tailscale-services).
+## Enable both entrances
 
-## 2. Permit and approve the host
-
-Keep the existing Mac's Tailscale identity unchanged. The inspected Mac is user-owned and untagged. Assigning a tag replaces its user identity, so `autogroup:self` SSH rules no longer cover it and its user-based permissions no longer apply. Defining a tag under `tagOwners` alone does not tag the Mac. See [Tailscale tag behavior](https://tailscale.com/docs/features/tags) and [policy identity selectors](https://tailscale.com/docs/reference/syntax/policy-file).
-
-For the two named Services, use **one dedicated tagged Tailscale instance**—for example a container on this same physical Docker host—with `tag:flyleaf-host`. That one instance can advertise both `svc:aeroport-craiova` and `svc:aeroport-sibiu`. Keep the personal Mac client separate; two physical hosts or airport-specific host tags are unnecessary. Tailscale Services requires the advertising instance to use a tag-based identity. [Service host requirements](https://tailscale.com/docs/features/tailscale-services).
-
-`deploy/tailscale-policy.hujson` is a review copy of the policy supplied by the user, with the existing member grant, SSH check rule and both tag owners preserved. Its only additions are an explicit HTTPS grant for the two Services and their `autoApprovers.services` entries. If editing the live policy, merge only those additions; preserve any other entries that have since been added. No extra broad outbound grant or SSH rule is needed for a dedicated relay that proxies to apps through Docker networking.
-
-The dedicated instance is a proposed deployment topology, not provisioned by `start-tailscale.sh`. It needs its own Tailscale state and authentication, plus connectivity to both presentation web upstreams. If using a container, proxy to the web containers over their Docker networks; `127.0.0.1` inside a container is not the Mac. Do not run the host-tagging step on the personal Mac to work around missing relay setup.
-
-Enable MagicDNS and HTTPS certificates in tailnet DNS settings. With the auto-approval entries, the dedicated instance can advertise both Services without individual host approval; otherwise approve it manually on each Service page. No live policy, tag or SSH changes are applied by the application launchers.
-
-## 3. Configure the application origins
-
-Keep presentation settings in **`.env.tailscale`**, separate from the existing root `.env`:
+Keep provider keys (including `GOOGLE_MAPS_API_KEY` and `OPENAI_API_KEY`) in the root `.env`. Both entrances use the same API configuration. Only the two HTTPS origins belong in `.env.tailscale`. The launcher extracts these into `.runtime/tailscale.origins.env`; any legacy API-key entries in `.env.tailscale` are ignored so they cannot change the shared API configuration:
 
 ```bash
 cp deploy/tailscale.env.example .env.tailscale
@@ -54,45 +21,31 @@ FLYLEAF_CRAIOVA_PUBLIC_URL=https://aeroport-craiova.taileceb7a.ts.net
 FLYLEAF_SIBIU_PUBLIC_URL=https://aeroport-sibiu.taileceb7a.ts.net
 ```
 
-Do not add trailing slashes. The suffix above comes from the provided screenshot and connected host. The overlay enables Secure cookies and the exact HTTPS origins automatically. Local Compose does not read `.env.tailscale`.
-
-Start the separate presentation deployment:
+Use your tailnet's actual Service hostnames, without trailing slashes. Then run:
 
 ```bash
 ./scripts/start-tailscale.sh
 ```
 
-The launcher reads existing secrets from `.env` and the presentation origins from `.env.tailscale`, builds the app and starts **`flyleaf-presentation`**. It pins that project name explicitly, so a developer's `COMPOSE_PROJECT_NAME` cannot redirect the launcher into their local stack. It does not advertise Tailscale Services or modify tailnet policy. It creates its own fresh corpus and identity state. Local developer ports 8080/8081 and login ports 8180/8181 remain available; the presentation upstream ports are **18080/18081**, with loopback identity maintenance ports 18180/18181.
+The launcher pins project `flyleaf`, keeps its existing state/identity volumes, and adds `craiova-tailweb` and `sibiu-tailweb`. It registers local and remote callbacks on the **existing** browser clients. Configuration briefly stops the shared stack, backs up its four persistent volumes, updates callback/logout origins, removes temporary bootstrap credentials and restarts. User IDs, passwords, documents and canonical identity issuers are retained. It does not regenerate PDFs.
 
-Application and Keycloak volumes use separate `flyleaf_…` and `flyleaf-presentation_…` prefixes. The launchers reuse host-generated exchange certificates/tokens under `.runtime/exchange` and optional model-provider credentials from `.env`; those shared inputs do not merge airport documents, sessions or identity databases.
+Use this same launcher for future rebuilds while you want both entrances enabled. Running `start-demo.sh` applies the local-only configuration again. Native development remains independent and does not need Tailscale; this change shares the existing Docker databases, not a native developer's SQLite checkout.
 
-For Google Photorealistic 3D mode in both environments, set `GOOGLE_MAPS_API_KEY` in the ignored root `.env`. Native development reads that file, local Compose injects the key into both airport APIs, and the presentation launcher inherits it. An optional nonempty value in `.env.tailscale` can use a different presentation key; an explicitly blank override disables Google only there. Restrict the browser key to Map Tiles API and all intended local and presentation web origins, including `http://localhost:5173/*`, `http://127.0.0.1:5173/*`, `http://127.0.0.1:8080/*`, `http://127.0.0.1:8081/*`, and both Tailscale HTTPS hostnames. Availability depends on the Google project and local coverage; see [3D sources and content handling](AIRPORT_3D_SOURCES.md).
-
-If you later change presentation hostnames, reconcile the existing presentation realms:
+If an older `flyleaf-presentation` project exists, stop it first so it releases ports 18080/18081:
 
 ```bash
-backend/.venv/bin/python scripts/configure_identity.py --tailscale
+docker stop $(docker ps -q --filter label=com.docker.compose.project=flyleaf-presentation)
 ```
 
-This stops only the selected presentation project, backs up its four volumes, updates exact callback/logout URLs and matching persisted issuer links, retains account IDs/passwords, removes temporary configuration access, and restarts. A plain Compose restart does not update an existing imported Keycloak realm. The default invocation without `--tailscale` targets local development only and is not part of presentation setup.
+Skip that command when no such containers are running. Its volumes are left intact as historical data; they are **not** merged into the canonical `flyleaf` databases or deleted. Preserve/export any unique records before retiring those volumes.
 
-An existing local installation still named Dunărea/Carpați should run `backend/.venv/bin/python scripts/migrate_airports.py` once to rename it. Original volumes and immutable signed/stored PDF versions remain available. This migration is separate from the presentation launcher.
+## One Tailscale host for both airports
 
-Derived settings (already wired in Compose):
+One dedicated Tailscale instance tagged `tag:flyleaf-host` can advertise both `svc:aeroport-craiova` and `svc:aeroport-sibiu`. Keep the personal Mac client's ownership/SSH configuration as it is. The launcher does not change tailnet policies, tags, SSH access or Serve configuration.
 
-| Setting | Craiova | Sibiu |
-|---|---|---|
-| Tenant / realm | `craiova` | `sibiu` |
-| Public issuer | `https://aeroport-craiova.taileceb7a.ts.net/auth/realms/craiova` | `https://aeroport-sibiu.taileceb7a.ts.net/auth/realms/sibiu` |
-| Internal issuer transport | `http://craiova-identity:8080/auth/realms/craiova` | `http://sibiu-identity:8080/auth/realms/sibiu` |
-| Callback | `https://aeroport-craiova.taileceb7a.ts.net/api/auth/oidc/callback` | `https://aeroport-sibiu.taileceb7a.ts.net/api/auth/oidc/callback` |
-| Logout return | `https://aeroport-craiova.taileceb7a.ts.net/` | `https://aeroport-sibiu.taileceb7a.ts.net/` |
+Existing unrestricted member access can remain. The supplied `deploy/tailscale-policy.hujson` preserves the original member grant, SSH check rule and tag owners; only merge the Service-specific additions if needed. See [Tailscale Services](https://tailscale.com/docs/features/tailscale-services).
 
-The web client remains `flyleaf-web`, with PKCE S256 and exact redirect URIs. Cookies are HttpOnly and Secure in HTTPS mode: the temporary OIDC cookie uses SameSite=Lax, while the application session uses SameSite=Strict. Application cookies are host-only and include the airport ID in their names, separating the airport sessions; the presentation HTTPS hosts also separate them from localhost sessions. The backend uses each configured public origin in its CORS/Origin allowlist, while provider token traffic stays inside Docker. Proxy headers come from the configured origin. See [Keycloak reverse proxy configuration](https://www.keycloak.org/server/reverseproxy).
-
-## 4. Advertise both Services
-
-Run on the **dedicated tagged Tailscale instance**, not the personal Mac client. These loopback targets apply only when the instance can reach the presentation upstreams at those local addresses. For a Docker relay, use its Docker-reachable web targets instead (for example `http://craiova-web:80` and `http://sibiu-web:80` on attached presentation web networks):
+Enable MagicDNS and HTTPS certificates, then run on the dedicated instance that can reach both upstream ports:
 
 ```bash
 tailscale serve --bg --service=svc:aeroport-craiova --https=443 http://127.0.0.1:18080
@@ -100,23 +53,34 @@ tailscale serve --bg --service=svc:aeroport-sibiu --https=443 http://127.0.0.1:1
 tailscale serve status
 ```
 
-These use Tailscale Serve inside the tailnet. No Funnel, public port forwarding, database exposure, or separate service for the API/identity maintenance ports is needed. The server must remain awake with Docker and Tailscale running. See the [Serve CLI reference](https://tailscale.com/docs/reference/tailscale-cli/serve).
+For a relay container, loopback is that container, not the host. Attach it to the corresponding FlyLeaf web networks and target `http://craiova-tailweb:80` / `http://sibiu-tailweb:80`. Both Services can use the same relay. No Funnel or public port forwarding is required.
 
-## 5. Verify from another permitted tailnet device
+## Login and data consistency
+
+Local browser identity stays on `http://127.0.0.1:8180/realms/craiova` (8181/Sibiu). Remote identity stays on its airport's HTTPS hostname at `/realms/craiova` or `/realms/sibiu`, with the callback at `/api/auth/oidc/callback`.
+
+The API accepts only explicitly configured origins. Each login transaction pins its issuer, callback, PKCE verifier and browser cookie; tokens from another origin cannot complete it. Alternate issuers resolve to the same canonical local account identity. Internal token traffic still reaches the same Keycloak container. Remote cookies are Secure and HttpOnly; local HTTP cookies retain their existing behavior. Cookies are host-only, so users sign in separately at each entrance, while their data and permissions are shared.
+
+Keycloak resolves browser URLs from forwarding headers only when this overlay is enabled. The remote proxy supplies those headers from configuration, never incoming client headers; administration, other realms and the exchange endpoint remain blocked. See [Keycloak hostname configuration](https://www.keycloak.org/server/hostname) and [reverse proxy configuration](https://www.keycloak.org/server/reverseproxy).
+
+Google browser-key restrictions must permit local addresses and both HTTPS hostnames. The key itself is shared through `.env`; see [map sources and usage](AIRPORT_3D_SOURCES.md).
+
+## Verify or disable remote access
+
+From another permitted tailnet device:
 
 ```bash
 curl --fail https://aeroport-craiova.taileceb7a.ts.net/api/health
 curl --fail https://aeroport-sibiu.taileceb7a.ts.net/api/health
 ```
 
-Expected airport IDs are `craiova` and `sibiu`. Open both URLs in a browser, sign in, open a PDF, use a normal authenticated action, and sign out. Login must remain on that airport's HTTPS hostname throughout; it must never send a remote browser to `127.0.0.1`. Verify a shared copy from Sibiu to exercise the unchanged gateway trust boundary.
+Sign in locally and remotely as the same user, compare document IDs/counts, and confirm a change made through one entrance appears through the other. Login and logout must stay on the selected entrance. Airport boundaries remain enforced.
 
-App API routes live under `/api/` and require the normal airport session/roles. Tailscale access does not bypass application authorization. `/api/health` is a basic unauthenticated liveness check. The API's raw OpenAPI and Swagger routes are not exposed by this web proxy.
-
-Local development always uses its existing localhost URLs. To stop the presentation stack without touching local development:
+To disable remote access without stopping the shared app, disable only the Serve endpoints:
 
 ```bash
-docker compose --project-name flyleaf-presentation -f compose.yaml -f compose.tailscale.yaml --env-file .env.tailscale stop
+tailscale serve --service=svc:aeroport-craiova --https=443 off
+tailscale serve --service=svc:aeroport-sibiu --https=443 off
 ```
 
-Disable each advertised endpoint with `tailscale serve --service=svc:aeroport-craiova --https=443 off` (and the equivalent for Sibiu). Do not remove persistent volumes to switch deployments.
+Do not run `compose down` to disable Tailscale: the stack is shared. Never remove volumes to switch access methods.

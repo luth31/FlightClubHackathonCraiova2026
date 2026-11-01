@@ -13,9 +13,11 @@ function workEmail(firstName:string,lastName:string) {
 
 function SignInLink({person,busy,onCopy}:{person:Person;busy:boolean;onCopy:(url:string)=>void}) {
   if(!person.sign_in_url)return null;
+  const url = new URL(person.sign_in_url);
+  const signInUrl = new URL(url.pathname + url.search, location.origin).href;
   return <div className="employee-login-link">
-    <label className="field">Link de conectare<input readOnly value={person.sign_in_url} onFocus={e=>e.target.select()}/></label>
-    <button type="button" className="button secondary" disabled={busy} onClick={()=>onCopy(person.sign_in_url!)}>Copiază linkul de conectare</button>
+    <label className="field">Link de conectare<input readOnly value={signInUrl} onFocus={e=>e.target.select()}/></label>
+    <button type="button" className="button secondary" disabled={busy} onClick={()=>onCopy(signInUrl)}>Copiază linkul de conectare</button>
     <p className="quiet-note">Linkul completează numele de utilizator. Angajatul introduce parola pentru a se conecta.</p>
   </div>;
 }

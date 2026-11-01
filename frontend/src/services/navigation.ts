@@ -2,30 +2,32 @@ import {useEffect, useLayoutEffect, useState} from 'react';
 import type {Page} from '@/types';
 
 export const pageLabels: Record<Page, string> = {
-  home: 'Acasă', documents: 'Documente', contracts: 'Contracte', suppliers: 'Furnizori',
+  home: 'Acasă', documents: 'Documente', contracts: 'Documente', suppliers: 'Furnizori',
   approvals: 'Aprobări', people: 'Echipă', sharing: 'Colaborare', audit: 'Jurnal de activitate',
   operations: 'Operațiuni la sol', reports: 'Rapoarte',
 };
+const currentPage = (page: Page): Page => page === 'contracts' ? 'documents' : page;
 type Route = {page: Page; doc?: string};
 type NavigationState = {userId?: string; origin: Page; documentDepth: number; scroll?: [number, number]};
 const isPage = (value: string): value is Page => Object.hasOwn(pageLabels, value);
 
 export function parseRoute(hash: string): Route {
   const [path, query = ''] = hash.replace(/^#/, '').split('?');
+  if (path === 'operations' && new URLSearchParams(query).get('view') === 'station') return {page: 'people'};
   if (path.startsWith('reports/')) return {page: 'reports'};
   if (path === 'document') return {page: 'documents'};
-  if (!path.startsWith('document/')) return {page: isPage(path) ? path : 'home'};
+  if (!path.startsWith('document/')) return {page: isPage(path) ? currentPage(path) : 'home'};
   const origin = new URLSearchParams(query).get('from') || 'documents';
   try {
     const doc = decodeURIComponent(path.slice('document/'.length));
-    return doc ? {page: isPage(origin) ? origin : 'documents', doc} : {page: 'documents'};
+    return doc ? {page: isPage(origin) ? currentPage(origin) : 'documents', doc} : {page: 'documents'};
   } catch {
     return {page: 'documents'};
   }
 }
 
 export const documentHref = (id: string, origin: Page) =>
-  `#document/${encodeURIComponent(id)}?from=${origin}`;
+  `#document/${encodeURIComponent(id)}?from=${currentPage(origin)}`;
 
 // Only our own document chain can use history.go. Copied/legacy links stay inside the app.
 export function useNavigation(userId: string | undefined, allowedPages: Record<Page,boolean>) {
@@ -64,6 +66,7 @@ export function useNavigation(userId: string | undefined, allowedPages: Record<P
   }
 
   function navigate(destination: Page) {
+    destination = currentPage(destination);
     const allowed = allowedPages[destination] ? destination : 'documents';
     write(`#${allowed}`, {userId, origin: allowed, documentDepth: 0}, window.location.hash === `#${allowed}`);
   }

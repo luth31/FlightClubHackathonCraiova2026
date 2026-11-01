@@ -15,8 +15,9 @@ local_day = service.calendar_day
 
 def build(db, user, department='', today=None):
     today = today or datetime.now(BUCHAREST).date()
-    catalog = service.catalog(db, user)
-    reports = {definition['id']: service.report(db, user, definition['id'], 90, department, reference_date=today)
+    documents = service.document_snapshot(db, user, today)
+    catalog = service.catalog(db, user, _documents=documents)
+    reports = {definition['id']: service.report(db, user, definition['id'], 90, department, reference_date=today, _documents=documents)
                for definition in catalog['items']}
     documents = reports['documents']['rows']
     tasks = reports['approvals']['rows']
@@ -107,4 +108,4 @@ def build(db, user, department='', today=None):
             events=[dict(document_id=event.document_id, created_at=event.created_at) for event in events]),
         coverage=dict(dated_contracts=sum(bool(r.get('date')) for r in contracts),
             valued_contracts=sum(r.get('value') is not None for r in contracts),
-            scope='Date administrative din AeroDesk. Indicatorii de trafic aerian nu au o sursă conectată.'))
+            scope='Date administrative din FlyLeaf. Indicatorii de trafic aerian nu au o sursă conectată.'))

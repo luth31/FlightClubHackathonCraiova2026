@@ -80,17 +80,17 @@ def oidc(client, monkeypatch):
         'oidc_internal_issuer':'http://craiova-identity:8080/realms/craiova',
         'oidc_redirect_uri':'http://127.0.0.1:8080/api/auth/oidc/callback',
         'oidc_frontend_url':'http://127.0.0.1:8080/', 'oidc_client_id':'flyleaf-web',
-        'oidc_subject_map':None, 'cookie_secure':False}.items():
+        'oidc_subject_map':None, 'cookie_secure':False, 'oidc_extra_origins':[]}.items():
         monkeypatch.setattr(settings,name,value)
     key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
     jwk=json.loads(jwt.algorithms.RSAAlgorithm.to_jwk(key.public_key()))
     jwk.update(kid='test-key',use='sig',alg='RS256')
     provider={'key':key,'jwk':jwk,'claims':{},'token_requests':0,'subject_user':'technician'}
 
-    def provider_json(method,url,data=None):
+    def provider_json(method,url,data=None,*,issuer=None):
+        issuer=issuer or settings.oidc_issuer
         internal=settings.oidc_internal_issuer
         if method=='GET' and url==internal+'/.well-known/openid-configuration':
-            issuer=settings.oidc_issuer
             return {'issuer':provider.get('discovery_issuer',issuer),
                 'authorization_endpoint':issuer+'/protocol/openid-connect/auth',
                 'token_endpoint':provider.get('token_endpoint',issuer+'/protocol/openid-connect/token'),
@@ -103,12 +103,12 @@ def oidc(client, monkeypatch):
         assert data['code']=='valid-code'
         assert data['client_id']=='flyleaf-web'
         assert data['grant_type']=='authorization_code'
-        assert data['redirect_uri']==settings.oidc_redirect_uri
+        assert data['redirect_uri']==provider['query']['redirect_uri'][0]
         challenge=base64.urlsafe_b64encode(hashlib.sha256(data['code_verifier'].encode()).digest()).rstrip(b'=').decode()
         assert challenge==provider['query']['code_challenge'][0]
         timestamp=int(time.time())
         subject=next(subject for subject,user_id in service.subject_map().items() if user_id==provider['subject_user'])
-        claims={'iss':settings.oidc_issuer,'aud':settings.oidc_client_id,'azp':settings.oidc_client_id,
+        claims={'iss':issuer,'aud':settings.oidc_client_id,'azp':settings.oidc_client_id,
             'sub':subject,'iat':timestamp,'exp':timestamp+300,'auth_time':timestamp,
             'nonce':provider['query']['nonce'][0], 'realm_access':{'roles':['admin','director']},
             **provider['claims']}
@@ -304,3 +304,57 @@ def test_concurrent_callbacks_consume_login_once(oidc):
     assert locations.count(settings.oidc_frontend_url)==1
     assert sum('auth_error=invalid_state' in value for value in locations)==1
     assert provider['token_requests']==1
+
+
+REMOTE = 'https://craiova.tailnet.test'
+
+
+def test_local_and_remote_login_use_same_identity_and_dataset(oidc, db, monkeypatch):
+    from app.people.models import Session as LoginSession
+    client, provider = oidc
+    monkeypatch.setattr(settings, 'oidc_extra_origins', [REMOTE])
+    local_state = begin(oidc)
+    assert callback(client, local_state).headers['location'] == settings.oidc_frontend_url
+    local_user = client.get('/api/session').json()['current_user']
+    with TestClient(app, base_url=REMOTE) as remote:
+        state = begin((remote, provider))
+        assert provider['query']['redirect_uri'] == [REMOTE + '/api/auth/oidc/callback']
+        response = callback(remote, state, iss=REMOTE + '/realms/craiova')
+        assert response.headers['location'] == REMOTE + '/'
+        assert 'Secure' in response.headers['set-cookie']
+        assert remote.get('/api/session').json()['current_user']['id'] == local_user['id']
+        token = remote.cookies.get('flyleaf_session_craiova')
+        assert db.get(LoginSession, token_hash(token)).auth_issuer == settings.oidc_issuer
+        assert remote.get('/api/documents').json() == client.get('/api/documents').json()
+        logout = remote.post('/api/auth/logout', headers={'Origin': REMOTE})
+        assert logout.status_code == 200
+        assert logout.json()['redirect_url'].startswith(REMOTE + '/realms/craiova/')
+        assert client.get('/api/session').json()['current_user']['id'] == local_user['id']
+
+
+def test_alias_callback_rejects_foreign_issuer_and_cross_entrance_state(oidc, monkeypatch):
+    client, provider = oidc
+    monkeypatch.setattr(settings, 'oidc_extra_origins', [REMOTE])
+    with TestClient(app, base_url=REMOTE) as remote:
+        state = begin((remote, provider))
+        # Copying the flow cookie to another entrance cannot redeem its transaction.
+        client.cookies.set('flyleaf_oidc_craiova', remote.cookies.get('flyleaf_oidc_craiova'))
+        assert 'invalid_state' in callback(client, state).headers['location']
+        assert 'invalid_provider' in callback(remote, state, iss=settings.oidc_issuer).headers['location']
+        assert not remote.get('/api/session').json()['current_user']
+        assert provider['token_requests'] == 0
+
+
+def test_unregistered_host_cannot_choose_identity_redirect(oidc, monkeypatch):
+    from app.identity.origins import request_origin
+    from starlette.requests import Request
+    monkeypatch.setattr(settings, 'oidc_extra_origins', [REMOTE])
+    request = Request({'type':'http','headers':[(b'host',b'evil.test'),(b'x-forwarded-host',b'craiova.tailnet.test')]})
+    assert request_origin(request).issuer == settings.oidc_issuer
+
+
+@pytest.mark.parametrize('origin', ['http://craiova.tailnet.test', REMOTE+'/', REMOTE+'?x=y', 'https://user@host'])
+def test_aliases_must_be_explicit_https_origins(oidc, monkeypatch, origin):
+    monkeypatch.setattr(settings, 'oidc_extra_origins', [origin])
+    with pytest.raises(service.IdentityError, match='configuration_error'):
+        service.validate_configuration()

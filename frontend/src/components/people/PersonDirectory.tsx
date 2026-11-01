@@ -11,7 +11,7 @@ interface ProfileDirectory {
 
 interface AccountActions {
   userId: string;
-  signOut: () => Promise<void>;
+  signOut: () => void | Promise<void>;
   signingOut: boolean;
   signOutError: string;
 }

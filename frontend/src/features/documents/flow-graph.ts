@@ -16,7 +16,7 @@ export interface FlowGraphEdge {
   id: string;
   source: string;
   target: string;
-  kind: 'flow' | 'related';
+  kind: 'flow' | 'related' | 'reference' | 'correction';
   label?: string;
 }
 
@@ -72,8 +72,11 @@ function compareNodes(first: FlowGraphNode, second: FlowGraphNode) {
 }
 
 function linked(first: FlowGraphNode, second: FlowGraphNode) {
+  const references = (node: FlowGraphNode, id: string) => Array.isArray(node.document.metadata.flow_links)
+    && node.document.metadata.flow_links.some((link: unknown) => link && typeof link === 'object'
+      && 'source_id' in link && link.source_id === id);
   return first.document.related_ids.includes(second.id)
-    || second.document.related_ids.includes(first.id);
+    || second.document.related_ids.includes(first.id) || references(first, second.id) || references(second, first.id);
 }
 
 function makeEdge(source: FlowGraphNode, target: FlowGraphNode, kind: FlowGraphEdge['kind']): FlowGraphEdge {
@@ -83,10 +86,11 @@ function makeEdge(source: FlowGraphNode, target: FlowGraphNode, kind: FlowGraphE
     target: target.id,
     kind,
     ...(kind === 'related' ? { label: 'Act adițional' } : {}),
+    ...(kind === 'reference' ? { label: 'Contract de referință' } : {}),
   };
 }
 
-function choosePurchasingPredecessor(target: FlowGraphNode, candidates: FlowGraphNode[]) {
+function purchasingPredecessors(target: FlowGraphNode, candidates: FlowGraphNode[]) {
   const type = normalize(target.document.flow.document_type);
   let available = candidates;
   if (type.includes('iesire') || type.includes('outbound')) {
@@ -96,25 +100,44 @@ function choosePurchasingPredecessor(target: FlowGraphNode, candidates: FlowGrap
     const replacements = candidates.filter((node) => purchasingRank(node) === 5);
     available = replacements.length ? replacements : candidates.filter((node) => purchasingRank(node) < 4);
   }
-  return [...available].sort((first, second) => purchasingRank(second) - purchasingRank(first)
-    || compareNodes(first, second))[0];
+  const nearestRank = Math.max(-1, ...available.map(purchasingRank));
+  return available.filter((node) => purchasingRank(node) === nearestRank).sort(compareNodes);
 }
 
 function layoutGroup(id: string, label: string, caseId: string | null, nodes: FlowGraphNode[]): FlowGraphGroup {
   const ordered = [...nodes].sort(compareNodes);
   const edges: FlowGraphEdge[] = [];
+  const explicit = new Set<string>();
+  const visible = new Set(nodes.map((node) => node.id));
+  for (const node of ordered) {
+    const links = node.document.metadata.flow_links;
+    if (!Array.isArray(links)) continue;
+    // An explicit empty list is a root, including when all its inputs are filtered out.
+    explicit.add(node.id);
+    for (const link of links) {
+      if (!link || typeof link !== 'object' || !visible.has(link.source_id) || link.source_id === node.id
+        || !['flow', 'related', 'reference', 'correction'].includes(link.kind)) continue;
+      const id = `${link.source_id}->${node.id}`;
+      if (edges.some((edge) => edge.id === id)) continue;
+      edges.push({id, source: link.source_id, target: node.id, kind: link.kind,
+        ...(typeof link.label === 'string' && link.label ? {label: link.label} : {})});
+    }
+  }
   const purchases = ordered.filter((node) => node.stage === 'purchasing');
   const mainPurchases = purchases.filter((node) => !isAmendment(node));
   mainPurchases.forEach((node, index) => {
     node.row = index;
+    if (explicit.has(node.id)) return;
     const predecessors = mainPurchases.filter((candidate) => purchasingRank(candidate) < purchasingRank(node)
       && linked(candidate, node));
-    const predecessor = choosePurchasingPredecessor(node, predecessors);
-    if (predecessor) edges.push(makeEdge(predecessor, node, 'flow'));
+    for (const predecessor of purchasingPredecessors(node, predecessors)) {
+      edges.push(makeEdge(predecessor, node, 'flow'));
+    }
   });
 
   purchases.filter(isAmendment).forEach((node, index) => {
     node.row = mainPurchases.length + index;
+    if (explicit.has(node.id)) return;
     const contractId = node.document.metadata.contract_id;
     const contracts = mainPurchases.filter((candidate) => purchasingRank(candidate) === 2
       && (linked(candidate, node) || candidate.id === contractId));
@@ -124,22 +147,29 @@ function layoutGroup(id: string, label: string, caseId: string | null, nodes: Fl
 
   for (let stageIndex = 1; stageIndex < stageOrder.length; stageIndex += 1) {
     const stageNodes = ordered.filter((node) => node.stageIndex === stageIndex);
-    const occupied = new Set<number>();
-    stageNodes.forEach((node, index) => {
+    for (const node of stageNodes) {
+      if (explicit.has(node.id)) continue;
       const previous = ordered.filter((candidate) => candidate.stageIndex < stageIndex
         && !isAmendment(candidate) && linked(candidate, node));
       const nearestStage = Math.max(-1, ...previous.map((candidate) => candidate.stageIndex));
       const candidates = previous.filter((candidate) => candidate.stageIndex === nearestStage);
-      const predecessor = nearestStage === 0
-        ? choosePurchasingPredecessor(node, candidates)
-        : [...candidates].sort((first, second) => first.row - second.row
-          || compareNodes(first, second))[Math.min(index, candidates.length - 1)];
-      if (predecessor) edges.push(makeEdge(predecessor, node, 'flow'));
-      let row = predecessor?.row ?? index;
-      while (occupied.has(row)) row += 1;
-      occupied.add(row);
-      node.row = row;
-    });
+      const predecessors = nearestStage === 0 ? purchasingPredecessors(node, candidates) : candidates;
+      // Keep every linked input: split deliveries and consolidated invoices are not single chains.
+      for (const predecessor of predecessors) edges.push(makeEdge(predecessor, node, 'flow'));
+      if (node.stage === 'invoice_verification' && nearestStage > 0) {
+        const contract = purchases.find((candidate) => purchasingRank(candidate) === 2
+          && candidate.id === node.document.metadata.contract_id);
+        if (contract) edges.push(makeEdge(contract, node, 'reference'));
+      }
+    }
+    // Order by the average position of linked inputs, then pack without inheriting empty rows.
+    const inputPosition = (node: FlowGraphNode) => {
+      const inputs = edges.filter((edge) => edge.target === node.id && edge.kind === 'flow')
+        .map((edge) => ordered.find((candidate) => candidate.id === edge.source)!.row);
+      return inputs.length ? inputs.reduce((sum, row) => sum + row, 0) / inputs.length : Number.MAX_SAFE_INTEGER;
+    };
+    stageNodes.sort((first, second) => inputPosition(first) - inputPosition(second)
+      || compareNodes(first, second)).forEach((node, index) => { node.row = index; });
   }
 
   return { id, label, caseId, nodes: ordered, edges,

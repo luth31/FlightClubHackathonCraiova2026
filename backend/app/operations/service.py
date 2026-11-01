@@ -10,16 +10,17 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from app.config import settings
 from app.core.audit import record
+from app.core.presentation import operational_text
 from app.core.exceptions import DomainError
 from app.core.security import has_role
 from app.operations.models import OperationEvent, OperationSimulation
-from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, TIMELINE, ROUTINE_TIMELINE, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, AIRCRAFT_DISPLAY_SCALE, gates, position, motion_path
+from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, AIRCRAFT_DISPLAY_SCALE, gates, position, motion_path, scenario_timeline, SCENARIOS
 
 
 KINDS = {
     'nfc_check_in': 'Card NFC · intrare', 'nfc_check_out': 'Card NFC · ieșire',
     'gate_open': 'Poartă deschisă', 'gate_close': 'Poartă închisă',
-    'emergency_declared': 'Urgență simulată declarată', 'emergency_cleared': 'Urgență simulată închisă',
+    'emergency_declared': 'Urgență declarată', 'emergency_cleared': 'Urgență închisă',
 }
 
 
@@ -45,13 +46,13 @@ def append_event(db, state, user, kind, elapsed, title, detail='', *, source='sc
         sequence=state.next_sequence, elapsed_seconds=elapsed, recorded_at=utc_now().isoformat(),
         kind=kind, source=source, event_key=key or uuid4().hex, title=title, detail=detail,
         actor_id=user.id if source != 'scenario' else 'simulation',
-        actor=user.name if source != 'scenario' else 'Motorul simulării',
+        actor=user.name if source != 'scenario' else 'Sistem operațional',
         flight_id=payload.get('flight_id'), gate_id=payload.get('gate_id'), staff_id=payload.get('staff_id'), payload=payload)
     state.next_sequence += 1
     db.add(event)
-    audit = record(db, user, 'Simulare · ' + title, detail=f'Run {state.run_id}; eveniment {event.sequence}; {clock_time(elapsed)}; {detail}')
+    audit = record(db, user, 'Operațiuni · ' + title, detail=f'Run {state.run_id}; eveniment {event.sequence}; {clock_time(elapsed)}; {detail}')
     if source == 'scenario':
-        audit.actor_id, audit.actor = 'simulation', 'Motorul simulării'
+        audit.actor_id, audit.actor = 'simulation', 'Sistem operațional'
     return event
 
 
@@ -66,11 +67,11 @@ def initial_state(db, user):
     if state is None:
         now = utc_now().isoformat()
         state = OperationSimulation(airport_id=user.airport_id, run_id=str(uuid4()), elapsed_seconds=0,
-            running=False, scenario_mode='interactive', speed=1, updated_at=now, created_at=now, next_sequence=1)
+            running=False, scenario_mode='normal', speed=30, updated_at=now, created_at=now, next_sequence=1)
         db.add(state)
         db.flush()
         append_event(db, state, user, 'simulation_initialized', 0, 'Tura este pregătită',
-            'Scenariu demonstrativ. Porțile, zborurile și cardurile NFC sunt simulate.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode})
+            'Tura este pregătită pentru începerea operațiunilor.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode})
         db.flush()
     return state
 
@@ -106,7 +107,7 @@ def boarding_progress(flight, events, elapsed):
 
 def pending_events(events, scenario_mode='interactive'):
     keys = {e.event_key for e in events}
-    scripted = TIMELINE if scenario_mode == 'replay' else ROUTINE_TIMELINE
+    scripted = scenario_timeline(scenario_mode)
     result = []
     for seconds, kind, payload, title, detail in scripted:
         subject = payload.get('flight_id') or payload.get('staff_id') or 'shift'
@@ -115,7 +116,7 @@ def pending_events(events, scenario_mode='interactive'):
             and e.flight_id == payload.get('flight_id') and e.staff_id == payload.get('staff_id') for e in events)
         if key not in keys and not legacy_exists:
             result.append((seconds, key, kind, payload, title, detail))
-    if scenario_mode != 'replay':
+    if scenario_mode == 'interactive':
         for flight in FLIGHTS:
             if flight.get('automatic'):
                 continue
@@ -144,7 +145,7 @@ def pending_events(events, scenario_mode='interactive'):
             key = flight['id'] + ':' + kind
             if key not in keys:
                 result.append((seconds, key, kind, payload, title,
-                    f'Îmbarcare {flight["turnaround_seconds"]/60:g} min cu poarta deschisă; rulaj demonstrativ 3 min după plecarea de la stand.'))
+                    f'Îmbarcare {flight["turnaround_seconds"]/60:g} min cu poarta deschisă; rulaj 3 min după plecarea de la stand.'))
     return sorted(result, key=lambda item: (item[0], item[1]))
 
 
@@ -235,7 +236,7 @@ def severity(delay_minutes, emergency=False):
 
 
 def serialize_event(event):
-    return {key: getattr(event, key) for key in ('id','run_id','sequence','elapsed_seconds','recorded_at','kind','source','title','detail','actor_id','actor','flight_id','gate_id','staff_id','payload')} | {
+    return {key: operational_text(getattr(event, key)) if key in ('title','detail','actor') else getattr(event, key) for key in ('id','run_id','sequence','elapsed_seconds','recorded_at','kind','source','title','detail','actor_id','actor','flight_id','gate_id','staff_id','payload')} | {
         'simulated_at': clock_time(event.elapsed_seconds), 'simulated': True}
 
 
@@ -283,7 +284,7 @@ def snapshot(db, state, user, events):
             'estimated_takeoff_seconds': estimated+180 if estimated is not None else None,
             'severity': severity(delay, emergency), 'emergency': emergency, 'simulated': True,
             'cause_event_id': opened.id if opened else None,
-            'status_label': 'Urgență simulată' if emergency else (f'+{delay} min' if delay else 'La timp')})
+            'status_label': 'Urgență' if emergency else (f'+{delay} min' if delay else 'La timp')})
     departed = [f for f in flights if f['actual_departure_seconds'] is not None]
     ontime = sum(f['delay_minutes'] == 0 for f in departed)
     return {
@@ -291,7 +292,8 @@ def snapshot(db, state, user, events):
         'mode': 'simulation', 'simulated': True,
         'model': {'departure_basis': 'open_gate_boarding_then_offblock_then_taxi', 'gate_reclosures_affect_departure': True,
             'aircraft_display_scale': AIRCRAFT_DISPLAY_SCALE, 'interactive_flight_id': 'flight-101',
-            'notice': 'Pontaj → deschidere poartă → 16 min îmbarcare → plecare de la stand → 3 min rulaj. Închiderea porții întrerupe îmbarcarea. Durate demonstrative, fără autorizare ATC.'},
+            'notice': 'Pontaj → deschidere poartă → 16 min îmbarcare → plecare de la stand → 3 min rulaj. Închiderea porții întrerupe îmbarcarea.'},
+        'scenarios': SCENARIOS,
         'simulation': {'scenario_mode':state.scenario_mode, 'run_id': state.run_id, 'revision': state.revision, 'running': state.running, 'speed': state.speed,
             'elapsed_seconds': round(state.elapsed_seconds, 2), 'duration_seconds': DURATION_SECONDS,
             'clock_time': clock_time(state.elapsed_seconds), 'created_at': state.created_at, 'updated_at': state.updated_at},
@@ -310,7 +312,7 @@ def snapshot(db, state, user, events):
             'gates_open': sum(gate['open'] for gate in gate_rows.values())},
         'thresholds': {'minor_delay_minutes': MINOR_DELAY_MINUTES, 'major_delay_minutes': MAJOR_DELAY_MINUTES},
         'permissions': {'can_control': can_control(user)},
-        'notice': 'Scenariu demonstrativ. Cardurile NFC și zborurile sunt simulate; nu reprezintă operațiuni reale.',
+        'notice': 'Registrul operațiunilor aeroportuare.',
     }
 
 
@@ -365,7 +367,7 @@ def can_control(user):
 def authorize_control(user):
     airport_for(user)
     if not can_control(user):
-        raise DomainError('Doar echipa operațională, conformitatea și directorul pot controla demonstrația.',403)
+        raise DomainError('Doar echipa operațională, conformitatea și directorul pot gestiona tura.',403)
 
 
 def verify_revision(state, expected):
@@ -389,7 +391,7 @@ def control(db, user, body):
                     'Istoricul acestei rulări rămâne în jurnal.', source='control')
                 state.run_id, state.elapsed_seconds, state.running, state.next_sequence = str(uuid4()), 0, False, 1
                 state.scenario_mode = body.scenario_mode or 'interactive'
-                state.speed = 30 if state.scenario_mode == 'replay' else 1
+                state.speed = 30 if state.scenario_mode != 'interactive' else 1
                 state.created_at = utc_now().isoformat()
                 append_event(db, state, user, 'simulation_initialized', 0, 'Tura este pregătită',
                     'Rulare nouă; evenimentele anterioare au fost păstrate.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode})
@@ -404,11 +406,11 @@ def control(db, user, body):
                 if body.action == 'step' and pending:
                     target = max(state.elapsed_seconds, pending[0][0])
                 synchronize(db, state, user, target=target)
-                append_event(db, state, user, 'simulation_advanced', state.elapsed_seconds, 'Timp simulat avansat', source='control')
+                append_event(db, state, user, 'simulation_advanced', state.elapsed_seconds, 'Ora turei actualizată', source='control')
             else:
                 state.running = body.action == 'start' and state.elapsed_seconds < DURATION_SECONDS
                 append_event(db, state, user, 'simulation_' + body.action, state.elapsed_seconds,
-                    'Simulare pornită' if state.running else 'Simulare oprită', source='control')
+                    'Tură pornită' if state.running else 'Tură oprită', source='control')
             if body.speed is not None:
                 state.speed = body.speed
             state.updated_at = utc_now().isoformat()
@@ -437,13 +439,13 @@ def input_event(db, user, body):
             gate_ids = {item['id'] for item in gates(airport_for(user))}
             flight_ids = {item['id'] for item in FLIGHTS}
             if body.staff_id is not None and body.staff_id not in staff:
-                raise DomainError('Cardul demonstrativ nu este cunoscut în acest aeroport.', 422)
+                raise DomainError('Cardul nu este cunoscut în acest aeroport.', 422)
             if body.gate_id is not None and body.gate_id not in gate_ids:
                 raise DomainError('Poarta nu există în acest scenariu.', 422)
             if body.flight_id is not None and body.flight_id not in flight_ids:
                 raise DomainError('Zborul nu există în acest scenariu.', 422)
             if body.kind.startswith('nfc_') and not body.staff_id:
-                raise DomainError('Selectează cardul demonstrativ al angajatului.', 422)
+                raise DomainError('Selectează cardul angajatului.', 422)
             if body.kind.startswith('nfc_') and staff[body.staff_id]['present'] == (body.kind == 'nfc_check_in'):
                 raise DomainError('Cardul este deja pontat în această stare.', 409)
             payload = {'staff_id': body.staff_id, 'gate_id': body.gate_id, 'flight_id': body.flight_id}
@@ -472,7 +474,7 @@ def input_event(db, user, body):
                 payload['planned_seconds'] = gate['planned_open_seconds']
             if body.kind.startswith('emergency_') and not body.flight_id:
                 raise DomainError('Selectează zborul din exercițiu.', 422)
-            detail = body.note.strip() or 'Acțiune demonstrativă înregistrată de operator.'
+            detail = body.note.strip() or 'Acțiune înregistrată de operator.'
             if body.kind.startswith('nfc_'):
                 payload['card_id'] = staff[body.staff_id]['card_label']
                 payload['planned_seconds'] = staff[body.staff_id]['expected_seconds']
@@ -510,7 +512,7 @@ def nfc(db, user, body):
     card = body.card_id.strip().upper()
     person = next((person for person in STAFF if person['card_label'].upper()==card), None)
     if person is None:
-        raise DomainError('Card necunoscut. Folosește un card înregistrat pentru demonstrație.', 422)
+        raise DomainError('Card necunoscut. Folosește un card înregistrat.', 422)
     return input_event(db, user, EventInput(kind='nfc_'+body.action, staff_id=person['id'], request_id=body.request_id))
 
 

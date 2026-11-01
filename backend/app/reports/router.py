@@ -28,7 +28,7 @@ def export(report_id: str, days: int = Query(90, ge=30, le=365),
            db: Session = Depends(get_db), user=Depends(current_user)):
     data = service.report(db, user, report_id, days, department, reference_date=as_of)
     return Response(service.export_csv(data), media_type='text/csv; charset=utf-8',
-                    headers={'Content-Disposition': f'attachment; filename="aerodesk-{data["report"]["id"]}.csv"', 'Cache-Control': 'no-store'})
+                    headers={'Content-Disposition': f'attachment; filename="flyleaf-{data["report"]["id"]}.csv"', 'Cache-Control': 'no-store'})
 
 
 @router.get('/{report_id}')

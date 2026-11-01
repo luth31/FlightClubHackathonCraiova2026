@@ -1,4 +1,4 @@
-# AeroDesk reports
+# FlyLeaf reports
 
 Open **Rapoarte** in the workspace navigation, or `/#reports`. Individual reports support direct links such as `/#reports/contracts`. The inspiration board remains at `/reports-design`.
 
@@ -16,7 +16,7 @@ The expandable library below the dashboard retains all authorized detailed repor
 
 PDF export prints the current analytical view, date and active filters without app navigation or the library. Presentation mode uses browser fullscreen. Mobile layouts expose a collapsible filter panel. No flight, passenger, delay or geographic data is fabricated; the app supplies administrative records, so the template's geographic map is replaced by actual contract exposure.
 
-Design references: Microsoft's [dashboard design guidance](https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips), the [Airport Authority Performance Summary](https://community.fabric.microsoft.com/t5/Data-Stories-Gallery/Airport-Authority-Performance-Summary/td-p/628963), and ZoomCharts' [airport Power BI example](https://zoomcharts.com/en/microsoft-power-bi-custom-visuals/dashboard-and-report-examples/view/airline-delays-dashboard-power-bi). The implementation uses AeroDesk records and code-native visuals.
+Design references: Microsoft's [dashboard design guidance](https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips), the [Airport Authority Performance Summary](https://community.fabric.microsoft.com/t5/Data-Stories-Gallery/Airport-Authority-Performance-Summary/td-p/628963), and ZoomCharts' [airport Power BI example](https://zoomcharts.com/en/microsoft-power-bi-custom-visuals/dashboard-and-report-examples/view/airline-delays-dashboard-power-bi). The implementation uses FlyLeaf records and code-native visuals.
 
 | Report | Permitted account roles | Source and purpose |
 | --- | --- | --- |
@@ -50,6 +50,8 @@ Contract totals include accessible contracts across statuses and group each curr
 - `GET /api/reports/{report_id}/export.csv?days=90&department=&as_of=2026-10-31`: all source rows in the report's authorized department scope. Client-side table search, status and chart filters are local exploration controls.
 
 Valid activity periods are 30, 90 and 365 days. Invalid report identifiers return 404; denied report access returns 403; unauthenticated requests return 401. Responses are uncached. CSV output uses UTF-8 with a BOM and the existing formula-safe cell encoding.
+
+The briefing reads and serializes its authorized document set once per request, sharing those rows across its report summaries. Read-only report rows omit the document editor's action-permission calculation; record visibility, department normalization, and sensitive-field filtering still apply. No document snapshot is reused between requests or accounts. The query-growth regression is covered by `backend/tests/test_report_performance.py`.
 
 Report favorites are stored per account in the browser. The library supports category filters, favorites and Romanian search with or without diacritics. Refresh preserves the current library search, report view and visual selections. Tables support search, status and chart filters, sorting and pagination. Monetary cells retain their original currency; sorting groups currencies separately. Each document-backed row links to its source document. Catalog charts and displayed report values come from the API.
 

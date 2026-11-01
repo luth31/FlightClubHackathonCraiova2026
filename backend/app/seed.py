@@ -50,6 +50,9 @@ def seed():
         if settings.seed_documents and manifest.exists():
             raw=json.loads(manifest.read_text(encoding='utf-8'))
             records=raw.get('documents',[]) if isinstance(raw,dict) else raw
+            scenarios=settings.corpus_dir/'procurement-scenarios.json'
+            if scenarios.exists():
+                records=[*records,*json.loads(scenarios.read_text(encoding='utf-8')).get('documents',[])]
             for item in records:
                 if db.get(Document,item['id']): continue
                 path=settings.corpus_dir/'pdfs'/Path(item['filename']).name

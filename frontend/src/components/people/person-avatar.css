@@ -131,6 +131,8 @@
 .person-profile-email { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; border-radius: 8px; background: #edf3eb; color: #2a6145; font-size: 12px; font-weight: 600; text-decoration: none; }
 .person-profile-email:hover { background: #e0ebde; }
 .person-profile-footer small { color: #7a867e; font-size: 10px; }
+.person-profile-account { border-color: var(--border); padding-top: 12px; }
+.person-profile-account .logout-button { width: 100%; justify-content: flex-start; }
 .person-profile-message { border-top: 1px solid #e9eee7; padding-top: 16px; color: #6c7b70; }
 .person-profile-message button { display: block; margin-top: 10px; color: #2e6449; text-decoration: underline; }
 .user-menu-trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 1; min-width: 0; text-align: left; }

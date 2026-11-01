@@ -1,57 +1,175 @@
+/* Match frontend/src/app/theme.css and the welcome screen. */
+@font-face {
+  font-family: 'DM Sans Variable'; font-style: normal; font-display: swap; font-weight: 100 1000;
+  src: url('../fonts/dm-sans-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'DM Sans Variable'; font-style: normal; font-display: swap; font-weight: 100 1000;
+  src: url('../fonts/dm-sans-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope Variable'; font-style: normal; font-display: swap; font-weight: 200 800;
+  src: url('../fonts/manrope-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Manrope Variable'; font-style: normal; font-display: swap; font-weight: 200 800;
+  src: url('../fonts/manrope-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
 :root {
   color-scheme: light;
-  --keycloak-card-top-color: #195644;
-  --pf-v5-global--primary-color--dark-100: #195644;
-  --pf-v5-global--primary-color--100: #195644;
-  --pf-v5-global--primary-color--200: #124434;
-  --pf-v5-global--active-color--100: #195644;
-  --pf-v5-global--Color--100: #293b32;
-  --pf-v5-global--FontFamily--text: Arial, sans-serif;
-  --pf-v5-global--FontFamily--heading: Arial, sans-serif;
+  --ink: #142432;
+  --text: #33475b;
+  --muted: #526575;
+  --primary: #153c52;
+  --primary-hover: #0e2c3e;
+  --accent: #0f6e68;
+  --surface: #fff;
+  --surface-subtle: #eef3f6;
+  --border: #d7dfe6;
+  --danger: #b12a32;
+  --keycloak-card-top-color: transparent;
+  --pf-v5-global--primary-color--dark-100: var(--primary);
+  --pf-v5-global--primary-color--100: var(--primary);
+  --pf-v5-global--primary-color--200: var(--primary-hover);
+  --pf-v5-global--active-color--100: var(--accent);
+  --pf-v5-global--Color--100: var(--ink);
+  --pf-v5-global--Color--200: var(--muted);
+  --pf-v5-global--danger-color--100: var(--danger);
+  --pf-v5-global--FontFamily--text: 'DM Sans Variable', sans-serif;
+  --pf-v5-global--FontFamily--heading: 'Manrope Variable', 'DM Sans Variable', sans-serif;
 }
+html, body { margin: 0; background: var(--surface-subtle); color: var(--ink); }
 .pf-v5-c-login {
-  background: #f5f7f2;
   min-height: 100vh;
-  color: #293b32;
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: 1.05fr 1fr;
+  padding: 0;
+  background: var(--surface-subtle);
+  font-family: 'DM Sans Variable', sans-serif;
+  line-height: 1.45;
 }
-.pf-v5-c-login__container { max-width: 480px; }
-#kc-header-wrapper {
-  /* Keycloak v2 marks its white brand color important. */
-  color: #195644 !important;
-  font-family: Arial, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.5;
-  letter-spacing: .03em;
-  text-transform: none;
-}
-.pf-v5-c-login__main {
-  border: 1px solid #dce4d9;
-  border-radius: 18px;
-  background: white;
-  box-shadow: 0 12px 40px #183a2910;
+.login-story {
+  background: var(--primary);
+  padding: 44px 48px;
+  position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #d4e3e9;
 }
-.pf-v5-c-login__main-header { padding-top: 36px; }
-.pf-v5-c-login__main-header, .pf-v5-c-login__main-body { padding-left: 32px; padding-right: 32px; }
-#kc-page-title { color: #293b32; font-size: 25px; font-weight: 700; letter-spacing: -.03em; }
-.pf-v5-c-form__label { font-size: 14px; color: #394d3f; }
-.pf-v5-c-form-control { border: 1px solid #cdd7c9; border-radius: 7px; }
-.pf-v5-c-form-control::before, .pf-v5-c-form-control::after { border-radius: 7px; }
-.pf-v5-c-form-control input { min-height: 43px; }
-.pf-v5-c-button.pf-m-primary { background: #195644; border-radius: 8px; min-height: 44px; font-weight: 600; }
-.pf-v5-c-button.pf-m-primary:hover { background: #124434; }
-.pf-v5-c-button.pf-m-control { min-height: 45px; border-radius: 7px; color: #52634e; }
-.pf-v5-c-login__main-header-utilities { margin-top: 4px; }
-.pf-v5-c-login__main-header-utilities select { font-size: 12px; }
-@media(max-width: 600px) {
-  .pf-v5-c-login { padding: 24px 16px; }
-  .pf-v5-c-login__container { width: 100%; }
-  .pf-v5-c-login__main-header, .pf-v5-c-login__main-body { padding-left: 22px; padding-right: 22px; }
+.brand { display: flex; align-items: center; font-family: 'Manrope Variable', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -1px; color: #fff; }
+.brand-mark { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; margin-right: 9px; }
+.brand-mark svg { width: 26px; height: 26px; }
+.brand-period, .login-benefits svg { color: #a4e5db; }
+.login-story-content { margin: auto 0; padding: 60px 0 120px; position: relative; z-index: 1; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .9px; color: var(--muted); }
+.login-story .eyebrow { letter-spacing: 1.8px; margin-bottom: 28px; color: #d4e3e9; }
+.login-story-content h2 { margin: 0; font-family: 'Manrope Variable', sans-serif; font-size: clamp(38px,4vw,56px); font-weight: 450; line-height: 1.12; letter-spacing: -2px; color: #fff; }
+.login-story-content h2 em { font-style: normal; color: #a4e5db; }
+.login-story-content p { font-size: 16px; max-width: 360px; line-height: 1.6; margin: 30px 0 0; }
+.login-benefits { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 34px; }
+.login-benefits span { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.login-benefits svg { width: 13px; height: 16px; }
+.runway-art { position: absolute; left: 0; bottom: 45px; width: 100%; color: #a4e5db; opacity: .15; }
+.login-footer { position: relative; z-index: 1; font-size: 12px; letter-spacing: .2px; }
+.pf-v5-c-login__container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  padding: 60px;
+  margin: 0;
 }
-
-.pf-v5-c-form-control input:focus-visible,
-.pf-v5-c-form-control select:focus-visible {
-  outline: 2px solid #195644;
-  outline-offset: -2px;
+.pf-v5-c-login__header { width: 100%; max-width: 400px; padding: 0; margin: 0 0 12px; }
+.login-airport { height: 43px; width: 43px; display: flex; align-items: center; justify-content: center; color: var(--muted); margin-bottom: 25px; }
+.login-airport svg { width: 20px; height: 20px; }
+#kc-header-wrapper { /* Override Keycloak's important white brand color. */ color: var(--muted) !important; font-family: 'DM Sans Variable', sans-serif; font-size: 12px; line-height: 1.45; font-weight: 500; letter-spacing: .9px; text-transform: uppercase; text-align: left; padding: 0; }
+.pf-v5-c-login__main { width: 100%; max-width: 400px; align-self: center; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.pf-v5-c-login__main-header { display: flex; flex-direction: column; align-items: stretch; gap: 16px; padding: 0 0 26px; border-top: 0; }
+#kc-page-title { color: var(--ink); font-family: 'Manrope Variable', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1.25; margin: 0; }
+.pf-v5-c-login__main-header-utilities { align-self: flex-start; margin: 0; }
+.login-language { position: relative; display: inline-flex; width: 200px; max-width: 100%; color: var(--muted); }
+.login-language select {
+  appearance: none;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 36px 10px 40px;
+  border: 1px solid #b7c5d0;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: 500 14px/1.45 'DM Sans Variable', sans-serif;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.login-language select:hover { border-color: var(--primary); }
+.login-language select:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.login-language-icon, .login-language-chevron { position: absolute; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); pointer-events: none; }
+.login-language-icon { left: 12px; }
+.login-language-chevron { right: 12px; width: 16px; height: 16px; }
+.pf-v5-c-login__main-body { padding: 0; }
+.pf-v5-c-form__label { font-size: 14px; color: var(--text); }
+.pf-v5-c-form-control { background: var(--surface); border: 1px solid #b7c5d0; border-radius: 8px; }
+.pf-v5-c-form-control::before, .pf-v5-c-form-control::after { border: 0; }
+.pf-v5-c-form-control input, .pf-v5-c-form-control select { color: var(--ink); background: transparent; min-height: 44px; font-size: 14px; }
+.pf-v5-c-form-control input:focus-visible, .pf-v5-c-form-control select:focus-visible { outline: none; }
+.pf-v5-c-form-control:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pf-v5-c-form-control.pf-m-error { border-color: var(--danger); }
+.pf-v5-c-input-group { gap: 0; }
+.pf-v5-c-input-group .pf-v5-c-form-control { border-radius: 8px 0 0 8px; }
+.pf-v5-c-button { font-family: inherit; cursor: pointer; transition: background-color .15s; }
+.pf-v5-c-button.pf-m-primary { background: var(--primary); color: #fff; border-radius: 8px; min-height: 44px; font-size: 14px; font-weight: 650; padding: 14px 16px; }
+.pf-v5-c-button.pf-m-primary:hover { background: var(--primary-hover); }
+.pf-v5-c-button.pf-m-control { min-width: 44px; min-height: 46px; border: 1px solid #b7c5d0; border-left: 0; border-radius: 0 8px 8px 0; color: var(--muted); background: var(--surface); }
+.pf-v5-c-button.pf-m-control::after { border: 0; }
+.pf-v5-c-button.pf-m-control:hover { background: var(--surface-subtle); }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.pf-v5-c-login__main-footer { padding: 0; background: transparent; }
+.pf-v5-c-login__main-footer:empty { display: none; }
+.login-copyright { position: absolute; bottom: 35px; font-size: 12px; color: var(--muted); text-align: center; }
+@media (max-width: 1100px) {
+  .login-story { padding: 35px; }
+  .pf-v5-c-login__container { padding: 40px; }
+}
+@media (max-width: 800px) {
+  .pf-v5-c-login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .login-story { min-height: 280px; padding: 30px 35px; }
+  .login-story .brand { font-size: 22px; }
+  .login-story-content { margin: 0; padding: 32px 0 20px; }
+  .login-story-content .eyebrow { display: none; }
+  .login-story-content h2 { font-size: 36px; line-height: 1.2; }
+  .login-story-content h2 br { display: none; }
+  .login-story-content h2 em { display: block; }
+  .login-story-content p { font-size: 14px; }
+  .login-benefits, .login-footer, .login-airport { display: none; }
+  .pf-v5-c-login__container { padding: 35px; }
+  .pf-v5-c-login__header, .pf-v5-c-login__main { max-width: 440px; }
+  .login-copyright { position: static; margin-top: 40px; }
+}
+@media (max-width: 600px) {
+  .pf-v5-c-login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .login-story { min-height: 0; padding: 22px 26px; }
+  .login-story-content { padding: 22px 0 0; margin: 0; }
+  .login-story-content h2 { font-size: 29px; }
+  .login-story-content p, .login-benefits, .login-footer, .runway-art { display: none; }
+  .pf-v5-c-login__container { padding: 28px 26px; justify-content: flex-start; }
+  #kc-page-title { font-size: 26px; }
+  .pf-v5-c-form-control input, .pf-v5-c-form-control select { font-size: 16px; }
+  .login-language select { font-size: 16px; }
+  .login-copyright { position: static; margin-top: 40px; }
+}
+@media (max-height: 650px) and (min-width: 601px) {
+  .login-copyright { position: static; margin-top: 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pf-v5-c-button, .login-language select { transition: none; }
 }

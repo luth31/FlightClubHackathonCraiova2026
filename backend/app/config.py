@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     oidc_client_id: str = 'flyleaf-web'
     oidc_redirect_uri: str = ''
     oidc_frontend_url: str = ''
+    oidc_extra_origins: list[str] = []
     oidc_subject_map: dict[str, str] | None = None
     oidc_session_minutes: int = 60
     keycloak_provisioning_client_id: str = 'flyleaf-provisioner'

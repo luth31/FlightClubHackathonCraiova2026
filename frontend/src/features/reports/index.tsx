@@ -12,6 +12,7 @@ import './bi.css';
 import './workspace.css';
 import './briefing.css';
 import './dashboard.css';
+import './report-theme.css';
 
 function routeReport() { return location.hash.startsWith('#reports/') ? location.hash.split('/')[1]?.split('?')[0] || '' : ''; }
 function routeDepartment() { return new URLSearchParams(location.hash.split('?')[1] || '').get('department') || ''; }

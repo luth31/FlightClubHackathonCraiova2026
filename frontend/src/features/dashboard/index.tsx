@@ -64,7 +64,7 @@ export function DashboardPage({
       label: "Expiră în 60 zile",
       value: data.stats.expiring,
       icon: CalendarDays,
-      to: "contracts",
+      to: "documents",
       filter: "soon",
     },
     {

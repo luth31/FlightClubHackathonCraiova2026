@@ -224,6 +224,29 @@ def test_technician_flow_hides_financial_records_and_private_fields(admin, flow_
         assert set(item['related_ids']) <= {'flow-outbound', 'flow-receipt', 'flow-minutes'}
 
 
+def test_explicit_flow_inputs_hide_inaccessible_documents_and_do_not_mutate_metadata(admin, db, flow_documents):
+    document = db.get(Document, 'flow-receipt')
+    original = document.extra
+    document.extra = {**original, 'metadata': {**original.get('metadata', {}), 'flow_links': [
+        {'source_id': 'flow-invoice', 'kind': 'reference', 'label': 'HiddenInvoiceReference'},
+        {'source_id': 'flow-outbound', 'kind': 'flow', 'label': 'VisibleDeliveryReference'},
+    ]}}
+    db.commit()
+    try:
+        login(admin, 'technician')
+        response = admin.get('/api/documents/flow', params={'q': 'FlowMarker'})
+        assert response.status_code == 200
+        assert 'HiddenInvoiceReference' not in response.text
+        receipt = next(item for item in flow_items(response.json()) if item['id'] == 'flow-receipt')
+        assert receipt['metadata']['flow_links'] == [
+            {'source_id': 'flow-outbound', 'kind': 'flow', 'label': 'VisibleDeliveryReference'}]
+        db.refresh(document)
+        assert len(document.extra['metadata']['flow_links']) == 2
+    finally:
+        document.extra = original
+        db.commit()
+
+
 def test_new_document_and_title_revision_recompute_flow_without_migration(admin, pdf_bytes):
     uploaded = admin.post('/api/documents', files={'file': ('delivery.pdf', pdf_bytes, 'application/pdf')},
         data={'title': 'Aviz de livrare DN-99', 'category': 'Proces-verbal', 'department': 'Tehnic'})
@@ -261,3 +284,12 @@ def test_flow_includes_all_matches_beyond_default_library_page(admin, db):
             if document:
                 db.delete(document)
         db.commit()
+
+
+def test_expiring_dashboard_link_uses_documents_in_both_views(admin):
+    count = admin.get('/api/dashboard').json()['stats']['expiring']
+    records = admin.get('/api/documents?status=soon').json()
+    flow = admin.get('/api/documents/flow?status=soon').json()
+    assert records['total'] == flow['total'] == count
+    assert all(d['category'] == 'Contract' and d['validated'] and 0 <= d['days_remaining'] <= 60
+        and d['status'] != 'archived' for d in records['items'])

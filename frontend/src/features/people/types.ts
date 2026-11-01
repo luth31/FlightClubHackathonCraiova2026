@@ -22,7 +22,7 @@ export interface Directory {
   items:Person[]; total:number; departments:string[]; department_records?:Department[];
   delegations:Delegation[]; leaves:Leave[]; current_user_id:string; can_manage_accounts:boolean;
   can_manage_delegations:boolean; can_create_users?:boolean; can_propose_heads?:boolean;
-  can_admin_delegations?:boolean;
+  can_admin_delegations?:boolean; can_record_attendance?:boolean;
   can_manage_signing?:boolean; can_view_appointments?:boolean; reference_date:string; auth_mode?:string;
   organization_leaders?:Array<{id:string;name:string;job_title:string}>;
 }

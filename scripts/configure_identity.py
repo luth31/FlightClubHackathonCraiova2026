@@ -19,6 +19,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 AIRPORTS = {'craiova': ('dunarea', 8180), 'sibiu': ('carpati', 8181)}
 COMPOSE = ['docker', 'compose']
+ALIAS_ONLY = False
 
 
 def command(args, *, env=None):
@@ -94,12 +95,24 @@ def configure(config, airport, bootstrap, secret):
             raise RuntimeError(f'{airport}: expected one existing FlyLeaf browser client.')
         web = request('GET', prefix + '/clients/' + web[0]['id'])
         previous = web['redirectUris']
-        if len(previous) != 1 or not previous[0].endswith('/api/auth/oidc/callback'):
+        if not previous or any(not value.endswith('/api/auth/oidc/callback') for value in previous):
             raise RuntimeError(f'{airport}: ambiguous prior origin; configure this custom deployment manually.')
+        if ALIAS_ONLY and origin + '/api/auth/oidc/callback' not in previous:
+            raise RuntimeError(f'{airport}: primary local callback is missing; reconcile this installation first.')
         prior_origin = previous[0].removesuffix('/api/auth/oidc/callback')
-        web.update(redirectUris=[origin + '/api/auth/oidc/callback'], webOrigins=[origin])
-        web.setdefault('attributes', {})['post.logout.redirect.uris'] = origin + '/'
+        aliases = json.loads(config['services'][airport + '-api']['environment'].get('FLYLEAF_OIDC_EXTRA_ORIGINS', '[]'))
+        for alias in aliases:
+            parsed = urlsplit(alias)
+            if (parsed.scheme != 'https' or not parsed.hostname or parsed.path or parsed.query
+                    or parsed.fragment or parsed.username or parsed.password):
+                raise ValueError('Additional identity origins must be exact HTTPS origins.')
+        origins = list(dict.fromkeys([origin, *aliases]))
+        web.update(redirectUris=[value + '/api/auth/oidc/callback' for value in origins], webOrigins=origins)
+        web.setdefault('attributes', {})['post.logout.redirect.uris'] = '##'.join(value + '/' for value in origins)
         request('PUT', prefix + '/clients/' + web['id'], json=web)
+        if ALIAS_ONLY:
+            print(f'{airport.title()}: local and Tailscale callbacks registered on the existing realm.', flush=True)
+            return
         # User-management clients keep their IDs and role grants; preserve passwords.
         provision = request('GET', prefix + '/clients', params={'clientId': 'flyleaf-provisioner'})
         if len(provision) != 1:
@@ -223,15 +236,17 @@ if __name__ == '__main__':
     import argparse
     import fcntl
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--tailscale', action='store_true', help='Configure only the isolated presentation project.')
+    parser.add_argument('--tailscale', action='store_true', help='Add Tailscale browser origins to the existing local installation.')
     args = parser.parse_args()
     if args.tailscale:
+        ALIAS_ONLY = True
         if not (ROOT / '.env.tailscale').is_file():
             parser.error('Create .env.tailscale from deploy/tailscale.env.example first.')
-        COMPOSE += ['--project-name', 'flyleaf-presentation', '-f', 'compose.yaml', '-f', 'compose.tailscale.yaml']
+        COMPOSE += ['--project-name', 'flyleaf', '-f', 'compose.yaml', '-f', 'compose.tailscale.yaml']
         if (ROOT / '.env').is_file():
             COMPOSE += ['--env-file', '.env']
-        COMPOSE += ['--env-file', '.env.tailscale']
+        from tailscale_origins import prepare_origins
+        COMPOSE += ['--env-file', str(prepare_origins())]
     lock_path = ROOT / '.runtime/identity-configuration.lock'
     lock_path.parent.mkdir(exist_ok=True)
     with lock_path.open('w') as lock:

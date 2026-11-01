@@ -34,6 +34,7 @@ export function ReadOnlyPdf({source,title,word=true}:{source:string;title:string
   },[source,page,pages,retry]);
   async function save(format:'pdf'|'docx'){
     setBusy(format);setDownloadError('');
+    // eslint-disable-next-line no-control-regex -- Strip control characters from downloaded filenames.
     try{await download(format==='pdf'?source:representationUrl(source,'docx'),title.replace(/[<>:"/\\|?*\x00-\x1f]/g,'-').slice(0,150)+'.'+format)}
     catch(e){setDownloadError((e as Error).message)}finally{setBusy('')}
   }
