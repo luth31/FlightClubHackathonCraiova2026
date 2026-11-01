@@ -24,7 +24,8 @@ interface Answer {
     id: string;
     title: string;
     number: string;
-    page: number;
+    page: number | null;
+    source_type?: string;
     excerpt: string;
   }>;
   mode: string;
@@ -107,12 +108,12 @@ function AnswerResult({
                     <ArrowUpRight size={16} aria-hidden="true" />
                   </button>
                   <small>
-                    {source.number} · pagina {source.page || 1}
+                    {source.number} · {source.page ? `pagina ${source.page}` : 'metadate validate din registru'}
                   </small>
                   {source.excerpt && (
                     <details className="ask-disclosure ask-excerpt">
                       <summary>
-                        Vezi fragmentul{" "}
+                        {source.page ? 'Vezi fragmentul' : 'Vezi rezumatul din registru'}{" "}
                         <ChevronDown size={13} aria-hidden="true" />
                       </summary>
                       <p>{source.excerpt}</p>

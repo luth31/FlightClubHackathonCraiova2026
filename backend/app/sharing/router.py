@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse,Response
 from sqlalchemy import select,desc
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.core.security import current_user,require_role,can_read,require_page
+from app.core.security import current_user,require_role,can_read,require_page,is_department_head,can_share_documents,require_share_documents
 from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.documents.models import Document
@@ -65,13 +65,14 @@ def create(document_id: str,body: ShareRequest,db: Session=Depends(get_db),user=
 
 @router.get('/shares')
 def listing(db: Session=Depends(get_db),user=Depends(current_user)):
-    require_role(user,'director','reviewer')
+    if not is_department_head(user):
+        require_role(user,'director','reviewer')
     items=[s for s in db.scalars(select(Share).order_by(desc(Share.created_at))).all() if (d:=db.get(Document,s.document_id)) and can_read(user,d)]
-    return {'items':[service.serialize(s,db) for s in items],'total':len(items)}
+    return {'items':[{**service.serialize(s,db),'can_revoke':can_share_documents(user)} for s in items],'total':len(items)}
 
 @router.post('/shares/{share_id}/revoke')
 def revoke(share_id: str,db: Session=Depends(get_db),user=Depends(current_user)):
-    require_role(user,'director','reviewer')
+    require_share_documents(user)
     share=db.get(Share,share_id)
     if not share: raise DomainError('Partajarea nu există.',404)
     doc=get_document(db,share.document_id,user)

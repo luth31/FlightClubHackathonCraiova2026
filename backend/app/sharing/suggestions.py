@@ -1,12 +1,12 @@
 """Explainable candidate detection; publication always requires review of the derivative."""
 import re
-from app.core.security import require_role
+from app.core.security import require_share_documents
 from app.documents.service import get_document, current_version, file_hash
 from app.core.exceptions import DomainError
 
 
 def redaction_suggestions(db, user, document_id):
-    require_role(user, 'director', 'reviewer')
+    require_share_documents(user)
     document = get_document(db, document_id, user)
     if document.department == 'Resurse umane':
         raise DomainError('Documentele de personal nu se partajează între aeroporturi.', 403)

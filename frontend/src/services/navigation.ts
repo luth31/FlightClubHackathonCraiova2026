@@ -3,7 +3,7 @@ import type {Page} from '@/types';
 
 export const pageLabels: Record<Page, string> = {
   home: 'Acasă', documents: 'Documente', contracts: 'Contracte', suppliers: 'Furnizori',
-  approvals: 'Aprobări', people: 'Echipă', sharing: 'Partajate cu aeroporturi', audit: 'Jurnal de activitate',
+  approvals: 'Aprobări', people: 'Echipă', sharing: 'Colaborare', audit: 'Jurnal de activitate',
   operations: 'Operațiuni la sol', reports: 'Rapoarte',
 };
 type Route = {page: Page; doc?: string};
