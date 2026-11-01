@@ -6,7 +6,7 @@ export function pagePermissions(user?: User | null): Record<Page, boolean> {
   const finance = roles.includes('finance');
   const head = roles.includes('department_head');
   const technician = roles.includes('technician') && !head && !director;
-  const fallback = {home:true, operations:true, documents:true, approvals:true, people:true,
+  const fallback = {home:true, operations:true, documents:true, approvals:true, people:true, reports:true,
     contracts:!technician && (director || finance || (head && !roles.includes('hr'))),
     suppliers:director || finance || (head && user?.department === 'Achiziții'),
     sharing:director || (roles.includes('reviewer') && user?.department === 'Conformitate'),

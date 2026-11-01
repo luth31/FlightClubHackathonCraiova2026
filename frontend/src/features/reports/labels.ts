@@ -1,0 +1,6 @@
+import {readableText} from '@/utils/text';
+const labels:Record<string,string>={draft:'Ciornă',in_review:'În aprobare',approved:'Aprobat',signed:'Semnat',archived:'Arhivat',pending:'În așteptare',completed:'Finalizat',cancelled:'Anulat',needs_review:'De verificat',verified:'Verificat',clear:'Fără semnale',rejected:'Respins',active:'Activ',revoked:'Revocat',expired:'Expirat',superseded:'Versiune înlocuită',available:'Disponibil',away:'În absență',inactive:'Inactiv',acknowledged:'Preluat',in_progress:'În desfășurare',validation:'Validare',approval:'Avizare',signature:'Semnare',high:'Ridicat',medium:'Mediu',low:'Scăzut',director:'Director',admin:'Administrator',reviewer:'Avizator',finance:'Financiar',hr:'Resurse umane',technician:'Tehnician',signer:'Semnatar'};
+export const label=(value:string)=>labels[value]||readableText(value);
+export const number=(value:number)=>new Intl.NumberFormat('ro-RO',{maximumFractionDigits:1}).format(value);
+export const amount=(value:number,currency:string)=>new Intl.NumberFormat('ro-RO',{style:'currency',currency,maximumFractionDigits:0}).format(value);
+export const shortDate=(value?:string|null)=>value?new Intl.DateTimeFormat('ro-RO',{day:'2-digit',month:'short',year:'numeric',timeZone:'Europe/Bucharest'}).format(new Date(value)):'—';

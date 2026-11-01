@@ -1,5 +1,5 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
-import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane} from 'lucide-react';
+import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
 import {rememberNfcLink,pendingNfcCard,cardFromHash} from '@/features/operations/nfc-links';
@@ -14,6 +14,7 @@ import {AuditPage} from '@/features/audit';
 import {SuppliersPage} from '@/features/suppliers';
 import {SupplierCatalogPage} from '@/features/suppliers/SupplierCatalogPage';
 import {PeoplePage} from '@/features/people';
+import {ReportsPage} from '@/features/reports';
 import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
 import {initials,roleLabel} from '@/utils/format';
@@ -27,7 +28,7 @@ function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:st
     <Suspense fallback={<Loading/>}><OperationsPage notify={notify}/></Suspense>
   </ViewActiveContext></div>;
 }
-const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound}];
+const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
 const secondNav=[{id:'sharing',label:'Partajate cu aeroporturi',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
@@ -189,6 +190,7 @@ export function App() {
             ? <SuppliersPage revision={revision} notify={notify} onOpen={openDoc} user={user}/>
             : <SupplierCatalogPage revision={revision} onOpen={openDoc}/>)}
           {page==='people'&&<PeoplePage revision={revision} notify={notify}/>}
+          {page==='reports'&&<ReportsPage user={user} revision={revision} onOpen={openDoc} onNavigate={navigate} notify={notify}/>}
           {page==='audit'&&<AuditPage revision={revision} onOpen={openDoc}/>}
           </ViewActiveContext>
         </div>

@@ -53,12 +53,12 @@ def can_review_leave(db, user, leave):
         (has_role(user, 'reviewer', 'department_head') and getattr(subject, 'manager_id', None) == user.id))
 
 
-def directory(db, user):
+def directory(db, user, reference_date=None):
     from app.people.management import employee_dict, department_records
     users = list(db.scalars(select(User).where(User.airport_id == user.airport_id).order_by(User.name)))
     user_ids = {person.id for person in users}
     all_leaves = list(db.scalars(select(LeaveRequest).where(LeaveRequest.user_id.in_(user_ids))))
-    today = settings.reference_date.isoformat()
+    today = (reference_date or settings.reference_date).isoformat()
     open_appointments = {appointment.department_id: appointment for appointment in db.scalars(
         select(HeadAppointment).where(HeadAppointment.airport_id == user.airport_id,
             HeadAppointment.status.in_(['pending', 'approved'])))}
