@@ -362,3 +362,13 @@ Chrome DevTools verification used an isolated QA database and browser context. I
 All twelve base PDFs rendered to 2–3 pages with no empty pages or out-of-margin text. Representative base documents and all five pages of a real Luna proposal were visually inspected; evidence labels and identifiers stay together across page breaks. PDF approval state is read from the controlled document register rather than a stale baked-in draft status.
 
 Both local airport APIs and frontends were rebuilt and restarted. Health endpoints returned 200; both databases report migration `20261101_strategy_analysis`, and both web sites serve `/assets/index-ByPiSEOx.js`. The existing corpus PDF files were not regenerated.
+
+### Integrated reporting and visible aircraft lock — 1 November 2026
+
+Rebased the SOP work onto the reporting dashboard merged in `817a0ba`, without conflicts. The combined backend suite passed **349 tests**. With the documented Node 24 runtime, **149 frontend tests**, TypeScript, ESLint and the production build passed. An initial frontend run used the machine's older Node 23 binary, whose Windows-1252 decoder caused four label-repair failures; the supported runtime passes those tests without changing the application text utility.
+
+The aircraft details now expose the persistent lock as **Urmărește / Urmărire activă**, replacing the ambiguous one-shot centering icon. Both controls share the same follow state; missing map positions disable the details control. Interaction tests exercise activation, release, transfer, style changes and disappearance through the actual details button.
+
+Chrome DevTools verified the details control, transfer from FL404 to FL202, retention across both map styles, Escape release and the 390 px layout without horizontal overflow or console errors. During FL404 taxi playback from 08:17:00 to 08:18:21, four samples retained identical label coordinates (434 px, 191.567 px) while the simulation advanced. Browser checks used the isolated QA database; no presentation run was reset.
+
+All four application Docker images were rebuilt and both airports updated with the combined features. Both health endpoints return 200, both databases retain `20261101_strategy_analysis`, both nginx configurations validate, and both web sites serve `/assets/index-DXprBc8e.js`. Development and Tailscale settings remain unchanged.

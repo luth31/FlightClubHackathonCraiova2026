@@ -211,14 +211,25 @@ test('camera lock transfers with explicit selection, survives style changes, and
   const first=fixture().flights[0],second={...first,id:'flight-202',callsign:'FL202'};
   await setup(t,{flightRows:[first,second],mapConfig:googleConfig});
   assert.equal(globalThis.sceneProps.followFlightId,null);
-  await act(async()=>globalThis.sceneProps.onFollowChange('flight-101'));await settle();
+  await click('Urmărește');
   assert.equal(globalThis.sceneProps.followFlightId,'flight-101');
+  assert.equal(document.querySelector('.ops-selected-heading button').getAttribute('aria-pressed'),'true');
   await click('FL202');
   assert.equal(globalThis.sceneProps.followFlightId,'flight-202');
   await selectMapStyle('model');await selectMapStyle('photorealistic');
   assert.equal(globalThis.sceneProps.followFlightId,'flight-202');
   await click('Trafic ADS-B');await click('Simulare');
   assert.equal(globalThis.sceneProps.followFlightId,null);
+});
+
+test('aircraft detail control releases the lock and disables tracking without a mapped position',async t=>{
+  await setup(t,{live:[{id:'live-unknown',callsign:'UNKNOWN',position:{lat:44.318,lon:23.888,altitude_m:null},severity:'neutral',delay_minutes:null}]});
+  await click('Urmărește');
+  assert.equal(globalThis.sceneProps.followFlightId,'flight-101');
+  await click('Urmărire activă');
+  assert.equal(globalThis.sceneProps.followFlightId,null);
+  await click('Trafic ADS-B');
+  assert.equal(document.querySelector('.ops-selected-heading button').disabled,true);
 });
 
 test('camera lock releases when its aircraft disappears instead of following the next flight',async t=>{

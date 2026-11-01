@@ -43,6 +43,10 @@
 .ops-flight-detail{border-top:1px solid var(--ops-border);padding:15px 16px}
 .ops-selected-heading{display:flex;align-items:center;justify-content:space-between;font-size:10px;letter-spacing:.7px;color:#526575}
 .ops-selected-heading button{padding:5px;border-radius:5px;color:#153c52}
+.ops-selected-heading .ops-follow-button{display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 8px;border:1px solid #d4e0e5;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0;background:#fff}
+.ops-selected-heading .ops-follow-button[aria-pressed=true]{background:#eaf6f1;color:#174b43;border-color:#9bc6b9}
+.ops-selected-heading .ops-follow-button:disabled{opacity:.5;cursor:not-allowed}
+.ops-selected-heading .ops-follow-button:focus-visible{outline:3px solid #46877f;outline-offset:2px}
 .ops-flight-detail h3{font-size:20px;letter-spacing:-.4px;margin:8px 0 12px;color:#142432}
 .ops-flight-detail h3 small{font-size:12px;font-weight:400;color:#526575;margin-left:8px}
 .ops-flight-detail dl{margin:0;display:grid;gap:10px}
