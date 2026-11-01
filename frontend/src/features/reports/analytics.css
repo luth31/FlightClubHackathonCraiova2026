@@ -23,6 +23,19 @@
 .px-main-analytics { display: grid; gap: 20px; min-width: 0; }
 .px-kpis { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
 .px-kpi { min-height: 158px; padding: 20px; gap: 12px; align-items: flex-start; border-radius: 12px; position: relative; }
+.px-dashboard .px-kpi { --px-metric-color: var(--px-accent); }
+.px-dashboard .px-kpi-teal { --px-metric-color: var(--px-teal); }
+.px-dashboard .px-kpi-gold { --px-metric-color: var(--px-gold); }
+.px-dashboard .px-kpi-red { --px-metric-color: var(--px-red); }
+.px-dashboard .px-kpi:not(.px-kpi-neutral) {
+  background: color-mix(in srgb, var(--px-metric-color) 6%, var(--px-surface));
+  border-color: color-mix(in srgb, var(--px-metric-color) 22%, var(--px-line));
+}
+.px-dashboard .px-kpi:not(.px-kpi-neutral):hover {
+  background: color-mix(in srgb, var(--px-metric-color) 10%, var(--px-surface));
+  border-color: color-mix(in srgb, var(--px-metric-color) 45%, var(--px-line));
+}
+.px-dashboard .px-kpi-neutral strong, .px-dashboard .px-kpi-neutral .px-kpi-icon { color: var(--px-muted); }
 .px-kpi>div { min-width: 0; }
 .px-kpi>div>span { font-size: 12px; line-height: 1.5; display: block; }
 .px-kpi strong { font-size: 34px; font-weight: 720; letter-spacing: -1px; line-height: 1.4; }
@@ -73,18 +86,6 @@
 .or-controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .or-controls label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
 .or-report select,.or-controls>button,.or-source-filters>button { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--ink); font-size: 12px; min-height: 38px; }
-.or-kpis .px-kpi-teal { --or-metric-color: var(--px-teal); }
-.or-kpis .px-kpi-gold { --or-metric-color: var(--px-gold); }
-.or-kpis .px-kpi-red { --or-metric-color: var(--px-red); }
-.or-kpis .px-kpi:not(.px-kpi-neutral) {
-  background: color-mix(in srgb, var(--or-metric-color) 6%, var(--px-surface));
-  border-color: color-mix(in srgb, var(--or-metric-color) 22%, var(--px-line));
-}
-.or-kpis .px-kpi:not(.px-kpi-neutral):hover {
-  background: color-mix(in srgb, var(--or-metric-color) 10%, var(--px-surface));
-  border-color: color-mix(in srgb, var(--or-metric-color) 45%, var(--px-line));
-}
-.or-kpis .px-kpi-neutral strong, .or-kpis .px-kpi-neutral .px-kpi-icon { color: var(--px-muted); }
 .or-kpis em { font-size: 16px; font-style: normal; letter-spacing: 0; }
 .or-charts { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; }
 .or-legend { display: flex; gap: 16px; padding: 12px 20px; flex-wrap: wrap; color: var(--muted); font-size: 11px; }
@@ -199,3 +200,12 @@
   .or-controls label { min-width: 0; }
   .or-controls select { min-width: 0; }
 }
+
+/* The detailed report library uses the same semantic KPI palette. */
+.rp-page .bi-tile { --report-metric-color: var(--primary); background: color-mix(in srgb, var(--report-metric-color) 6%, var(--surface)); border-color: color-mix(in srgb, var(--report-metric-color) 22%, var(--border)); }
+.rp-page .bi-tile.green { --report-metric-color: var(--accent); }
+.rp-page .bi-tile.amber { --report-metric-color: var(--warning); }
+.rp-page .bi-tile.red { --report-metric-color: var(--danger); }
+.rp-page .bi-tile>strong, .rp-page .bi-tile:is(.green,.amber,.red)>strong { color: var(--report-metric-color); }
+.rp-page .bi-tile>span, .rp-page .bi-tile>small { color: var(--muted); }
+.rp-page .bi-scorecard .bi-tile { padding: 14px; }
