@@ -1,3 +1,4 @@
+import type {MotionPoint,SimulationClockState} from './flight-motion';
 export type SceneStatus = 'neutral' | 'caution' | 'critical';
 export type AirportMapMode = 'model' | 'photorealistic';
 export interface SceneFlight {
@@ -13,6 +14,7 @@ export interface SceneFlight {
   altitude_reference?: string;
   ground?: boolean;
   display_scale?: number;
+  trajectory?: MotionPoint[];
 }
 export interface AirportSceneProps {
   airportId: 'craiova' | 'sibiu';
@@ -26,6 +28,7 @@ export interface AirportSceneProps {
   overviewRequest?: number;
   trafficMode?: boolean;
   animateFlights?: boolean;
+  simulationClock?: SimulationClockState;
   googleApiKey?: string;
   mapMode?: AirportMapMode;
   onMapStatus?: (status: 'loading' | 'ready' | 'error', message?: string) => void;

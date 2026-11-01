@@ -1,6 +1,8 @@
+import type {MotionPoint} from './flight-motion';
 export type Severity = 'neutral' | 'yellow' | 'red';
 export interface Position {lat:number;lon:number;altitude_m:number|null;heading:number|null}
 export interface Flight {
+  automatic?:boolean;trajectory?:MotionPoint[];
   id:string;callsign:string;aircraft_type:string;origin:string;destination:string;
   gate_id:string|null;scheduled_departure_seconds:number|null;actual_departure_seconds:number|null;
   delay_minutes:number|null;severity:Severity;emergency:boolean;phase:string;position:Position;
@@ -8,6 +10,7 @@ export interface Flight {
   status?:string;boarding_remaining_seconds?:number;altitude_reference?:string;ground?:boolean;distance_nm?:number;
 }
 export interface Staff {
+  automatic?:boolean;
   id:string;name:string;title:string;present:boolean;expected_seconds:number;
   actual_arrival_seconds:number|null;late_minutes:number|null;gate_id:string|null;card_label:string;
 }

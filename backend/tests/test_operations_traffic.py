@@ -52,7 +52,7 @@ def test_success_cache_failure_backoff_stale_expiry_and_recovery(feed,monkeypatc
     monkeypatch.setattr(traffic,'fetch_payload',fetch)
     first=traffic.get_traffic(feed)
     assert first['status']=='fresh' and len(first['aircraft'])==1
-    now[0]+=10
+    now[0]+=1
     assert traffic.get_traffic(feed)['status']=='fresh' and len(calls)==1
     def fail(_):
         calls.append(1)
@@ -61,11 +61,11 @@ def test_success_cache_failure_backoff_stale_expiry_and_recovery(feed,monkeypatc
     now[0]=131
     stale=traffic.get_traffic(feed)
     assert stale['status']=='stale' and stale['aircraft'][0]['stale']
-    assert stale['poll_after_seconds']==30
+    assert stale['poll_after_seconds']==10
     now[0]=132
     assert traffic.get_traffic(feed)['status']=='stale' and len(calls)==2
     now[0]=162
-    assert traffic.get_traffic(feed)['poll_after_seconds']==60
+    assert traffic.get_traffic(feed)['poll_after_seconds']==20
     now[0]=450
     expired=traffic.get_traffic(feed)
     assert expired['status']=='unavailable' and expired['aircraft']==[]
@@ -120,3 +120,42 @@ def test_reported_position_has_geographic_distance_bearing_and_no_invented_altit
     assert 5.9 < result[1]['distance_nm'] < 6.1
     assert result[1]['bearing_degrees'] == 0
     assert result[1]['phase'] == 'taxiing'
+
+
+def test_tracking_refreshes_at_two_seconds_and_all_viewers_share_the_cache(feed,monkeypatch):
+    now=[100.0]
+    monkeypatch.setattr(traffic.time,'monotonic',lambda:now[0])
+    calls=[]
+    monkeypatch.setattr(traffic,'fetch_payload',lambda _:(calls.append(now[0]) or {'ac':[aircraft()]}))
+    assert traffic.get_traffic(feed)['poll_after_seconds']==5
+    now[0]=101
+    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==1
+    assert calls==[100]
+    now[0]=102
+    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==2
+    assert traffic.get_traffic(feed)['poll_after_seconds']==5
+    assert calls==[100,102]
+    now[0]=106
+    traffic.get_traffic(feed)
+    assert len(calls)==2
+    now[0]=107
+    traffic.get_traffic(feed)
+    assert calls==[100,102,107]
+
+
+def test_tracking_honors_provider_retry_after_without_bypassing_cache(feed,monkeypatch):
+    now=[100.0]
+    monkeypatch.setattr(traffic.time,'monotonic',lambda:now[0])
+    calls=[]
+    def throttled(_):
+        calls.append(1)
+        response=httpx.Response(429,headers={'Retry-After':'60'},request=httpx.Request('GET',traffic.PROVIDER_ORIGIN))
+        response.raise_for_status()
+    monkeypatch.setattr(traffic,'fetch_payload',throttled)
+    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==60
+    now[0]=159
+    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==1
+    assert len(calls)==1
+    now[0]=160
+    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==60
+    assert len(calls)==2
