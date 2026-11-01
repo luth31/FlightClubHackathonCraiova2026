@@ -60,8 +60,10 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .topbar-actions .quick-search, .topbar-actions .assistant-trigger { font-size: 12px; }
 .quick-search { color: var(--muted); padding: 8px 0; }
 .assistant-trigger { color: var(--primary); padding: 8px 10px; border-radius: 7px; background: var(--surface-subtle); }
-.topbar-logout { padding: 8px; }
-.topbar-logout span { display: none; }
+.logout-confirmation { max-width: 460px; }
+.logout-confirmation .modal-body > p { color: var(--text); font-size: 14px; line-height: 1.6; }
+.logout-confirmation .error-message { margin-top: 16px; }
+.logout-confirmation .modal-footer .button { min-height: 44px; }
 .main-content { padding: 24px 28px 32px; }
 .collaboration-nav-count { margin-left:auto; min-width:24px; padding:2px 7px; border-radius:6px; background:#e6f3f1; color:#0b625b; font-size:14px; font-weight:650; }
 .main-content:focus { outline: none; }

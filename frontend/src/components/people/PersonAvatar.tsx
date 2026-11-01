@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent} from 'react';
 import {createPortal} from 'react-dom';
-import {Building2, Mail, UserRound, X} from 'lucide-react';
+import {Building2, LogOut, Mail, UserRound, X} from 'lucide-react';
 import {date, initials, roleLabel} from '@/utils/format';
 import {usePersonDirectory, type Person} from './PersonDirectory';
 import {OwnProfileControls} from './OwnProfileControls';
@@ -21,13 +21,16 @@ export function PersonStatus({person}: {person: Person}) {
   return <span className={`availability availability-${status}`}><i aria-hidden="true"/>{status === 'offline' ? 'Offline' : presenceLabels[status]}</span>;
 }
 
-export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style}: {
+export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, onLogout, logoutDisabled = false, openOnFocus = true}: {
   userId?: string;
   name: string;
   person?: Person;
   referenceDate?: string;
   className?: string;
   style?: CSSProperties;
+  onLogout?: () => void;
+  logoutDisabled?: boolean;
+  openOnFocus?: boolean;
 }) {
   const directory = usePersonDirectory();
   // Audit entries can contain names rather than IDs. Ambiguous names stay unresolved.
@@ -153,7 +156,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         timer.current = setTimeout(() => setOpen(true), 180);
       }}
       onPointerLeave={scheduleClose}
-      onFocus={() => { if (!suppressFocus.current) show(); }}
+      onFocus={() => { if (openOnFocus && !suppressFocus.current) show(); }}
       onBlur={blur}
       onClick={event => { event.stopPropagation(); show(); }}
       onKeyDown={event => {
@@ -213,6 +216,11 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
           </div>}
         </> : <div className="person-profile-message" role="status">
           {directory.error ? <>Profilul nu a putut fi încărcat.<button type="button" onClick={directory.refresh}>Încearcă din nou</button></> : !directory.data ? 'Se încarcă profilul…' : 'Informațiile acestei persoane nu sunt disponibile în directorul echipei.'}
+        </div>}
+        {onLogout && <div className="person-profile-footer person-profile-account">
+          <button type="button" className="logout-button" disabled={logoutDisabled} onClick={() => {close(true); onLogout();}}>
+            <LogOut size={16}/>Ieși din cont
+          </button>
         </div>}
       </div>, document.body,
     )}
