@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from datetime import date
+from typing import Literal
 
 from app.core.security import current_user
 from app.database import get_db
@@ -19,6 +20,13 @@ def catalog(db: Session = Depends(get_db), user=Depends(current_user)):
 @router.get('/briefing')
 def briefing(department: str = Query('', max_length=100), db: Session = Depends(get_db), user=Depends(current_user)):
     return build(db, user, department)
+
+
+@router.get('/operations')
+def operations(days: Literal['0', '7', '30'] = '7', scope: Literal['all', 'current'] = 'all',
+               db: Session = Depends(get_db), user=Depends(current_user)):
+    from app.reports.operations import build as build_operations
+    return build_operations(db, user, int(days), scope)
 
 
 @router.get('/{report_id}/export.csv')

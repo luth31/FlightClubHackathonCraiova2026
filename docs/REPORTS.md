@@ -82,3 +82,13 @@ Frontend checks: `npm --prefix frontend run lint` and `npm --prefix frontend run
 The dashboard is checked in Chrome at desktop (1512px) and mobile (390px) widths. Browser checks cover all four analytical views, KPI/source/CSV agreement, intersecting filters, matrix and bar selections, supplier/owner drill-through, contract document links, refresh preservation, library search, fullscreen, PDF, network-failure recovery and technician restrictions. There are 17 frontend reporting tests and 23 backend reporting tests. Browser verification reads the current app data; backend tests use isolated fixtures.
 
 Reports can be committed independently of the renewal feature. The contract report uses the renewal service when that separate module is installed, and otherwise retains the document-based metrics. This optional integration does not create renewal records.
+
+### Operations analytics
+
+The **Operațiuni** perspective loads `/api/reports/operations` on demand. It reads the existing tenant's `OperationLedgerGroup` records and the current run's persisted `OperationEvent` records. Reading a report never seeds history, starts a run, advances time, or aggregates archived runs repeatedly. The administrative briefing stays independent of this request.
+
+- Periods are 7 or 30 calendar days ending at the latest operational day, or all available history (`days=0`). The displayed date range is explicit. `scope=current` restricts the report to the current shift.
+- Punctuality means no positive whole-minute delay at **off-block**. Only persisted departure events enter its denominator. Arrivals, planned flights, forecast delays and takeoff times are excluded. With no completed departures, the rate and average delay are unavailable, not 100% or 0%.
+- Daily bars conserve completed departures across 0, 1–14 and ≥15 minute bands. Delay totals and averages use actual timestamps. Gate statistics use the first recorded opening for each departure. Delay context is taken from the ledger; missing context stays unspecified.
+- KPI, day and gate selections narrow the flight register. CSV exports contain that selection and source identities. Each source link resolves the exact ledger group and event, independently of the current scenario, and includes a return to the selected report filters.
+- Document creation charts use inclusive, nonoverlapping date buckets with their full interval labels. Colors describe each document's current status; they do not claim to show historical approval dates. Filters are collapsed until requested and existing document access rules still apply.
