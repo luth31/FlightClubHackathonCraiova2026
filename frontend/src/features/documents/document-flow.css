@@ -85,3 +85,4 @@
   .flow-case-intro { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) { .flow-document, .flow-connector { transition: none; } }
+.flow-connector-association{stroke-dasharray:2 5;stroke:#7d92a5}.flow-semantics{font-size:12px;color:#526575;line-height:1.6;margin:8px 0 12px}

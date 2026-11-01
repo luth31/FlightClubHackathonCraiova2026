@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, FileText, LoaderCircle } from 'lucide-react';
 import { api } from '@/services/api-client';
@@ -11,6 +12,7 @@ interface ExtractionPage {
 export function ExtractedText({ doc, canReadText, onRetry }: {
   doc: DocumentRecord; canReadText: boolean; onRetry: () => void;
 }) {
+  useLanguage();
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<ExtractionPage>();
@@ -35,24 +37,24 @@ export function ExtractedText({ doc, canReadText, onRetry }: {
   }
   return <section className="extracted-text">
     {pending ? <p className="extraction-progress" role="status"><LoaderCircle size={16} className="spin" />
-      {doc.extraction_status === 'queued' ? 'Documentul așteaptă extragerea textului.' : 'Extragem textul local…'}
-      <small>Poți continua lucrul. Informațiile apar automat.</small>
+      {doc.extraction_status === 'queued' ? t("Documentul așteaptă extragerea textului.") : t("Extragem textul local…")}
+      <small>{t("Poți continua lucrul. Informațiile apar automat.")}</small>
     </p> : doc.extraction_status === 'failed' ? <div role="status">
-      <p>{doc.extraction?.error || 'Textul nu a putut fi extras.'}</p>
-      {doc.permissions?.can_edit && <button className="text-button" disabled={retrying} onClick={retry}>Reîncearcă extragerea</button>}
+      <p>{doc.extraction?.error || t("Textul nu a putut fi extras.")}</p>
+      {doc.permissions?.can_edit && <button className="text-button" disabled={retrying} onClick={retry}>{t("Reîncearcă extragerea")}</button>}
     </div> : doc.extraction_status === 'ready' && canReadText ? <>
       <button className="text-button" aria-expanded={open} onClick={() => setOpen(!open)}><FileText size={15} />
-        {open ? 'Ascunde textul extras' : 'Vezi textul extras'}
+        {open ? t("Ascunde textul extras") : t("Vezi textul extras")}
       </button>
       {open && <div className="extracted-text-body">
         {!data && !error ? <LoaderCircle size={16} className="spin" /> : data?.page && <>
           <div className="extracted-text-pagination">
-            <button className="icon-button" aria-label="Pagina anterioară a textului" disabled={page <= 1} onClick={() => setPage(page-1)}><ChevronLeft size={16} /></button>
-            <span>Pagina {page} din {data.page_count} · {data.page.method === 'ocr' ? 'OCR local' : 'Text digital'}</span>
-            <button className="icon-button" aria-label="Pagina următoare a textului" disabled={page >= data.page_count} onClick={() => setPage(page+1)}><ChevronRight size={16} /></button>
+            <button className="icon-button" aria-label={t("Pagina anterioară a textului")} disabled={page <= 1} onClick={() => setPage(page-1)}><ChevronLeft size={16} /></button>
+            <span>{t("Pagina")}{' '}{page} {t("din")}{' '}{data.page_count} · {data.page.method === 'ocr' ? t("OCR local") : t("Text digital")}</span>
+            <button className="icon-button" aria-label={t("Pagina următoare a textului")} disabled={page >= data.page_count} onClick={() => setPage(page+1)}><ChevronRight size={16} /></button>
           </div>
-          {data.page.review_required && <p className="extraction-note">Text recunoscut din scanare. Verifică numele, cifrele și conturile în original.</p>}
-          <pre>{data.page.text || 'Niciun text lizibil pe această pagină.'}</pre>
+          {data.page.review_required && <p className="extraction-note">{t("Text recunoscut din scanare. Verifică numele, cifrele și conturile în original.")}</p>}
+          <pre>{data.page.text || t("Niciun text lizibil pe această pagină.")}</pre>
         </>}
       </div>}
     </> : null}

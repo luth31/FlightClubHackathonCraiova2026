@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {ArrowLeft, Building2, Check, ChevronDown, Copy, LogOut, Mail, UserRound, X} from 'lucide-react';
@@ -10,15 +11,17 @@ import './person-avatar.css';
 const focusable = 'button:not(:disabled), a[href], input:not(:disabled):not([hidden]), select:not(:disabled), textarea:not(:disabled)';
 
 function ProfileImage({url, name}: {url: string | null; name: string}) {
+  useLanguage();
   const [failed, setFailed] = useState<string>();
   return url && failed !== url ? <img className="person-avatar-image" src={url} alt="" onError={() => setFailed(url)}/> : initials(name);
 }
 
 export function PersonStatus({person}: {person: Person}) {
+  useLanguage();
   const directory = usePersonDirectory();
   const current = directory.data?.items.find(item => item.id === person.id);
   const status = displayedPresence({...person, profile: current?.profile || person.profile}, directory.now);
-  return <span className={`availability availability-${status}`}><i aria-hidden="true"/>{status === 'offline' ? 'Offline' : presenceLabels[status]}</span>;
+  return <span className={`availability availability-${status}`}><i aria-hidden="true"/>{status === 'offline' ? t("Offline") : presenceLabels[status]}</span>;
 }
 
 export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled, openOnFocus = true, children, fallbackDetails, action, embedded = false}: {
@@ -38,6 +41,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
   /** A name inside an existing button/link uses its parent's keyboard target. */
   embedded?: boolean;
 }) {
+  useLanguage();
   const directory = usePersonDirectory();
   // Audit entries can contain names rather than IDs. Ambiguous names stay unresolved.
   const [viewedPersonId,setViewedPersonId] = useState<string>();
@@ -189,7 +193,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
       className={`person-avatar-trigger ${accountRole ? 'person-account-trigger' : ''} ${className}`}
       style={style}
       disabled={embedded ? undefined : disabled}
-      aria-label={`${action?.label || 'Vezi profilul'}: ${name}`}
+      aria-label={t("{p0}: {p1}", {p0:action?.label || 'Vezi profilul',p1:name})}
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-controls={open ? id : undefined}
@@ -227,7 +231,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         id={id}
         className={`person-profile ${own ? 'person-profile-own' : ''}`}
         role="dialog"
-        aria-label={`Profil: ${profile?.name || name}`}
+        aria-label={t("Profil: {p0}", {p0:profile?.name || name})}
         onClick={event => event.stopPropagation()}
         onPointerEnter={clearTimer}
         onPointerLeave={scheduleClose}
@@ -246,8 +250,8 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
           }
         }}
       >
-        <button type="button" className="person-profile-close" aria-label="Închide profilul" onClick={() => close(true)}><X size={17}/></button>
-        {viewedPersonId && <button type="button" className="person-profile-back" onClick={() => setViewedPersonId(undefined)}><ArrowLeft size={14}/>Înapoi la {name}</button>}
+        <button type="button" className="person-profile-close" aria-label={t("Închide profilul")} onClick={() => close(true)}><X size={17}/></button>
+        {viewedPersonId && <button type="button" className="person-profile-back" onClick={() => setViewedPersonId(undefined)}><ArrowLeft size={14}/>{t("Înapoi la")}{' '}{name}</button>}
         <div className="person-profile-header">
           <span className="person-profile-avatar" aria-hidden="true"><ProfileImage url={personal.photo_url} name={profile?.name || name}/></span>
           <div>
@@ -260,24 +264,24 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         {own && profile && <OwnProfileControls person={profile} onEditingChange={onEditingChange}/>}
         {profile ? <>
           <dl className="person-profile-details">
-            <div><dt><Mail size={16}/>Email</dt><dd className="person-email-copy">{profile.email ? <><a href={`mailto:${profile.email}`}>{profile.email}</a><button type="button" aria-label="Copiază emailul" title="Copiază emailul" onClick={()=>void copyEmail()}>{copyState==='copied'?<Check size={15}/>:<Copy size={15}/>}</button></> : 'Nespecificat'}</dd></div>
-            <div><dt><Building2 size={16}/>Departament</dt><dd>{profile.department || 'Nespecificat'}</dd></div>
-            {!externalAirport && <div><dt><UserRound size={16}/>Manager</dt><dd>{manager?<button type="button" className="person-profile-manager" onClick={() => setViewedPersonId(manager.id)} onPointerEnter={event => {if(event.pointerType!=='touch'){clearTimer();timer.current=setTimeout(()=>setViewedPersonId(manager.id),180);}}} onPointerLeave={clearTimer}>{manager.name}</button>:profile.manager_name || 'Nespecificat'}</dd></div>}
+            <div><dt><Mail size={16}/>{t("Email")}</dt><dd className="person-email-copy">{profile.email ? <><a href={`mailto:${profile.email}`}>{profile.email}</a><button type="button" aria-label={t("Copiază emailul")} title={t("Copiază emailul")} onClick={()=>void copyEmail()}>{copyState==='copied'?<Check size={15}/>:<Copy size={15}/>}</button></> : t("Nespecificat")}</dd></div>
+            <div><dt><Building2 size={16}/>{t("Departament")}</dt><dd>{profile.department || t("Nespecificat")}</dd></div>
+            {!externalAirport && <div><dt><UserRound size={16}/>{t("Manager")}</dt><dd>{manager?<button type="button" className="person-profile-manager" onClick={() => setViewedPersonId(manager.id)} onPointerEnter={event => {if(event.pointerType!=='touch'){clearTimer();timer.current=setTimeout(()=>setViewedPersonId(manager.id),180);}}} onPointerLeave={clearTimer}>{manager.name}</button>:profile.manager_name || t("Nespecificat")}</dd></div>}
           </dl>
-          {copyState!=='idle'&&<p className="person-copy-status" role="status">{copyState==='copied'?'Email copiat.':'Copierea nu este disponibilă. Selectează și copiază adresa afișată.'}</p>}
+          {copyState!=='idle'&&<p className="person-copy-status" role="status">{copyState==='copied'?t("Email copiat."):t("Copierea nu este disponibilă. Selectează și copiază adresa afișată.")}</p>}
           {((!own && profile.email) || profile.availability === 'away') && <div className="person-profile-footer">
-            {!own && profile.email && <a className="person-profile-email" href={`mailto:${profile.email}`}><Mail size={15}/>Trimite email</a>}
-            {!externalAirport && profile.availability === 'away' && <small>În concediu la {date(referenceDate || directory.data?.reference_date)}</small>}
+            {!own && profile.email && <a className="person-profile-email" href={`mailto:${profile.email}`}><Mail size={15}/>{t("Trimite email")}</a>}
+            {!externalAirport && profile.availability === 'away' && <small>{t("În concediu la")}{' '}{date(referenceDate || directory.data?.reference_date)}</small>}
           </div>}
         </> : fallbackDetails ? <dl className="person-profile-details">
-          {fallbackDetails.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}
+          {fallbackDetails.fields.map(field => <div key={field.label}><dt>{t(field.label)}</dt><dd>{field.value}</dd></div>)}
         </dl> : <div className="person-profile-message" role="status">
-          {directory.error ? <>Profilul nu a putut fi încărcat.<button type="button" onClick={directory.refresh}>Încearcă din nou</button></> : !directory.data ? 'Se încarcă profilul…' : 'Informațiile acestei persoane nu sunt disponibile în directorul echipei.'}
+          {directory.error ? <>{t("Profilul nu a putut fi încărcat.")}<button type="button" onClick={directory.refresh}>{t("Încearcă din nou")}</button></> : !directory.data ? t("Se încarcă profilul…") : t("Informațiile acestei persoane nu sunt disponibile în directorul echipei.")}
         </div>}
-        {action && !viewedPersonId && <div className="person-profile-footer"><button type="button" className="person-profile-email" onClick={() => {close(); action.onSelect();}}>{action.label}</button></div>}
+        {action && !viewedPersonId && <div className="person-profile-footer"><button type="button" className="person-profile-email" onClick={() => {close(); action.onSelect();}}>{t(action.label)}</button></div>}
         {own && directory.account && <div className="person-profile-signout">
           <button type="button" className="logout-button person-signout-button" disabled={directory.account.signingOut} aria-busy={directory.account.signingOut} onClick={() => {close(true); void directory.account?.signOut();}}>
-            <LogOut size={17}/>{directory.account.signingOut ? 'Se deconectează…' : 'Ieși din cont'}
+            <LogOut size={17}/>{directory.account.signingOut ? t("Se deconectează…") : t("Ieși din cont")}
           </button>
           {directory.account.signOutError && <p className="own-profile-error">{directory.account.signOutError}</p>}
         </div>}

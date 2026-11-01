@@ -1,8 +1,9 @@
 import type {CalendarLeave, LeaveReviewer} from './types';
+import {t,getLocale} from '@/i18n';
 
 export function leaveReviewerLabel(reviewer:LeaveReviewer,requesterId:string) {
-  if(reviewer.delegated_from_name)return `${reviewer.name} (${reviewer.via==='delegation'?'delegat':'înlocuitor ierarhic'} pentru ${reviewer.delegated_from_name})`;
-  return reviewer.id===requesterId?`${reviewer.name} (aprobare proprie)`:reviewer.name;
+  if(reviewer.delegated_from_name)return t('{name} ({role} pentru {principal})',{name:reviewer.name,role:t(reviewer.via==='delegation'?'delegat':'înlocuitor ierarhic'),principal:reviewer.delegated_from_name});
+  return reviewer.id===requesterId?t('{name} (aprobare proprie)',{name:reviewer.name}):reviewer.name;
 }
 
 // Date-only arithmetic in UTC keeps inclusive leave ranges stable across DST.
@@ -24,7 +25,7 @@ export function monthDays(value:string) {
   return result;
 }
 export function formatCalendarDate(value:string,options:Intl.DateTimeFormatOptions) {
-  return calendarDate(value).toLocaleDateString('ro-RO',{...options,timeZone:'UTC'});
+  return calendarDate(value).toLocaleDateString(getLocale(),{...options,timeZone:'UTC'});
 }
 export function calendarRange(start:string,end:string) {
   return `${formatCalendarDate(start,{day:'numeric',month:'short'})} – ${formatCalendarDate(end,{day:'numeric',month:'short',year:'numeric'})}`;

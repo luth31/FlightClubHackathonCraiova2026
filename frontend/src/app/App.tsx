@@ -1,3 +1,6 @@
+import {LanguageSwitcher} from '@/i18n/LanguageSwitcher';
+import './branding.css';
+import {t,useLanguage} from '@/i18n';
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {House,FolderOpen,Wrench,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
@@ -25,6 +28,7 @@ import {roleLabel} from '@/utils/format';
 import type {Page,Session} from '@/types';
 const OperationsPage = lazy(()=>import('@/features/operations').then(module=>({default:module.OperationsPage})));
 function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:string)=>void}) {
+  useLanguage();
   const [visited,setVisited]=useState(visible);
   useEffect(()=>{if(visible)setVisited(true)},[visible]);
   if(!visited&&!visible)return null;
@@ -35,6 +39,7 @@ function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:st
 const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'equipment',label:'Echipamente',icon:Wrench},{id:'assistant',label:'Întreabă FlyLeaf',icon:Sparkles},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
 const secondNav=[{id:'sharing',label:'Colaborare',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
+  useLanguage();
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
     [upload,setUpload]=useState(false),
     [search,setSearch]=useState(false), [revision,setRevision]=useState(0),
@@ -155,20 +160,19 @@ export function App() {
         if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
         event.preventDefault();navigate('home');
       }}>
-        <span className="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 25 16 5l11 20h-7l-4-8-4 8z" fill="currentColor"/><path d="M8 21h18" stroke="#91b6a3" strokeWidth="2"/></svg></span>
-        FlyLeaf<span className="brand-period">.</span>
+        <img className="workspace-brand-logo" src="/branding/flyleaf-logo.png" alt="FlyLeaf" width="180" height="69"/>
       </a>
       <div className="airport-switch"><span className="airport-symbol"><Plane size={18}/></span><div><strong>{airport}</strong></div></div>
-      <div className="nav-label">SPAȚIU DE LUCRU</div>
-      <nav aria-label="Navigare principală">
+      <div className="nav-label">{t("SPAȚIU DE LUCRU")}</div>
+      <nav aria-label={t("Navigare principală")}>
         {nav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
-          <n.icon size={19}/><span>{labels[n.id as Page]}</span>{page===n.id&&<span className="active-dot"/>}
+          <n.icon size={19}/><span>{t(labels[n.id as Page])}</span>{page===n.id&&<span className="active-dot"/>}
         </button>)}
       </nav>
-      {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">COLABORARE</div>}
-      <nav aria-label="Colaborare și istoric">
+      {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">{t("COLABORARE")}</div>}
+      <nav aria-label={t("Colaborare și istoric")}>
         {secondNav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
-          <n.icon size={18}/><span>{n.label}</span>{n.id==='sharing'&&collaborationInbox.pendingCount>0&&<span className="collaboration-nav-count" aria-label={collaborationInbox.pendingCount===1?'1 cerere primită deschisă':`${collaborationInbox.pendingCount} cereri primite deschise`}>{collaborationInbox.pendingCount}</span>}
+          <n.icon size={18}/><span>{t(n.label)}</span>{n.id==='sharing'&&collaborationInbox.pendingCount>0&&<span className="collaboration-nav-count" aria-label={collaborationInbox.pendingCount===1?t("1 cerere primită deschisă"):t("{p0} cereri primite deschise", {p0:collaborationInbox.pendingCount})}>{collaborationInbox.pendingCount}</span>}
         </button>)}
       </nav>
       <div className="sidebar-bottom">
@@ -176,19 +180,19 @@ export function App() {
           <PersonAvatar userId={user.id} name={user.name} accountRole={roleLabel[user.role]||user.role} className="user-button user-menu-trigger" disabled={loggingOut} openOnFocus={false}/>
         </div>
         <button className="logout-button sidebar-logout" disabled={loggingOut} onClick={requestLogout} aria-busy={loggingOut}>
-          <LogOut size={16}/>{loggingOut?'Se deconectează…':'Ieși din cont'}
+          <LogOut size={16}/>{loggingOut?t("Se deconectează…"):t("Ieși din cont")}
         </button>
       </div>
     </aside>
     <div className="app-main">
       <header className="topbar">
         <div className="breadcrumb">
-          <button className="icon-button mobile-menu" onClick={()=>setMobileOpen(true)} aria-label="Deschide meniul"><Menu size={21}/></button>
+          <button className="icon-button mobile-menu" onClick={()=>setMobileOpen(true)} aria-label={t("Deschide meniul")}><Menu size={21}/></button>
 
-          {doc?<><button className="breadcrumb-parent" onClick={returnToOrigin}>{labels[page]}</button><ChevronRight size={13}/><strong>Document</strong></>:<strong>{labels[page]}</strong>}
+          {doc?<><button className="breadcrumb-parent" onClick={returnToOrigin}>{t(labels[page])}</button><ChevronRight size={13}/><strong>{t("Document")}</strong></>:<strong>{t(labels[page])}</strong>}
         </div>
-        <div className="topbar-actions">
-          <button className="quick-search" onClick={()=>setSearch(true)} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
+        <div className="topbar-actions"><LanguageSwitcher compact/>
+          <button className="quick-search" onClick={()=>setSearch(true)} aria-label={t("Caută un document")}><Search size={17}/><span>{t("Caută un document")}</span></button><span className="topbar-divider"/>
           <PersonAvatar userId={user.id} name={user.name} className="avatar top-avatar" openOnFocus={false}/>
         </div>
       </header>
@@ -218,13 +222,13 @@ export function App() {
     </div>
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
     {search&&<QuickSearch onClose={closeSearch} onOpen={openDoc} onAll={q=>{setSearch(false);goToPage('documents','/list?q='+encodeURIComponent(q))}}/>}
-    {confirmingLogout&&<Modal title="Vrei să ieși din cont?" onClose={cancelLogout} initialFocusRef={cancelLogoutRef} className="logout-confirmation">
+    {confirmingLogout&&<Modal title={t("Vrei să ieși din cont?")} onClose={cancelLogout} initialFocusRef={cancelLogoutRef} className="logout-confirmation">
       <div className="modal-body">
-        <p>Sesiunea ta FlyLeaf se va încheia. Te poți conecta din nou oricând.</p>
+        <p>{t("Sesiunea ta FlyLeaf se va încheia. Te poți conecta din nou oricând.")}</p>
         {logoutError&&<ErrorMessage message={logoutError}/>}
         <div className="modal-footer">
-          <button type="button" className="button secondary" ref={cancelLogoutRef} disabled={loggingOut} onClick={cancelLogout}>Rămâi conectat</button>
-          <button type="button" className="button primary" disabled={loggingOut} onClick={()=>void logout()} aria-busy={loggingOut}><LogOut size={16}/>{loggingOut?'Se deconectează…':'Ieși din cont'}</button>
+          <button type="button" className="button secondary" ref={cancelLogoutRef} disabled={loggingOut} onClick={cancelLogout}>{t("Rămâi conectat")}</button>
+          <button type="button" className="button primary" disabled={loggingOut} onClick={()=>void logout()} aria-busy={loggingOut}><LogOut size={16}/>{loggingOut?t("Se deconectează…"):t("Ieși din cont")}</button>
         </div>
       </div>
     </Modal>}

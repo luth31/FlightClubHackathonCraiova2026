@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {useEffect, useId, useRef, useState, type FormEvent} from 'react';
 import {Camera, Check, ChevronRight, Clock3, MessageSquare, RotateCcw, Trash2} from 'lucide-react';
 import {api} from '@/services/api-client';
@@ -10,6 +11,7 @@ const statuses: Presence[] = ['available', 'busy', 'do_not_disturb', 'be_right_b
 const until = (value: string) => new Intl.DateTimeFormat('ro-RO', {timeZone: 'Europe/Bucharest', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}).format(new Date(value));
 
 export function OwnProfileControls({person, onEditingChange}: {person: Person; onEditingChange: (editing: boolean) => void}) {
+  useLanguage();
   const {updateProfile, now} = usePersonDirectory();
   const profile = liveProfile(person.profile, now);
   const status = displayedPresence(person, now);
@@ -62,60 +64,60 @@ export function OwnProfileControls({person, onEditingChange}: {person: Person; o
     }
   }
 
-  return <section className="own-profile" aria-label="Setările profilului tău">
-    <div className="own-profile-label">CONTUL TĂU</div>
+  return <section className="own-profile" aria-label={t("Setările profilului tău")}>
+    <div className="own-profile-label">{t("CONTUL TĂU")}</div>
     {!panel ? <div className="own-profile-actions">
-      <button type="button" className="own-profile-action" onClick={() => open('presence')} aria-label="Schimbă statusul">
+      <button type="button" className="own-profile-action" onClick={() => open('presence')} aria-label={t("Schimbă statusul")}>
         <span className={`profile-status-dot profile-status-dot-${status}`} aria-hidden="true"/>
-        <span><strong>{presenceLabels[status]}</strong><small>{profile.presence_expires_at ? `Revine automat pe ${until(profile.presence_expires_at)}` : profile.presence === 'automatic' ? 'Status automat · schimbă' : 'Status ales de tine · schimbă'}</small></span><ChevronRight size={15}/>
+        <span><strong>{presenceLabels[status]}</strong><small>{profile.presence_expires_at ? t("Revine automat pe {p0}", {p0:until(profile.presence_expires_at)}) : profile.presence === 'automatic' ? t("Status automat · schimbă") : t("Status ales de tine · schimbă")}</small></span><ChevronRight size={15}/>
       </button>
       <button type="button" className="own-profile-action" onClick={() => open('message')}>
-        <MessageSquare size={17}/><span><strong>{profile.status_message ? 'Editează mesajul de status' : 'Setează un mesaj de status'}</strong><small>Vizibil colegilor pe profilul tău</small></span><ChevronRight size={15}/>
+        <MessageSquare size={17}/><span><strong>{profile.status_message ? t("Editează mesajul de status") : t("Setează un mesaj de status")}</strong><small>{t("Vizibil colegilor pe profilul tău")}</small></span><ChevronRight size={15}/>
       </button>
       <button type="button" className="own-profile-action" onClick={() => open('photo')}>
-        <Camera size={17}/><span><strong>Schimbă fotografia</strong><small>Adaugă sau elimină poza de profil</small></span><ChevronRight size={15}/>
+        <Camera size={17}/><span><strong>{t("Schimbă fotografia")}</strong><small>{t("Adaugă sau elimină poza de profil")}</small></span><ChevronRight size={15}/>
       </button>
     </div> : <form className="own-profile-form" onSubmit={submit}>
       <fieldset disabled={busy}>
         {panel === 'presence' && <>
-          <label htmlFor={`${id}-status`}>Statusul tău</label>
+          <label htmlFor={`${id}-status`}>{t("Statusul tău")}</label>
           <select id={`${id}-status`} value={presence} onChange={event => setPresence(event.target.value as Presence)} autoFocus>
             {statuses.map(value => <option key={value} value={value}>{presenceLabels[value]}</option>)}
           </select>
-          <p className="own-profile-hint">Colegii văd statusul ales. „Nu deranjați” indică preferința ta de disponibilitate.</p>
+          <p className="own-profile-hint">{t("Colegii văd statusul ales. „Nu deranjați” indică preferința ta de disponibilitate.")}</p>
         </>}
         {panel === 'message' && <>
-          <label htmlFor={`${id}-message`}>Mesajul de status</label>
-          <textarea id={`${id}-message`} value={message} onChange={event => setMessage(event.target.value)} maxLength={280} rows={3} placeholder="De exemplu: Sunt pe platformă. Revin la 14:00." autoFocus/>
+          <label htmlFor={`${id}-message`}>{t("Mesajul de status")}</label>
+          <textarea id={`${id}-message`} value={message} onChange={event => setMessage(event.target.value)} maxLength={280} rows={3} placeholder={t("De exemplu: Sunt pe platformă. Revin la 14:00.")} autoFocus/>
           <span className="own-profile-count">{message.length}/280</span>
         </>}
         {(panel === 'presence' || panel === 'message') && <>
-          <label htmlFor={`${id}-duration`}><Clock3 size={14}/>{panel === 'presence' ? 'Revino la statusul automat după' : 'Șterge mesajul după'}</label>
+          <label htmlFor={`${id}-duration`}><Clock3 size={14}/>{panel === 'presence' ? t("Revino la statusul automat după") : t("Șterge mesajul după")}</label>
           <select id={`${id}-duration`} value={duration} onChange={event => setDuration(Number(event.target.value))}>
-            {durations.map(([value, label]) => <option key={value} value={value}>{value === 0 && panel === 'message' ? 'Până îl șterg' : label}</option>)}
+            {durations.map(([value, label]) => <option key={value} value={value}>{value === 0 && panel === 'message' ? t("Până îl șterg") : label}</option>)}
           </select>
         </>}
         {panel === 'photo' && <>
           <div className="own-profile-photo-preview">
             {(preview || profile.photo_url) ? <img src={preview || profile.photo_url!} alt="Previzualizarea fotografiei de profil"/> : <Camera size={32} aria-hidden="true"/>}
           </div>
-          <input ref={upload} hidden type="file" accept="image/jpeg,image/png,image/webp" aria-label="Alege fotografia de profil" onChange={event => {
+          <input ref={upload} hidden type="file" accept="image/jpeg,image/png,image/webp" aria-label={t("Alege fotografia de profil")} onChange={event => {
             const selected = event.target.files?.[0]; event.target.value = '';
             if (!selected) return;
             if (selected.size > 2 * 1024 * 1024) {setError('Alege o fotografie de cel mult 2 MB.'); return;}
             if (selected.type && !['image/jpeg', 'image/png', 'image/webp'].includes(selected.type)) {setError('Folosește o fotografie JPG, PNG sau WebP.'); return;}
             setFile(selected); setError('');
           }}/>
-          <button type="button" className="own-profile-photo-pick" onClick={() => upload.current?.click()}><Camera size={15}/>{file ? 'Alege altă fotografie' : 'Alege o fotografie'}</button>
-          <p className="own-profile-hint">JPG, PNG sau WebP · maximum 2 MB. Fotografia este încadrată automat în centru.</p>
+          <button type="button" className="own-profile-photo-pick" onClick={() => upload.current?.click()}><Camera size={15}/>{file ? t("Alege altă fotografie") : t("Alege o fotografie")}</button>
+          <p className="own-profile-hint">{t("JPG, PNG sau WebP · maximum 2 MB. Fotografia este încadrată automat în centru.")}</p>
         </>}
         <div className="own-profile-form-actions">
-          <button type="button" className="own-profile-cancel" onClick={() => open(null)}>Renunță</button>
-          <button type="submit" className="own-profile-save" disabled={panel === 'photo' && !file}><Check size={14}/>{busy ? 'Se salvează…' : 'Salvează'}</button>
+          <button type="button" className="own-profile-cancel" onClick={() => open(null)}>{t("Renunță")}</button>
+          <button type="submit" className="own-profile-save" disabled={panel === 'photo' && !file}><Check size={14}/>{busy ? t("Se salvează…") : t("Salvează")}</button>
         </div>
-        {panel === 'presence' && <button type="button" className="own-profile-reset" onClick={() => void save(() => api('/people/me/presence', {method: 'PATCH', body: JSON.stringify({status: 'automatic'})}), 'Statusul automat a fost restabilit.')}><RotateCcw size={14}/>Resetează statusul</button>}
-        {panel === 'message' && profile.status_message && <button type="button" className="own-profile-reset" onClick={() => void save(() => api('/people/me/status-message', {method: 'PATCH', body: JSON.stringify({message: ''})}), 'Mesajul de status a fost șters.')}><Trash2 size={14}/>Șterge mesajul</button>}
-        {panel === 'photo' && profile.photo_url && <button type="button" className="own-profile-reset" onClick={() => void save(() => api('/people/me/photo', {method: 'DELETE'}), 'Fotografia a fost eliminată.')}><Trash2 size={14}/>Elimină fotografia</button>}
+        {panel === 'presence' && <button type="button" className="own-profile-reset" onClick={() => void save(() => api('/people/me/presence', {method: 'PATCH', body: JSON.stringify({status: 'automatic'})}), 'Statusul automat a fost restabilit.')}><RotateCcw size={14}/>{t("Resetează statusul")}</button>}
+        {panel === 'message' && profile.status_message && <button type="button" className="own-profile-reset" onClick={() => void save(() => api('/people/me/status-message', {method: 'PATCH', body: JSON.stringify({message: ''})}), 'Mesajul de status a fost șters.')}><Trash2 size={14}/>{t("Șterge mesajul")}</button>}
+        {panel === 'photo' && profile.photo_url && <button type="button" className="own-profile-reset" onClick={() => void save(() => api('/people/me/photo', {method: 'DELETE'}), 'Fotografia a fost eliminată.')}><Trash2 size={14}/>{t("Elimină fotografia")}</button>}
       </fieldset>
     </form>}
     {error && <p className="own-profile-error" role="alert">{error}</p>}

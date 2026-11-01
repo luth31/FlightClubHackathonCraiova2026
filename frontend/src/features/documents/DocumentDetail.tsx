@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {PersonReference} from '@/components/people/PersonReference';
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
@@ -35,6 +36,7 @@ import {DocumentFollowUp} from './DocumentFollowUp';
 import {ReadOnlyPdf} from '@/components/documents/ReadOnlyPdf';
 import { ProcurementDocumentPanel } from '@/features/procurement/ProcurementDocumentPanel';
 import {DocumentWorkflowProgress,DocumentActivity} from './DocumentWorkflow';
+import {DocumentStateFlow} from './DocumentStateFlow';
 import "./documents.css";
 import { ShareDialog } from "@/features/sharing";
 import { date, time, money, actionLabel } from "@/utils/format";
@@ -56,6 +58,7 @@ export function DocumentDetail({
   notify: (s: string) => void;
   user: User;
 }) {
+  useLanguage();
   const [doc, setDoc] = useState<DocumentRecord>(),
     [error, setError] = useState(""),
     [tab, setTab] = useState("details"),
@@ -237,14 +240,14 @@ export function DocumentDetail({
     <div className="detail-page">
       <button className="back-button" onClick={onClose}>
         <ArrowLeft size={16} />
-        Înapoi la {pageLabels[origin]}
+        {t("Înapoi la")}{' '}{pageLabels[origin]}
       </button>
       {!doc ? (
         error ? (
           <>
             <ErrorMessage message={error} retry={load} />
-            <p className="quiet-note">Aprobările sunt disponibile în contul responsabilului desemnat.</p>
-            <a className="button secondary" href="#approvals">Vezi aprobările mele <ArrowRight size={16} /></a>
+            <p className="quiet-note">{t("Aprobările sunt disponibile în contul responsabilului desemnat.")}</p>
+            <a className="button secondary" href="#approvals">{t("Vezi aprobările mele")}{' '}<ArrowRight size={16} /></a>
           </>
         ) : (
           <Loading />
@@ -259,7 +262,7 @@ export function DocumentDetail({
                 {doc.number}
                 <span>·</span>
                 {doc.category}
-                <span>·</span>Versiunea {doc.version}
+                <span>·</span>{t("Versiunea")}{' '}{doc.version}
               </div>
               <h1>{doc.title}</h1>
             </div>
@@ -280,7 +283,7 @@ export function DocumentDetail({
               {doc.department}
             </span>
             <div>
-              <button className="button secondary small-button" onClick={()=>{location.hash='assistant?document='+encodeURIComponent(doc.id)}}><Sparkles size={15}/>Întreabă despre document</button>
+              <button className="button secondary small-button" onClick={()=>{location.hash='assistant?document='+encodeURIComponent(doc.id)}}><Sparkles size={15}/>{t("Întreabă despre document")}</button>
               <button
                 className="button secondary small-button"
                 onClick={async () => {
@@ -295,16 +298,14 @@ export function DocumentDetail({
                 }}
               >
                 <Download size={15} />
-                Descarcă PDF
-              </button>
+                {t("Descarcă PDF")}</button>
               {["approved", "signed"].includes(doc.status) && canShare && (
                 <button
                   className="button secondary small-button"
                   onClick={() => setSharing(true)}
                 >
                   <Share2 size={15} />
-                  Partajează
-                </button>
+                  {t("Partajează")}</button>
               )}
               {["approved", "signed"].includes(doc.status) && canReview && (
                 <button
@@ -312,8 +313,7 @@ export function DocumentDetail({
                   onClick={() => setConfirm("archive")}
                 >
                   <Archive size={15} />
-                  Arhivează
-                </button>
+                  {t("Arhivează")}</button>
               )}
             </div>
           </div>
@@ -322,13 +322,13 @@ export function DocumentDetail({
             <div className="pdf-panel">
               <div className="pdf-toolbar">
                 <FileIcon category={doc.category} />
-                <span>{doc.filename || `${doc.number}.pdf`}</span>
+                <span>{doc.filename || t("{p0}.pdf", {p0:doc.number})}</span>
                 <a
                   className="icon-button"
                   href={fileUrl(`${doc.file_url}?version=${doc.version}`)}
                   target="_blank"
                   rel="noreferrer"
-                  aria-label="Deschide PDF într-o filă nouă"
+                  aria-label={t("Deschide PDF într-o filă nouă")}
                 >
                   <ExternalLink size={16} />
                 </a>
@@ -344,11 +344,11 @@ export function DocumentDetail({
                 onArchive={() => setConfirm('archive')} notify={notify} onChanged={() => {onChanged(); void load();}}/>
               {doc.metadata?.managed_by === "leave_workflow" && (
                 <div className="panel document-actions">
-                  <h2>{doc.metadata.request_status === "approved" ? "Concediul este aprobat" :
-                    doc.metadata.request_status === "rejected" ? "Concediul a fost respins" : "Cerere în așteptarea deciziei"}</h2>
-                  <p>Actualizat automat din Concedii.</p>
+                  <h2>{doc.metadata.request_status === "approved" ? t("Concediul este aprobat") :
+                    doc.metadata.request_status === "rejected" ? t("Concediul a fost respins") : t("Cerere în așteptarea deciziei")}</h2>
+                  <p>{t("Actualizat automat din Concedii.")}</p>
                   <a className="button secondary full-width" href="#people?tab=leave">
-                    Vezi cererile de concediu <ArrowRight size={15}/>
+                    {t("Vezi cererile de concediu")}{' '}<ArrowRight size={15}/>
                   </a>
                 </div>
               )}
@@ -357,14 +357,14 @@ export function DocumentDetail({
                   {doc.workflow?.task?.status === "pending" && (
                     <div className="document-task-owner">
                       <span>
-                        Responsabil:{" "}
+                        {t("Responsabil:")}{" "}
                         {doc.workflow.task.effective_assignee
                           ? <DocumentPerson name={doc.workflow.task.assignee} userId={doc.workflow.task.effective_assignee}/>
                           : <strong>{doc.workflow.task.assignee}</strong>}
                       </span>
-                      <small>Termen: {date(doc.workflow.task.due_date)}</small>
+                      <small>{t("Termen:")}{' '}{date(doc.workflow.task.due_date)}</small>
                       <a href="#approvals">
-                        Vezi sarcinile echipei <ArrowRight size={13} />
+                        {t("Vezi sarcinile echipei")}{' '}<ArrowRight size={13} />
                       </a>
                     </div>
                   )}
@@ -372,13 +372,13 @@ export function DocumentDetail({
                     <>
                       <h2>
                         {doc.validated
-                          ? "Trimite la aprobare"
-                          : "Verifică informațiile"}
+                          ? t("Trimite la aprobare")
+                          : t("Verifică informațiile")}
                       </h2>
                       <p>
                         {doc.validated
-                          ? "Informațiile sunt validate."
-                          : "Compară datele de mai jos cu PDF-ul."}
+                          ? t("Informațiile sunt validate.")
+                          : t("Compară datele de mai jos cu PDF-ul.")}
                       </p>
                       {!doc.validated ? (
                         <button
@@ -391,8 +391,7 @@ export function DocumentDetail({
                           ) : (
                             <Check size={17} />
                           )}
-                          Confirmă și trimite spre aprobare
-                        </button>
+                          {t("Confirmă și trimite spre aprobare")}</button>
                       ) : (
                         <button
                           className="button primary full-width"
@@ -400,16 +399,15 @@ export function DocumentDetail({
                           onClick={() => act("submit")}
                         >
                           <FileCheck2 size={17} />
-                          Trimite spre aprobare
-                        </button>
+                          {t("Trimite spre aprobare")}</button>
                       )}
                     </>
                   )}
                   {doc.status === "in_review" && (
                     <>
-                      <h2>Decizia ta</h2>
+                      <h2>{t("Decizia ta")}</h2>
                       <p>
-                        Verifici versiunea {doc.version}.
+                        {t("Verifici versiunea")}{' '}{doc.version}.
                       </p>
                       {canReview ? (
                         <div className="approval-actions">
@@ -419,30 +417,27 @@ export function DocumentDetail({
                             onClick={() => setConfirm("approve")}
                           >
                             <Check size={17} />
-                            Aprobă documentul
-                          </button>
+                            {t("Aprobă documentul")}</button>
                           <button
                             className="button secondary full-width"
                             disabled={busy}
                             onClick={() => setConfirm("reject")}
                           >
-                            Returnează pentru corectare
-                          </button>
+                            {t("Returnează pentru corectare")}</button>
                         </div>
                       ) : (
                         <div className="note-box">
-                          În așteptarea responsabilului din Aprobări.
-                        </div>
+                          {t("În așteptarea responsabilului din Aprobări.")}</div>
                       )}
                     </>
                   )}
                   {doc.status === "approved" && (
                     <>
-                      <h2>Document aprobat</h2>
+                      <h2>{t("Document aprobat")}</h2>
                       <p>
                         {canSign
-                          ? "Semnează versiunea aprobată."
-                          : "Documentul așteaptă semnătura responsabilului desemnat."}
+                          ? t("Semnează versiunea aprobată.")
+                          : t("Documentul așteaptă semnătura responsabilului desemnat.")}
                       </p>
                       {canSign && (
                         <button
@@ -451,12 +446,10 @@ export function DocumentDetail({
                           onClick={() => setConfirm("sign")}
                         >
                           <PenLine size={17} />
-                          Semnează documentul
-                        </button>
+                          {t("Semnează documentul")}</button>
                       )}
                       <small className="quiet-note">
-                        Semnătură criptografică cu certificat local.
-                      </small>
+                        {t("Semnătură criptografică cu certificat local.")}</small>
                     </>
                   )}
                 </div>
@@ -487,21 +480,19 @@ export function DocumentDetail({
                       {doc.validated ? (
                         <div className="verified-line">
                           <Check size={14} />
-                          {doc.metadata?.managed_by === "leave_workflow" ? "Date din cererea de concediu" : "Informații validate"}
+                          {doc.metadata?.managed_by === "leave_workflow" ? t("Date din cererea de concediu") : t("Informații validate")}
                         </div>
                       ) : (
                         <div className="unverified-line">
                           <Clock3 size={14} />
-                          Informații de verificat
-                        </div>
+                          {t("Informații de verificat")}</div>
                       )}
                       <ExtractedText doc={doc} canReadText={!user.roles.includes('technician')} onRetry={load} />
                       {doc.metadata?.procurement ? <ProcurementDocumentPanel reviewOnly documentId={id} documentVersion={doc.version} extractionStatus={doc.extraction_status} notify={notify} onDirtyChange={setEditing} onChanged={()=>{setBusy(true);onChanged();void load().finally(()=>{setEditing(false);setBusy(false)})}}/> : <>
                       {editing ? (
                         <div className="edit-fields">
                           <label className="field">
-                            Titlu
-                            <input
+                            {t("Titlu")}<input
                               value={fields.title}
                               onChange={(e) =>
                                 setFields({ ...fields, title: e.target.value })
@@ -509,8 +500,7 @@ export function DocumentDetail({
                             />
                           </label>
                           <label className="field">
-                            Furnizor
-                            <input
+                            {t("Furnizor")}<input
                               value={fields.supplier}
                               onChange={(e) =>
                                 setFields({
@@ -522,7 +512,7 @@ export function DocumentDetail({
                           </label>
                           <div className="form-grid">
                             <label className="field">
-                              Valoare ({doc.currency || "RON"})
+                              {t("Valoare (")}{doc.currency || t("RON")})
                               <input
                                 type="number"
                                 min="0"
@@ -536,8 +526,7 @@ export function DocumentDetail({
                               />
                             </label>
                             <label className="field">
-                              Valabil până la
-                              <input
+                              {t("Valabil până la")}<input
                                 type="date"
                                 value={fields.expires_at}
                                 onInput={(e) => {
@@ -557,8 +546,7 @@ export function DocumentDetail({
                             </label>
                           </div>
                           <label className="field">
-                            Rezumat
-                            <textarea
+                            {t("Rezumat")}<textarea
                               rows={4}
                               value={fields.summary}
                               onInput={(e) =>
@@ -580,61 +568,59 @@ export function DocumentDetail({
                               className="button secondary"
                               onClick={() => setEditing(false)}
                             >
-                              Renunță
-                            </button>
+                              {t("Renunță")}</button>
                             <button
                               className="button primary"
                               onClick={save}
                               disabled={busy || !fields.title.trim()}
                             >
-                              Salvează
-                            </button>
+                              {t("Salvează")}</button>
                           </div>
                         </div>
                       ) : (
                         <>
                           <dl className="metadata-list">
                             <div>
-                              <dt>Număr</dt>
+                              <dt>{t("Număr")}</dt>
                               <dd>{doc.number}</dd>
                             </div>
                             <div>
-                              <dt>Departament</dt>
+                              <dt>{t("Departament")}</dt>
                               <dd>{doc.department}</dd>
                             </div>
                             <div>
-                              <dt>Responsabil</dt>
+                              <dt>{t("Responsabil")}</dt>
                               <dd>{doc.owner ? <DocumentPerson name={doc.owner} userId={doc.owner_id}/> : "Echipa " + doc.department}</dd>
                             </div>
                             {doc.supplier && (
                               <div>
-                                <dt>Furnizor</dt>
+                                <dt>{t("Furnizor")}</dt>
                                 <dd>{doc.supplier}</dd>
                               </div>
                             )}
                             <div>
-                              <dt>Înregistrat</dt>
+                              <dt>{t("Înregistrat")}</dt>
                               <dd>{date(doc.created_at)}</dd>
                             </div>
                             <div>
-                              <dt>Valabil până la</dt>
+                              <dt>{t("Valabil până la")}</dt>
                               <dd><DocumentExpiry muted={doc.follow_up?.alerts_suppressed} expiresAt={doc.expires_at} daysRemaining={doc.days_remaining} validated={doc.validated} status={doc.status}/></dd>
                             </div>
                             {doc.value != null && (
                               <div>
-                                <dt>Valoare</dt>
+                                <dt>{t("Valoare")}</dt>
                                 <dd>{money(doc.value, doc.currency)}</dd>
                               </div>
                             )}
                           </dl>
                           {doc.summary && (
                             <details className="doc-summary">
-                              <summary>Rezumat</summary>
+                              <summary>{t("Rezumat")}</summary>
                               <p>
                                 {doc.summary.startsWith(
                                   "Document încărcat. Verifică informațiile",
                                 )
-                                  ? "Document introdus în registru."
+                                  ? t("Document introdus în registru.")
                                   : doc.summary}
                               </p>
                             </details>
@@ -653,13 +639,12 @@ export function DocumentDetail({
                                 onClick={() => setEditing(true)}
                               >
                                 <PenLine size={14} />
-                                Corectează informațiile
-                              </button>
+                                {t("Corectează informațiile")}</button>
                             )}
                           {doc.extraction_evidence?.length ? (
                             <details className="evidence-details">
                               <summary>
-                                Fragmente sursă{" "}
+                                {t("Fragmente sursă")}{" "}
                                 <span>{doc.extraction_evidence.length}</span>
                               </summary>
                               {doc.extraction_evidence.map((e, i) => (
@@ -673,7 +658,7 @@ export function DocumentDetail({
                                         iban: "IBAN",
                                       } as Record<string, string>
                                     )[e.field] || e.field}{" "}
-                                    · pagina {e.page}
+                                    {t("· pagina")}{' '}{e.page}
                                   </strong>
                                   <p>„{e.excerpt}”</p>
                                 </div>
@@ -689,8 +674,8 @@ export function DocumentDetail({
                     notify={notify} onChanged={() => {onChanged(); void load()}} />}
                   {tab === "workflow" && (
                     <>
-                      <h2 className="tab-title">Traseu · versiunea {doc.version}</h2>
-                      <div className="workflow-steps">
+                      <h2 className="tab-title">{t("Traseu · versiunea")}{' '}{doc.version}</h2>
+                      {doc.workflow?.diagram ? <DocumentStateFlow key={doc.id+doc.version} diagram={doc.workflow.diagram}/> : <div className="workflow-steps">
                         {(
                           doc.workflow?.steps || [
                             { label: "Înregistrat", status: "completed" },
@@ -729,22 +714,22 @@ export function DocumentDetail({
                               )}
                             </span>
                             <div>
-                              <strong>{step.label}</strong>
+                              <strong>{t(step.label)}</strong>
                               {step.actor && (
                                 <small>
                                   <DocumentPerson name={step.actor} userId={step.actor_id}/>
-                                  {step.at ? ` · ${date(step.at)}` : ""}
+                                  {step.at ? t(" · {p0}", {p0:date(step.at)}) : ""}
                                 </small>
                               )}
                             </div>
                           </div>
                         ))}
                       </div>
+                      }
                       <div className="note-box">
                         <ShieldCheck size={18} />
                         <p>
-                          O versiune nouă necesită o nouă aprobare.
-                        </p>
+                          {t("O versiune nouă necesită o nouă aprobare.")}</p>
                       </div>
                       {doc.status === "signed" && (
                         <button
@@ -764,8 +749,7 @@ export function DocumentDetail({
                           }}
                         >
                           <ShieldCheck size={17} />
-                          Verifică semnătura
-                        </button>
+                          {t("Verifică semnătura")}</button>
                       )}
                       {verification && (
                         <div
@@ -773,22 +757,21 @@ export function DocumentDetail({
                         >
                           <strong>
                             {verification.integrity
-                              ? "Integritatea este confirmată"
-                              : "Verificarea nu a trecut"}
+                              ? t("Integritatea este confirmată")
+                              : t("Verificarea nu a trecut")}
                           </strong>
                           <p>
                             <PersonReference userId={verification.signer} name={verification.signer === user.id ? user.name : verification.signer || 'Semnatar neidentificat'}/>
                           </p>
                           <small>
-                            Certificat local, fără statut de semnătură calificată.
-                          </small>
+                            {t("Certificat local, fără statut de semnătură calificată.")}</small>
                         </div>
                       )}
                     </>
                   )}
                   {tab === "history" && (
                     <>
-                      <h2 className="tab-title">Versiuni păstrate</h2>
+                      <h2 className="tab-title">{t("Versiuni păstrate")}</h2>
                       <div className="version-list">
                         {(
                           doc.versions || [
@@ -807,14 +790,14 @@ export function DocumentDetail({
                             )}
                             target="_blank"
                             rel="noreferrer"
-                            title={`Deschide versiunea ${v.version}`}
+                            title={t("Deschide versiunea {p0}", {p0:v.version})}
                           >
-                            <span>V{v.version}</span>
+                            <span>{t("V")}{v.version}</span>
                             <div>
                               <strong>
                                 {v.version === doc.version
-                                  ? "Versiunea curentă"
-                                  : "Versiune anterioară"}
+                                  ? t("Versiunea curentă")
+                                  : t("Versiune anterioară")}
                               </strong>
                               <small>{time(v.created_at)}</small>
                             </div>
@@ -834,7 +817,7 @@ export function DocumentDetail({
                               className="sr-only"
                               type="file"
                               accept=".pdf"
-                              aria-label="Încarcă o versiune nouă"
+                              aria-label={t("Încarcă o versiune nouă")}
                               onChange={(e) => newVersion(e.target.files?.[0])}
                             />
                             <button
@@ -843,11 +826,10 @@ export function DocumentDetail({
                               onClick={() => versionInput.current?.click()}
                             >
                               <Upload size={15} />
-                              Încarcă o versiune nouă
-                            </button>
+                              {t("Încarcă o versiune nouă")}</button>
                           </>
                         )}
-                      <h2 className="tab-title history-title">Activitate</h2>
+                      <h2 className="tab-title history-title">{t("Activitate")}</h2>
                       <div className="detail-history">
                         {doc.audit?.map((a) => (
                           <div key={a.id}>
@@ -873,7 +855,7 @@ export function DocumentDetail({
               <DocumentActivity doc={doc}/>
               {doc.related_documents && doc.related_documents.length > 0 && (
                 <div className="panel related-panel">
-                  <h2>În același dosar <span className="count-badge">{doc.related_documents.length}</span></h2>
+                  <h2>{t("În același dosar")}{' '}<span className="count-badge">{doc.related_documents.length}</span></h2>
                   <div className="related-documents">
                     {doc.related_documents.map((rel) => (
                       <a
@@ -914,36 +896,36 @@ export function DocumentDetail({
             <Modal
               title={
                 confirm === "reject"
-                  ? "Ce trebuie corectat?"
+                  ? t("Ce trebuie corectat?")
                   : confirm === "sign"
-                    ? "Semnezi această versiune?"
+                    ? t("Semnezi această versiune?")
                     : confirm === "archive"
-                      ? "Arhivezi acest document?"
-                      : "Aprobi acest document?"
+                      ? t("Arhivezi acest document?")
+                      : t("Aprobi acest document?")
               }
-              subtitle={`${doc.number} · Versiunea ${doc.version}`}
+              subtitle={t("{p0} · Versiunea {p1}", {p0:doc.number,p1:doc.version})}
               onClose={() => setConfirm(undefined)}
             >
               <div className="modal-body">
                 <p className="dialog-copy">
                   {confirm === "archive"
-                    ? "Documentul și istoricul său vor rămâne în registru, în secțiunea Arhivă. Nu se șterge niciun fișier."
+                    ? t("Documentul și istoricul său vor rămâne în registru, în secțiunea Arhivă. Nu se șterge niciun fișier.")
                     : confirm === "sign"
-                      ? "Semnătura se aplică exact PDF-ului afișat. Versiunea semnată va fi păstrată fără modificări. Certificatul este local, fără statut de semnătură calificată."
+                      ? t("Semnătura se aplică exact PDF-ului afișat. Versiunea semnată va fi păstrată fără modificări. Certificatul este local, fără statut de semnătură calificată.")
                       : confirm === "reject"
-                        ? "Lasă un motiv clar pentru colegul care va actualiza documentul."
-                        : "Confirmă că ai verificat conținutul și informațiile acestei versiuni."}
+                        ? t("Lasă un motiv clar pentru colegul care va actualiza documentul.")
+                        : t("Confirmă că ai verificat conținutul și informațiile acestei versiuni.")}
                 </p>
                 <label className="field">
                   {confirm === "reject"
-                    ? "Motivul returnării"
-                    : "Observații (opțional)"}
+                    ? t("Motivul returnării")
+                    : t("Observații (opțional)")}
                   <textarea
                     rows={3}
                     value={reason}
                     onInput={(e) => setReason(e.currentTarget.value)}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="Adaugă context pentru echipă…"
+                    placeholder={t("Adaugă context pentru echipă…")}
                   />
                 </label>
                 {error && <ErrorMessage message={error} />}
@@ -952,8 +934,7 @@ export function DocumentDetail({
                     className="button secondary"
                     onClick={() => setConfirm(undefined)}
                   >
-                    Renunță
-                  </button>
+                    {t("Renunță")}</button>
                   <button
                     className={`button ${confirm === "reject" ? "danger" : "primary"}`}
                     disabled={busy || (confirm === "reject" && !reason.trim())}
@@ -965,12 +946,12 @@ export function DocumentDetail({
                       <Check size={17} />
                     )}{" "}
                     {confirm === "reject"
-                      ? "Returnează"
+                      ? t("Returnează")
                       : confirm === "sign"
-                        ? "Semnează versiunea"
+                        ? t("Semnează versiunea")
                         : confirm === "archive"
-                          ? "Arhivează documentul"
-                          : "Confirmă aprobarea"}
+                          ? t("Arhivează documentul")
+                          : t("Confirmă aprobarea")}
                   </button>
                 </div>
               </div>

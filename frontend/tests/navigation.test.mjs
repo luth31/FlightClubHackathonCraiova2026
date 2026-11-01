@@ -390,7 +390,8 @@ test('OIDC logout clears local content before navigating to the provider',async 
   assert.deepEqual(destinations,[redirect]);
   assert.equal(document.querySelector('.app-shell'),null);
   assert.ok(document.querySelector('.login-page a.login-button'));
-  assert.equal(document.querySelector('.login-page select'),null);
+  assert.equal(document.querySelectorAll('.login-page select:not(.language-switcher select)').length,0);
+  assert.deepEqual([...document.querySelector('.login-page .language-switcher select').options].map(option=>option.value),['ro','en']);
   assert.equal(localStorage.getItem('flyleaf-user'),null);
 });
 

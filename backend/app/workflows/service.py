@@ -6,6 +6,7 @@ from app.core.exceptions import DomainError
 from app.core.audit import record,now
 from app.core.signing import sign_file
 from app.tasks import service as task_service
+from app.workflows.definition import ACTION_STATES
 
 def apply_action(db,user,document_id,action,comment='',expected_version=None):
     # SQLite write lock serializes version approval and sign requests; a second sign is idempotent.
@@ -27,14 +28,14 @@ def apply_action(db,user,document_id,action,comment='',expected_version=None):
     from app.procurement.service import check_document_action
     check_document_action(db,user,document,action)
     if action=='validate':
-        if document.status not in ('draft','in_review'): raise DomainError('Metadatele se validează înainte de aprobare.',409)
+        if document.status not in ACTION_STATES[action]: raise DomainError('Metadatele se validează înainte de aprobare.',409)
         task=task_service.require_task(db,user,document,'validation')
         task_service.complete_task(db,task,user,'Metadate validate',comment)
         document.validated=True
         document.extra={**document.extra,'validated_by':user.name,'validated_at':now(),'extraction_evidence':[{**e,'validated':True} for e in document.extra.get('extraction_evidence',[])]}
         label='Metadate validate'
     elif action=='submit':
-        if document.status!='draft': raise DomainError('Doar o ciornă poate fi trimisă spre avizare.',409)
+        if document.status not in ACTION_STATES[action]: raise DomainError('Doar o ciornă poate fi trimisă spre avizare.',409)
         if not document.validated: raise DomainError('Validează metadatele înainte de trimitere.',409)
         document.status='in_review'; label='Trimis spre avizare'
         task_service.ensure_task(db,document,'approval',user,reopen=True)
@@ -45,7 +46,7 @@ def apply_action(db,user,document_id,action,comment='',expected_version=None):
             if not can_review_department(db,user,document.department): raise DomainError('Avizarea este în responsabilitatea altui departament.',403)
         except ImportError:
             pass
-        if document.status!='in_review': raise DomainError('Documentul nu așteaptă avizarea.',409)
+        if document.status not in ACTION_STATES[action]: raise DomainError('Documentul nu așteaptă avizarea.',409)
         task=task_service.require_task(db,user,document,'approval')
         if action=='reject':
             if not comment.strip(): raise DomainError('Adaugă motivul returnării pentru corectare.',422)
@@ -59,7 +60,7 @@ def apply_action(db,user,document_id,action,comment='',expected_version=None):
             task_service.ensure_task(db,document,'signature',user,reopen=True)
     elif action=='sign':
         require_role(user,'signer')
-        if document.status!='approved' or not version.approved_at: raise DomainError('Semnarea necesită avizarea acestei versiuni.',409)
+        if document.status not in ACTION_STATES[action] or not version.approved_at: raise DomainError('Semnarea necesită avizarea acestei versiuni.',409)
         task=task_service.require_task(db,user,document,'signature')
         target=Path(version.file_path).with_name(f'v{version.version}.signed.pdf')
         fingerprint=sign_file(user,version.file_path,str(target))
@@ -68,7 +69,7 @@ def apply_action(db,user,document_id,action,comment='',expected_version=None):
         task_service.complete_task(db,task,user,label,comment)
     elif action=='archive':
         require_role(user,'director','reviewer')
-        if document.status not in ('approved','signed'): raise DomainError('Se arhivează numai un document aprobat sau semnat.',409)
+        if document.status not in ACTION_STATES[action]: raise DomainError('Se arhivează numai un document aprobat sau semnat.',409)
         document.status='archived'; label='Document arhivat'
         for kind in ('validation','approval','signature'):
             pending=task_service.current_task(db,document,kind)

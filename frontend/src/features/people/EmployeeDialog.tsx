@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {PersonReference} from '@/components/people/PersonReference';
 import {useState, type FormEvent} from 'react';
 import {api} from '@/services/api-client';
@@ -13,19 +14,21 @@ function workEmail(firstName:string,lastName:string) {
 }
 
 function SignInLink({person,busy,onCopy}:{person:Person;busy:boolean;onCopy:(url:string)=>void}) {
+  useLanguage();
   if(!person.sign_in_url)return null;
   const url = new URL(person.sign_in_url);
   const signInUrl = new URL(url.pathname + url.search, location.origin).href;
   return <div className="employee-login-link">
-    <label className="field">Link de conectare<input readOnly value={signInUrl} onFocus={e=>e.target.select()}/></label>
-    <button type="button" className="button secondary" disabled={busy} onClick={()=>onCopy(signInUrl)}>Copiază linkul de conectare</button>
-    <p className="quiet-note">Linkul completează numele de utilizator. Angajatul introduce parola pentru a se conecta.</p>
+    <label className="field">{t("Link de conectare")}<input readOnly value={signInUrl} onFocus={e=>e.target.select()}/></label>
+    <button type="button" className="button secondary" disabled={busy} onClick={()=>onCopy(signInUrl)}>{t("Copiază linkul de conectare")}</button>
+    <p className="quiet-note">{t("Linkul completează numele de utilizator. Angajatul introduce parola pentru a se conecta.")}</p>
   </div>;
 }
 
 export function EmployeeDialog({directory, person, onClose, onChanged}: {
   directory:Directory;person?:Person;onClose:()=>void;onChanged:(message:string)=>void;
 }) {
+  useLanguage();
   const departments=directory.department_records||[];
   const legacyParts=person?.name.trim().split(/\s+/)||[];
   const [firstName,setFirstName]=useState(person?.first_name??legacyParts[0]??'');
@@ -103,45 +106,45 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
     (person?.is_department_head&&p.roles?.includes('director'))));
   const suggestedEmail=workEmail(firstName,lastName);
   const failed=result?.user.provisioning_status==='failed';
-  return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} titleContent={person?<>Fișa lui <PersonReference person={person}/></>:undefined} subtitle="Datele angajatului și accesul său la FlyLeaf." onClose={onClose}>
+  return <Modal title={person?t("Fișa lui {p0}", {p0:person.name}):t("Un coleg nou în echipă")} titleContent={person?<>{t("Fișa lui")}{' '}<PersonReference person={person}/></>:undefined} subtitle={t("Datele angajatului și accesul său la FlyLeaf.")} onClose={onClose}>
     <div className="modal-body">
       {result?<div className="employee-result" aria-live="polite">
-        <h3>{failed?'Contul așteaptă activarea':'Angajatul a fost înregistrat'}</h3>
-        {failed?<><ErrorMessage message={result.provisioning_error||'Contul de autentificare nu a putut fi creat.'}/><button className="button primary" disabled={busy} onClick={()=>void provision()}>Reîncearcă activarea</button></>:
-          result.temporary_password?<><p>Aceste date sunt afișate o singură dată. Transmite-le angajatului printr-un canal sigur.</p>
-            <label className="field">Cont<input readOnly value={result.user.login_username||result.user.id}/></label>
-            <label className="field">Parola inițială<input readOnly value={result.temporary_password} autoComplete="off"/></label>
-            <p className="quiet-note">{directory.auth_mode==='oidc'?'Angajatul își schimbă parola la prima conectare.':'Folosește această parolă pentru conectarea locală.'}</p></>:
-          <p>{result.invitation_status==='failed'?'Contul a fost creat, dar emailul de activare nu a putut fi trimis. Solicită retrimiterea instrucțiunilor.':'Instrucțiunile de activare au fost trimise angajatului.'}</p>}
+        <h3>{failed?t("Contul așteaptă activarea"):t("Angajatul a fost înregistrat")}</h3>
+        {failed?<><ErrorMessage message={result.provisioning_error||t("Contul de autentificare nu a putut fi creat.")}/><button className="button primary" disabled={busy} onClick={()=>void provision()}>{t("Reîncearcă activarea")}</button></>:
+          result.temporary_password?<><p>{t("Aceste date sunt afișate o singură dată. Transmite-le angajatului printr-un canal sigur.")}</p>
+            <label className="field">{t("Cont")}<input readOnly value={result.user.login_username||result.user.id}/></label>
+            <label className="field">{t("Parola inițială")}<input readOnly value={result.temporary_password} autoComplete="off"/></label>
+            <p className="quiet-note">{directory.auth_mode==='oidc'?t("Angajatul își schimbă parola la prima conectare."):t("Folosește această parolă pentru conectarea locală.")}</p></>:
+          <p>{result.invitation_status==='failed'?t("Contul a fost creat, dar emailul de activare nu a putut fi trimis. Solicită retrimiterea instrucțiunilor."):t("Instrucțiunile de activare au fost trimise angajatului.")}</p>}
         <SignInLink person={result.user} busy={busy} onCopy={url=>void copySignInLink(url)}/>
-        {result.invitation_status==='failed'&&<button className="button secondary" disabled={busy} onClick={()=>void instructions()}>Retrimite instrucțiunile</button>}
-        {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button className="button primary" onClick={onClose}>{result.temporary_password?'Am preluat datele':'Închide'}</button></div>
+        {result.invitation_status==='failed'&&<button className="button secondary" disabled={busy} onClick={()=>void instructions()}>{t("Retrimite instrucțiunile")}</button>}
+        {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button className="button primary" onClick={onClose}>{result.temporary_password?t("Am preluat datele"):t("Închide")}</button></div>
       </div>:<>
         <form onSubmit={save}>
           <div className="form-grid employee-name-fields">
-            <label className="field">Prenume<input name="first_name" value={firstName} onChange={e=>setFirstName(e.target.value)} minLength={1} maxLength={75} autoComplete="given-name" required/></label>
-            <label className="field">Al doilea prenume (opțional)<input name="middle_name" value={middleName} onChange={e=>setMiddleName(e.target.value)} maxLength={75} autoComplete="additional-name"/></label>
-            <label className="field">Nume de familie<input name="last_name" value={lastName} onChange={e=>setLastName(e.target.value)} minLength={1} maxLength={100} autoComplete="family-name" required/></label>
+            <label className="field">{t("Prenume")}<input name="first_name" value={firstName} onChange={e=>setFirstName(e.target.value)} minLength={1} maxLength={75} autoComplete="given-name" required/></label>
+            <label className="field">{t("Al doilea prenume (opțional)")}<input name="middle_name" value={middleName} onChange={e=>setMiddleName(e.target.value)} maxLength={75} autoComplete="additional-name"/></label>
+            <label className="field">{t("Nume de familie")}<input name="last_name" value={lastName} onChange={e=>setLastName(e.target.value)} minLength={1} maxLength={100} autoComplete="family-name" required/></label>
           </div>
-          {!person&&<div className="field"><label htmlFor="employee-email">Email de serviciu</label>
-            <div className="employee-email-row"><input id="employee-email" name="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={254} required placeholder="Inițială prenume.nume@arm.ro" aria-describedby="employee-email-help"/>
-              <button type="button" className="button secondary" disabled={busy||!suggestedEmail} onClick={()=>setEmail(suggestedEmail)}>Generează emailul</button></div>
-            <span id="employee-email-help" className="quiet-note">Generează o sugestie din prenume și numele de familie. Poți modifica adresa dacă este deja folosită sau nepotrivită.</span></div>}
-          <label className="field">Departament<select name="department_id" value={departmentId} onChange={e=>{setDepartmentId(e.target.value);setManagerId('');setJobTitle('');}} required>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
-          <div className="form-grid"><label className="field">Funcție<select name="job_title" value={jobTitle} onChange={e=>setJobTitle(e.target.value)} required><option value="">Alege funcția</option>{jobTitles.map(title=><option key={title} value={title}>{title}</option>)}</select></label>
-          <label className="field">Coordonator<select name="manager_id" value={coordinators.some(p=>p.id===managerId)?managerId:''} onChange={e=>setManagerId(e.target.value)}><option value="">Fără coordonator desemnat</option>{coordinators.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
-          {!person&&<label className="field">Acces inițial<select name="access_profile" defaultValue="employee"><option value="employee">Angajat</option><option value="technician">Tehnician</option></select></label>}
-          <p className="quiet-note">Fiecare angajat poate solicita concediu. Numirea ca șef și autoritatea de semnare se acordă separat.</p>
-          {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>Renunță</button><button className="button primary" disabled={busy||(!person&&!email.trim())}>{busy?'Se salvează…':person?'Salvează fișa':'Creează contul'}</button></div>
+          {!person&&<div className="field"><label htmlFor="employee-email">{t("Email de serviciu")}</label>
+            <div className="employee-email-row"><input id="employee-email" name="email" type="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={254} required placeholder={t("Inițială prenume.nume@arm.ro")} aria-describedby="employee-email-help"/>
+              <button type="button" className="button secondary" disabled={busy||!suggestedEmail} onClick={()=>setEmail(suggestedEmail)}>{t("Generează emailul")}</button></div>
+            <span id="employee-email-help" className="quiet-note">{t("Generează o sugestie din prenume și numele de familie. Poți modifica adresa dacă este deja folosită sau nepotrivită.")}</span></div>}
+          <label className="field">{t("Departament")}<select name="department_id" value={departmentId} onChange={e=>{setDepartmentId(e.target.value);setManagerId('');setJobTitle('');}} required>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+          <div className="form-grid"><label className="field">{t("Funcție")}<select name="job_title" value={jobTitle} onChange={e=>setJobTitle(e.target.value)} required><option value="">{t("Alege funcția")}</option>{jobTitles.map(title=><option key={title} value={title}>{title}</option>)}</select></label>
+          <label className="field">{t("Coordonator")}<select name="manager_id" value={coordinators.some(p=>p.id===managerId)?managerId:''} onChange={e=>setManagerId(e.target.value)}><option value="">{t("Fără coordonator desemnat")}</option>{coordinators.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
+          {!person&&<label className="field">{t("Acces inițial")}<select name="access_profile" defaultValue="employee"><option value="employee">{t("Angajat")}</option><option value="technician">{t("Tehnician")}</option></select></label>}
+          <p className="quiet-note">{t("Fiecare angajat poate solicita concediu. Numirea ca șef și autoritatea de semnare se acordă separat.")}</p>
+          {error&&<ErrorMessage message={error}/>}<div className="modal-footer"><button type="button" className="button secondary" onClick={onClose}>{t("Renunță")}</button><button className="button primary" disabled={busy||(!person&&!email.trim())}>{busy?t("Se salvează…"):person?t("Salvează fișa"):t("Creează contul")}</button></div>
         </form>
-        {current&&<div className="employee-access"><h3>Accesul la aplicație</h3>
-          <label className="field">Cont<input readOnly value={current.login_username||current.id}/></label>
+        {current&&<div className="employee-access"><h3>{t("Accesul la aplicație")}</h3>
+          <label className="field">{t("Cont")}<input readOnly value={current.login_username||current.id}/></label>
           <SignInLink person={current} busy={busy} onCopy={url=>void copySignInLink(url)}/>
-          <p>{current.active?'Dezactivarea închide sesiunile, revocă delegările și păstrează documentele și istoricul.':'Contul este inactiv. Documentele și istoricul rămân păstrate.'}</p>
-          {current.identity_sync_pending&&<><p className="quiet-note">Sincronizarea cu serviciul de identitate este în așteptare.</p><button className="button secondary" disabled={busy} onClick={()=>void synchronize()}>Reîncearcă sincronizarea</button></>}
-          {current.active&&(!current.provisioning_status||current.provisioning_status==='ready')&&(!current.roles.some(role=>['admin','director','hr','finance','reviewer','signer','department_head'].includes(role))||directory.can_admin_delegations)&&<button className="button secondary" disabled={busy} onClick={()=>void instructions()}>Retrimite instrucțiunile</button>}
-          {current.provisioning_status&&['pending','failed','processing'].includes(current.provisioning_status)?<button className="button secondary" disabled={busy} onClick={()=>void provision()}>Reîncearcă activarea</button>:
-            <button className="button secondary" disabled={busy} onClick={()=>void access()}>{current.active?'Dezactivează contul':'Reactivează contul'}</button>}
+          <p>{current.active?t("Dezactivarea închide sesiunile, revocă delegările și păstrează documentele și istoricul."):t("Contul este inactiv. Documentele și istoricul rămân păstrate.")}</p>
+          {current.identity_sync_pending&&<><p className="quiet-note">{t("Sincronizarea cu serviciul de identitate este în așteptare.")}</p><button className="button secondary" disabled={busy} onClick={()=>void synchronize()}>{t("Reîncearcă sincronizarea")}</button></>}
+          {current.active&&(!current.provisioning_status||current.provisioning_status==='ready')&&(!current.roles.some(role=>['admin','director','hr','finance','reviewer','signer','department_head'].includes(role))||directory.can_admin_delegations)&&<button className="button secondary" disabled={busy} onClick={()=>void instructions()}>{t("Retrimite instrucțiunile")}</button>}
+          {current.provisioning_status&&['pending','failed','processing'].includes(current.provisioning_status)?<button className="button secondary" disabled={busy} onClick={()=>void provision()}>{t("Reîncearcă activarea")}</button>:
+            <button className="button secondary" disabled={busy} onClick={()=>void access()}>{current.active?t("Dezactivează contul"):t("Reactivează contul")}</button>}
         </div>}
       </>}
     </div>

@@ -1,64 +1,50 @@
-# FlyLeaf product presentation
+# FlyLeaf · Prezentarea produsului
 
-A Romanian product pitch for **Flight Club**, built around the working FlyLeaf application. The main sequence takes five minutes, including a 75-second live demonstration. Two appendix slides support questions about reports, the broader workspace and technology.
+**Less paperwork. More possibility.**
 
-- [Editable PowerPoint](FlyLeaf-Product-Presentation-RO.pptx)
-- [PDF for upload and reading](FlyLeaf-Product-Presentation-RO.pdf)
-- [Speaker script and demo timing](SPEAKER_NOTES_RO.md)
-- [Slide copy and embedded notes](content.json)
+- [Deschide prezentarea actuală](index.html) în Chrome sau Edge.
+- [PDF-ul aceleiași prezentări](FlyLeaf-product.pdf), gata de trimis sau proiectat.
+- [Document simplu pentru mentor: produs, poziționare și pilot](../review/PRODUCT_AND_PILOT.md).
 
-The story connects an operational delay to its evidence, a proposed SOP improvement and a controlled document exchange with a partner airport. Document management, approvals, local OCR, redaction and audit explain how the platform reduces administrative friction. Benefits such as shorter approval times are pilot objectives, not invented results.
+Prezentarea actuală are **10 slide-uri principale și 2 anexe**. Explică scopul FlyLeaf, problemele descrise de director, documentele, intervențiile, operațiunile, echipa, colaborarea opțională, concurența și modelul comercial propus. Încheie cu un pilot în România și extindere internațională pe baza rezultatelor. Este o prezentare de produs; nu impune un scenariu de scenă sau roluri pentru vorbitori.
 
-## Contents
+## Deschidere și comenzi
 
-| Slide | Subject |
-| --- | --- |
-| 1 | FlyLeaf and Flight Club |
-| 2 | An 18-minute delay and the need for evidence |
-| 3 | Connected document dossiers and assigned approvals |
-| 4 | Atomic operations and inspectable entities |
-| 5 | SOP library and local approval |
-| 6 | Luna's proposals and human decisions |
-| 7 | Redaction and controlled copies |
-| 8 | Collaboration between independent airports |
-| 9 | Live demonstration |
-| 10 | Differentiation and the first measurable pilot |
-| 11–12 | Optional reports, team, supplier and technology appendices |
+HTML-ul funcționează local, fără internet. Copiază **întregul folder**: imaginile și fonturile sunt în `assets/`.
 
-## Before presenting
+- `→` / `←`: navigare; `Home`: început; `End`: încheiere.
+- `F`: ecran complet; `N`: context suplimentar pentru echipă; `A`: meniu și anexe.
+- `B`: ecran negru; `T`: pornește/oprește cronometrul.
+- Comenzile apar jos când apropii cursorul. Butonul **PDF** deschide dialogul de tipărire.
 
-Prepare a completed ledger case, an existing saved Luna analysis and its draft, and an approved sharing grant/message visible in the receiving airport. Keep both authorized sessions ready. Show a saved AI result as a saved result. There is no need to wait for an LLM request during the pitch.
+Capturile provin din aplicația locală și rămân vizibile când aplicația este oprită. Deschiderea prezentării nu schimbă date. Conturile pentru verificarea funcțiilor sunt în [ACCOUNTS.md](../demo/ACCOUNTS.md).
 
-The screenshot case is **FL634, 27 October**, from the stored synthetic history. It is independent of the current shift. Use **Tot registrul**, search `FL634`, expand the flight and open **Poartă deschisă**. A live NFC clock-in belongs to the current run and does not rewrite this historical example. If using NFC in the introduction, prepare the authenticated station in advance.
+## Ce susținem și ce măsurăm
 
-The source airport and recipient must both enable collaboration. A named contact conversation and the audience of the attached document grant are separate permissions. Do not present a private tailnet address as a publicly accessible judge demo URL.
+- Discuția cu directorul este o sursă de nevoi, nu dovada unui contract sau pilot acceptat.
+- Pilotul de 30 de zile și abonamentul sunt propuneri comerciale, nu rezultate obținute.
+- Economiile se calculează după măsurarea volumului și timpului, scăzând configurarea, instruirea, integrarea și operarea. Nu folosim sume inventate.
+- Pontajul confirmă prezența. Dependențele operaționale nu stabilesc singure culpa unei persoane.
+- Pragurile de întârziere din aplicație nu sunt prezentate drept reguli universale de anulare a zborurilor.
+- Colaborarea cere identitate, rol și partajare explicită. VPN-ul singur nu înlocuiește aceste controale.
+- Interfața RO/EN sprijină extinderea; procedurile și integrările se adaptează fiecărui aeroport.
 
-## Assets and provenance
+## Surse pentru echipă
 
-`assets/` contains unaltered browser captures from an isolated local FlyLeaf fixture using the actual frontend/API. They show synthetic data and contain no real API keys or private airport records. Counts reflect the account and filters in that session; they are not service-wide performance statistics. No screenshots fabricate LLM output. Source/code references live in each slide's notes.
+Verificate la 1 noiembrie 2026:
 
-The navy, mint and pale background direction follows the earlier FlyLeaf presentation in `deliverables/submission/FlyLeaf-Presentation-v2.pptx`. That historical file is optional reference material and is not needed to build this deck. All required current assets are in this directory.
+- [EUROCONTROL — Airport Collaborative Decision Making](https://www.eurocontrol.int/concept/airport-collaborative-decision-making): context pentru coordonarea turnaround și pre-departure. Modelul local FlyLeaf nu este o certificare A-CDM.
+- [Aerosimple — catalog oficial](https://www.aerosimple.com/solutions): include documente, fluxuri, operațiuni și mentenanță. Aceste funcții nu sunt exclusive FlyLeaf. Adaptarea și eficiența implementării rămân ipoteze de diferențiere de validat în pilot.
+- [Cambridge Dictionary — flyleaf](https://dictionary.cambridge.org/dictionary/english/flyleaf): sensul numelui, pagina de lângă coperta cărții.
 
-## Editing and rebuilding
+Fonturile Manrope și DM Sans sunt incluse local, cu licențele lor. Logo-ul este varianta aleasă de echipă, `b-navy-orange.png`, copiată fără modificarea desenului.
 
-Edit the PPTX directly in PowerPoint, Keynote or LibreOffice. Text remains editable; application screenshots are embedded images. The PDF is a separate upload copy and should be re-exported after edits.
+## Versiunea PowerPoint păstrată din main
 
-For source-based rebuilding, `build.mjs` reads `content.json` and `assets/`, creates the PPTX and speaker script, and renders slide previews into ignored `.runtime/presentation-v3/`. It uses the **Codex bundled `@oai/artifact-tool` runtime and Presentations skill finalizer**; these authoring tools are not application dependencies. In a Codex environment, use `load_workspace_dependencies` to locate its Node, module and Python paths, then supply:
+În repository există și o prezentare anterioară, cu o structură diferită, axată pe un caz operațional și demonstrație:
 
-```bash
-export ARTIFACT_NODE_MODULES=/absolute/path/to/bundled/node_modules
-export ARTIFACT_PYTHON=/absolute/path/to/bundled/python3
-export PRESENTATIONS_SKILL_DIR=/absolute/path/to/presentations/skill
-# Use a new filename: the finalizer deliberately refuses to overwrite outputs.
-export FLYLEAF_DECK_FILENAME=FlyLeaf-Product-Presentation-RO-revision.pptx
-/absolute/path/to/bundled/node docs/presentation/build.mjs
-```
+- [PowerPoint editabil](FlyLeaf-Product-Presentation-RO.pptx).
+- [PDF-ul versiunii PowerPoint](FlyLeaf-Product-Presentation-RO.pdf).
+- [Instrucțiunile și sursele acelei versiuni](README_POWERPOINT.md).
 
-No runtime paths or private environment files are required to open the delivered PPTX/PDF. For an ordinary LibreOffice installation, export a rebuilt deck using:
-
-```bash
-soffice --headless --convert-to pdf --outdir docs/presentation \
-  docs/presentation/FlyLeaf-Product-Presentation-RO-revision.pptx
-```
-
-Render and inspect every slide after changing copy or layout. The presentation does not require changes to source PDFs, application data or deployment configuration.
+Fișierele PowerPoint, PDF, `content.json`, `build.mjs` și notele asociate au fost păstrate. **Nu sunt exporturi ale HTML-ului actual**; modificarea unei versiuni nu o actualizează automat pe cealaltă.

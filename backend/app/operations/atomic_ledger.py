@@ -165,7 +165,8 @@ def prepare(db,user,groups,*,store=True):
         ids={event['id'] for group in result for event in group['events'] if event['actual_at'] and not event.get('projected')}
         saved={row.id:row.data for row in db.scalars(select(OperationFact).where(OperationFact.airport_id==user.airport_id,OperationFact.id.in_(ids)))}
         result=[{**group,'events':[saved.get(event['id'],event) for event in group['events']]} for group in result]
-    return result
+    from app.operations.process_graph import process_graph
+    return [{**group, 'process':process_graph(group)} for group in result]
 
 
 def entity_detail(db,user,entity_id,offset=0,limit=50):

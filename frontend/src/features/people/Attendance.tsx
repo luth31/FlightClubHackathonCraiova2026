@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {useCallback,useContext,useEffect,useRef,useState} from 'react';
 import {ArrowLeft,ArrowUpRight,Pause,Play,RotateCcw} from 'lucide-react';
 import {api} from '@/services/api-client';
@@ -6,6 +7,7 @@ import {NfcStation} from '@/features/operations/NfcStation';
 import type {OperationsData} from '@/features/operations/types';
 
 export function Attendance({onBack}:{onBack:()=>void}) {
+  useLanguage();
   const active=useContext(ViewActiveContext);
   const [visible,setVisible]=useState(!document.hidden);
   const [data,setData]=useState<OperationsData>(),[error,setError]=useState(''),[loadError,setLoadError]=useState(''),[busy,setBusy]=useState(false);
@@ -33,15 +35,15 @@ export function Attendance({onBack}:{onBack:()=>void}) {
     catch(e){setError((e as Error).message);await refresh().catch(()=>{});return null}
     finally{pending.current=false;setBusy(false)}
   }
-  if(!data)return <div className="people-attendance"><button className="text-button" onClick={onBack}><ArrowLeft size={16}/>Înapoi la echipă</button>{loadError?<ErrorMessage message={loadError} retry={()=>void refresh().catch(e=>setLoadError(e.message))}/>:<Loading/>}</div>;
+  if(!data)return <div className="people-attendance"><button className="text-button" onClick={onBack}><ArrowLeft size={16}/>{t("Înapoi la echipă")}</button>{loadError?<ErrorMessage message={loadError} retry={()=>void refresh().catch(e=>setLoadError(e.message))}/>:<Loading/>}</div>;
   const manual=data.simulation.scenario_mode==='interactive';
   const ended=data.simulation.elapsed_seconds>=data.simulation.duration_seconds;
   return <div className="people-attendance">
     {(error||loadError)&&<ErrorMessage message={error||loadError}/>}
     <NfcStation key={data.simulation.run_id} data={data} busy={busy} onBack={onBack} onScan={(card,action)=>mutate('/operations/nfc',{card_id:card,action,request_id:crypto.randomUUID()})}/>
-    {data.permissions.can_control&&<details className="people-attendance-options"><summary>Opțiuni tură<span>{manual?'Cu pontaj':'Scenariu automat'}</span></summary>
-      <div>{manual&&!ended?<><p>{data.simulation.running?'Tura este în desfășurare.':'Tura este în pauză.'}</p><button className="button secondary" disabled={busy} onClick={()=>void mutate('/operations/control',{action:data.simulation.running?'pause':'start'})}>{data.simulation.running?<Pause size={16}/>:<Play size={16}/>} {data.simulation.running?'Pauză':'Pornește tura'}</button></>:<><p>Începe o tură de la 08:00, cu prezența înregistrată prin carduri. Tura actuală rămâne în registru.</p><button className="button secondary" disabled={busy} onClick={()=>void mutate('/operations/control',{action:'reset',scenario_mode:'interactive',expected_revision:data.simulation.revision})}><RotateCcw size={16}/>Pornește tură cu pontaj</button></>}
-      <a className="text-button" href="#operations">Vezi operațiunile<ArrowUpRight size={15}/></a></div>
+    {data.permissions.can_control&&<details className="people-attendance-options"><summary>{t("Opțiuni tură")}<span>{manual?t("Cu pontaj"):t("Scenariu automat")}</span></summary>
+      <div>{manual&&!ended?<><p>{data.simulation.running?t("Tura este în desfășurare."):t("Tura este în pauză.")}</p><button className="button secondary" disabled={busy} onClick={()=>void mutate('/operations/control',{action:data.simulation.running?'pause':'start'})}>{data.simulation.running?<Pause size={16}/>:<Play size={16}/>} {data.simulation.running?t("Pauză"):t("Pornește tura")}</button></>:<><p>{t("Începe o tură de la 08:00, cu prezența înregistrată prin carduri. Tura actuală rămâne în registru.")}</p><button className="button secondary" disabled={busy} onClick={()=>void mutate('/operations/control',{action:'reset',scenario_mode:'interactive',expected_revision:data.simulation.revision})}><RotateCcw size={16}/>{t("Pornește tură cu pontaj")}</button></>}
+      <a className="text-button" href="#operations">{t("Vezi operațiunile")}<ArrowUpRight size={15}/></a></div>
     </details>}
   </div>;
 }

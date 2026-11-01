@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {useCallback, useContext, useEffect, useState} from 'react';
 import {ArrowLeft, RefreshCw} from 'lucide-react';
 import {api} from '@/services/api-client';
@@ -26,10 +27,12 @@ function storedPins(userId: string): string[] {
 }
 
 function ReportSkeleton() {
-  return <div className="rp-skeleton" role="status" aria-label="Se încarcă rapoartele"><span/><h2>Pregătim perspectiva ta.</h2><p>Se încarcă datele accesibile contului.</p><div>{[0, 1, 2].map(i => <i key={i}/>)}</div></div>;
+  useLanguage();
+  return <div className="rp-skeleton" role="status" aria-label={t("Se încarcă rapoartele")}><span/><h2>{t("Pregătim perspectiva ta.")}</h2><p>{t("Se încarcă datele accesibile contului.")}</p><div>{[0, 1, 2].map(i => <i key={i}/>)}</div></div>;
 }
 
 export function ReportsPage({user, revision, onOpen, onNavigate, notify}: {user: User; revision: number; onOpen: (id: string) => void; onNavigate: (page: Page) => void; notify: (message: string) => void}) {
+  useLanguage();
   const active = useContext(ViewActiveContext);
   const [reportId, setReportId] = useState(routeReport), [department, setDepartment] = useState(routeDepartment), [days, setDays] = useState(90);
   const [briefing, setBriefing] = useState<ReportBriefing>();
@@ -90,10 +93,10 @@ export function ReportsPage({user, revision, onOpen, onNavigate, notify}: {user:
     try { localStorage.setItem(`aerodesk-pinned-reports-${user.id}`, JSON.stringify(next)); }
     catch { notify('Preferința este păstrată pentru această vizită.'); }
   }
-  if (error) return <div className="rp-page"><button className="rp-back-to-hub" onClick={() => select('')}><ArrowLeft size={15}/>Centrul de rapoarte</button><ErrorMessage message={error} retry={refresh}/></div>;
+  if (error) return <div className="rp-page"><button className="rp-back-to-hub" onClick={() => select('')}><ArrowLeft size={15}/>{t("Centrul de rapoarte")}</button><ErrorMessage message={error} retry={refresh}/></div>;
   if (!catalog || (!reportId&&!briefing) || (reportId && data?.report.id !== reportId)) return <div className="rp-page"><ReportSkeleton/></div>;
   return <div className="rp-page">{reportId && data ? <>
-    <div className="rp-report-navigation"><button className="rp-back-to-hub" onClick={() => select('')}><ArrowLeft size={15}/>Biblioteca de rapoarte</button><span>/</span><select aria-label="Schimbă raportul" value={reportId} onChange={e => select(e.target.value)}>{catalog.items.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}</select><span className="rp-live-tag">{refreshing ? <RefreshCw size={12} className="rp-spin"/> : <i/>}{refreshing ? 'Se actualizează…' : 'Conectat la datele aplicației'}</span></div>
+    <div className="rp-report-navigation"><button className="rp-back-to-hub" onClick={() => select('')}><ArrowLeft size={15}/>{t("Biblioteca de rapoarte")}</button><span>/</span><select aria-label={t("Schimbă raportul")} value={reportId} onChange={e => select(e.target.value)}>{catalog.items.map(r => <option key={r.id} value={r.id}>{r.title}</option>)}</select><span className="rp-live-tag">{refreshing ? <RefreshCw size={12} className="rp-spin"/> : <i/>}{refreshing ? t("Se actualizează…") : t("Conectat la datele aplicației")}</span></div>
     <PowerReport key={data.report.id} data={data} days={days} department={department} onDays={setDays} onDepartment={changeDepartment} onOpen={onOpen} onNavigate={onNavigate} onRefresh={refresh} refreshing={refreshing} pinned={pins.includes(data.report.id)} onPin={() => pin(data.report.id)} notify={notify}/>
   </> : briefing&&<ReportHub data={briefing} pins={pins} onPin={pin} onSelect={select} user={user} onOpen={onOpen} onNavigate={onNavigate} onRefresh={refresh} refreshing={refreshing} department={department} onDepartment={changeDepartment}/>}</div>;
 }

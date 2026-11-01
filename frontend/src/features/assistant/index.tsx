@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { useRef, useState } from "react";
 import {
   ArrowRight,
@@ -60,6 +61,7 @@ function AnswerResult({
   answer: Answer;
   onOpen: (id: string) => void;
 }) {
+  useLanguage();
   const [showAll, setShowAll] = useState(false);
   // Keep the full response available, without repeating its document list up front.
   const [summary, ...details] = answer.answer.split(/\n\s*\n/);
@@ -71,13 +73,13 @@ function AnswerResult({
         <span>
           <Sparkles size={16} aria-hidden="true" /> FlyLeaf
         </span>
-        <small>Referință: {date(answer.reference_date)}</small>
+        <small>{t("Referință:")}{' '}{date(answer.reference_date)}</small>
       </div>
       <p className="ask-summary">{summary}</p>
       {details.length > 0 && (
         <details className="ask-disclosure ask-full-answer">
           <summary>
-            Detalii răspuns <ChevronDown size={14} aria-hidden="true" />
+            {t("Detalii răspuns")}{' '}<ChevronDown size={14} aria-hidden="true" />
           </summary>
           <div>
             {details.map((paragraph, index) => (
@@ -87,9 +89,9 @@ function AnswerResult({
         </details>
       )}
       {sources.length > 0 && (
-        <section className="ask-sources" aria-label="Documente sursă">
+        <section className="ask-sources" aria-label={t("Documente sursă")}>
           <h3>
-            Documente sursă <span>{sources.length}</span>
+            {t("Documente sursă")}{' '}<span>{sources.length}</span>
           </h3>
           <div id="ask-source-list">
             {(showAll ? sources : sources.slice(0, 3)).map((source, index) => (
@@ -108,12 +110,12 @@ function AnswerResult({
                     <ArrowUpRight size={16} aria-hidden="true" />
                   </button>
                   <small>
-                    {source.number} · {source.page ? `pagina ${source.page}` : 'metadate validate din registru'}
+                    {source.number} · {source.page ? t("pagina {p0}", {p0:source.page}) : t("metadate validate din registru")}
                   </small>
                   {source.excerpt && (
                     <details className="ask-disclosure ask-excerpt">
                       <summary>
-                        {source.page ? 'Vezi fragmentul' : 'Vezi rezumatul din registru'}{" "}
+                        {source.page ? t("Vezi fragmentul") : t("Vezi rezumatul din registru")}{" "}
                         <ChevronDown size={13} aria-hidden="true" />
                       </summary>
                       <p>{source.excerpt}</p>
@@ -131,8 +133,8 @@ function AnswerResult({
               onClick={() => setShowAll(!showAll)}
             >
               {showAll
-                ? "Arată mai puține"
-                : `Vezi toate cele ${sources.length} surse`}
+                ? t("Arată mai puține")
+                : t("Vezi toate cele {p0} surse", {p0:sources.length})}
               <ChevronDown
                 size={15}
                 className={showAll ? "ask-rotated" : ""}
@@ -153,6 +155,7 @@ export function AssistantDialog({
   onClose: () => void;
   onOpen: (id: string) => void;
 }) {
+  useLanguage();
   const [question, setQuestion] = useState("");
   const [asked, setAsked] = useState("");
   const [answer, setAnswer] = useState<Answer>();
@@ -204,7 +207,7 @@ export function AssistantDialog({
 
   return (
     <Modal
-      title="Întreabă FlyLeaf"
+      title={t("Întreabă FlyLeaf")}
       className="ask-dialog"
       initialFocusRef={inputRef}
       onClose={onClose}
@@ -217,13 +220,13 @@ export function AssistantDialog({
             ask();
           }}
         >
-          <label htmlFor="flyleaf-question">Ce vrei să afli?</label>
+          <label htmlFor="flyleaf-question">{t("Ce vrei să afli?")}</label>
           <div className="ask-input-wrap">
             <Search size={20} aria-hidden="true" />
             <input
               id="flyleaf-question"
               ref={inputRef}
-              placeholder="Scrie o întrebare sau un subiect…"
+              placeholder={t("Scrie o întrebare sau un subiect…")}
               value={question}
               minLength={2}
               maxLength={1000}
@@ -236,13 +239,13 @@ export function AssistantDialog({
               ) : (
                 <ArrowRight size={17} aria-hidden="true" />
               )}
-              <span>Întreabă</span>
+              <span>{t("Întreabă")}</span>
             </button>
           </div>
         </form>
         {!asked ? (
           <div className="ask-start">
-            <p>Întrebări rapide</p>
+            <p>{t("Întrebări rapide")}</p>
             <div className="ask-shortcuts">
               {suggestions.map(
                 ({ title, detail, question: prompt, icon: Icon }) => (
@@ -267,17 +270,15 @@ export function AssistantDialog({
         ) : (
           <div className="ask-response">
             <div className="ask-question-heading">
-              <span>Întrebarea ta</span>
+              <span>{t("Întrebarea ta")}</span>
               <button onClick={reset} disabled={busy}>
-                <Plus size={15} aria-hidden="true" /> Întrebare nouă
-              </button>
+                <Plus size={15} aria-hidden="true" /> {t("Întrebare nouă")}</button>
             </div>
             <p className="ask-question">{asked}</p>
             {busy && (
               <div className="ask-loading">
                 <LoaderCircle className="spin" size={20} aria-hidden="true" />{" "}
-                Consult registrul…
-              </div>
+                {t("Consult registrul…")}</div>
             )}
             {answer && (
               <AnswerResult
@@ -293,16 +294,14 @@ export function AssistantDialog({
         )}
         <span className="sr-only" role="status">
           {busy
-            ? "Consult registrul…"
+            ? t("Consult registrul…")
             : answer
-              ? `Răspuns disponibil. ${answer.answer.split(/\n\s*\n/)[0]}`
+              ? t("Răspuns disponibil. {p0}", {p0:answer.answer.split(/\n\s*\n/)[0]})
               : ""}
         </span>
       </div>
       <div className="ask-footer">
-        <ShieldCheck size={14} aria-hidden="true" /> Doar documente validate la
-        care ai acces.
-      </div>
+        <ShieldCheck size={14} aria-hidden="true" /> {t("Doar documente validate la care ai acces.")}</div>
     </Modal>
   );
 }

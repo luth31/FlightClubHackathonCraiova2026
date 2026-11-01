@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { ArrowUpRight } from "lucide-react";
 import { FileIcon, Status, Empty } from "@/components/ui";
 import { date } from "@/utils/format";
@@ -11,18 +12,19 @@ export function DocumentTable({
   onOpen: (id: string) => void;
   compact?: boolean;
 }) {
+  useLanguage();
   if (!documents.length) return <Empty />;
   return (
     <div className="table-scroll">
       <table className={`document-table ${compact ? "compact" : ""}`}>
         <thead>
           <tr>
-            <th>Document</th>
-            {!compact && <th>Departament</th>}
-            <th>Status</th>
-            <th>{compact ? "Actualizat" : "Termen"}</th>
+            <th>{t("Document")}</th>
+            {!compact && <th>{t("Departament")}</th>}
+            <th>{t("Status")}</th>
+            <th>{compact ? t("Actualizat") : t("Termen")}</th>
             <th>
-              <span className="sr-only">Deschide</span>
+              <span className="sr-only">{t("Deschide")}</span>
             </th>
           </tr>
         </thead>
@@ -55,7 +57,7 @@ export function DocumentTable({
               <td>
                 <button
                   className="row-open"
-                  aria-label={`Deschide ${d.title}`}
+                  aria-label={t("Deschide {p0}", {p0:d.title})}
                   onClick={() => onOpen(d.id)}
                 >
                   <ArrowUpRight size={17} />

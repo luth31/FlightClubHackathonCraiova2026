@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { createContext, useContext, useEffect, useRef, type ReactNode, type RefObject } from "react";
 import {
   ArrowUpRight,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 import { statusLabel } from "@/utils/format";
 export function Status({ value }: { value: string }) {
+  useLanguage();
   return (
     <span className={`status status-${value}`}>
       <span />
@@ -24,6 +26,7 @@ export function FileIcon({
   category?: string;
   large?: boolean;
 }) {
+  useLanguage();
   return (
     <span
       className={`file-icon ${large ? "large" : ""} ${category.toLowerCase().includes("contract") ? "contract" : category.toLowerCase().includes("factur") ? "invoice" : ""}`}
@@ -41,20 +44,22 @@ export function Empty({
   message?: string;
   children?: ReactNode;
 }) {
+  useLanguage();
   return (
     <div className="empty">
       <SearchX size={30} />
-      <h3>{title}</h3>
-      <p>{message}</p>
+      <h3>{typeof title==='string'?t(title):title}</h3>
+      <p>{typeof message==='string'?t(message):message}</p>
       {children}
     </div>
   );
 }
 export function Loading() {
+  useLanguage();
   return (
     <div className="loading">
       <LoaderCircle className="spin" size={22} />
-      <span>Se încarcă…</span>
+      <span>{t("Se încarcă…")}</span>
     </div>
   );
 }
@@ -65,16 +70,16 @@ export function ErrorMessage({
   message: string;
   retry?: () => void;
 }) {
+  useLanguage();
   return (
     <div className="error-message" role="alert">
       <AlertCircle size={20} />
       <div>
-        <strong>Nu am putut finaliza cererea</strong>
-        <p>{message}</p>
+        <strong>{t("Nu am putut finaliza cererea")}</strong>
+        <p>{typeof message==='string'?t(message):message}</p>
         {retry && (
           <button className="text-button" onClick={retry}>
-            Încearcă din nou
-          </button>
+            {t("Încearcă din nou")}</button>
         )}
       </div>
     </div>
@@ -102,6 +107,7 @@ export function Modal({
   className?: string;
   initialFocusRef?: RefObject<HTMLElement | null>;
 }) {
+  useLanguage();
   const ref = useRef<HTMLDivElement>(null);
   const active = useContext(ViewActiveContext);
   const closeRef = useRef(onClose);
@@ -152,18 +158,18 @@ export function Modal({
         className={`modal ${wide ? "modal-wide" : ""} ${className}`}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-label={typeof title==='string'?t(title):title}
         ref={ref}
       >
         <div className="modal-header">
           <div>
             <h2>{titleContent ?? title}</h2>
-            {subtitle && <p>{subtitle}</p>}
+            {subtitle && <p>{typeof subtitle==='string'?t(subtitle):subtitle}</p>}
           </div>
           <button
             className="icon-button"
             onClick={onClose}
-            aria-label="Închide"
+            aria-label={t("Închide")}
           >
             <X size={20} />
           </button>
@@ -184,10 +190,11 @@ export function SectionHead({
   onClick?: () => void;
   action?: string;
 }) {
+  useLanguage();
   return (
     <div className="section-head">
       <h2>
-        {title}
+        {typeof title==='string'?t(title):title}
         {children}
       </h2>
       {onClick && (
@@ -200,12 +207,13 @@ export function SectionHead({
   );
 }
 export function Toast({ message }: { message: string }) {
+  useLanguage();
   return (
     <div className="toast" role="status">
       <span>
         <Check size={16} />
       </span>
-      {message}
+      {typeof message==='string'?t(message):message}
     </div>
   );
 }

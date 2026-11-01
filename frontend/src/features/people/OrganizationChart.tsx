@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {useLayoutEffect, useRef} from 'react';
 import {UsersRound} from 'lucide-react';
 import {Tree, TreeNode} from 'react-organizational-chart';
@@ -6,16 +7,18 @@ import type {Directory} from './types';
 import {PersonReference} from '@/components/people/PersonReference';
 
 function OrganizationCard({node,leadership=false}:{node:OrganizationNode;leadership?:boolean}) {
+  useLanguage();
   return <article className={`organization-card ${node.departmentId?'organization-card-department':''} ${leadership?'organization-card-leadership':''}`}
     data-person-id={node.personId} data-department-id={node.departmentId}>
     {node.departmentLabel&&<h3>{node.departmentLabel}</h3>}
     <strong>{node.personId?<PersonReference userId={node.personId} name={node.name}/>:node.name}</strong>
     {node.jobTitle&&<span>{node.jobTitle}</span>}
-    {node.managerUnavailable&&<small>Coordonator indisponibil{node.managerName&&<>: <PersonReference userId={node.managerId} name={node.managerName}/></>}</small>}
+    {node.managerUnavailable&&<small>{t("Coordonator indisponibil")}{node.managerName&&<>: <PersonReference userId={node.managerId} name={node.managerName}/></>}</small>}
   </article>;
 }
 
 function OrganizationBranch({node}:{node:OrganizationNode}) {
+  useLanguage();
   return <TreeNode label={<OrganizationCard node={node}/>}>
     {node.children.map(child=><OrganizationBranch key={child.id} node={child}/>)}
   </TreeNode>;
@@ -26,6 +29,7 @@ function personCount(node:OrganizationNode):number {
 }
 
 export function OrganizationChart({directory}:{directory:Directory}) {
+  useLanguage();
   const scroll=useRef<HTMLDivElement>(null);
   const root=organizationTree(directory);
   useLayoutEffect(()=>{
@@ -40,12 +44,12 @@ export function OrganizationChart({directory}:{directory:Directory}) {
     window.addEventListener('resize',center);
     return()=>window.removeEventListener('resize',center);
   },[]);
-  return <section className="panel organization-chart" aria-label="Structura aeroportului">
-    <div className="organization-title"><UsersRound size={19}/><h2>Structura aeroportului</h2>
-      <span>{personCount(root)} persoane · {directory.department_records?.length||0} departamente</span>
+  return <section className="panel organization-chart" aria-label={t("Structura aeroportului")}>
+    <div className="organization-title"><UsersRound size={19}/><h2>{t("Structura aeroportului")}</h2>
+      <span>{personCount(root)} {t("persoane ·")}{' '}{directory.department_records?.length||0} {t("departamente")}</span>
     </div>
-    <p className="organization-help">Glisează sau derulează orizontal pentru a vedea toate echipele.</p>
-    <div ref={scroll} className="organization-scroll" tabIndex={0} role="region" aria-label="Organigramă — derulare orizontală">
+    <p className="organization-help">{t("Glisează sau derulează orizontal pentru a vedea toate echipele.")}</p>
+    <div ref={scroll} className="organization-scroll" tabIndex={0} role="region" aria-label={t("Organigramă — derulare orizontală")}>
       <div className="organization-canvas">
         <Tree label={<OrganizationCard node={root} leadership/>} lineWidth="2px" lineColor="#91aa9c" lineHeight="30px" nodePadding="8px" lineBorderRadius="8px">
           {root.children.map(node=><OrganizationBranch key={node.id} node={node}/>)}

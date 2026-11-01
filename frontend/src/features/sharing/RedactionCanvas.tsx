@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { LoaderCircle } from 'lucide-react';
 import type { PdfPage, Word } from './redaction-types';
@@ -7,6 +8,7 @@ export function RedactionCanvas({ page, src, hidden, focused, textMode, locked, 
   page: PdfPage; src: string; hidden: Set<string>; focused: string[]; textMode: boolean;
   locked: boolean; onSelect: (ids: string[]) => void; onImageError: (error: boolean) => void;
 }) {
+  useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [loadedSrc, setLoadedSrc] = useState('');
   const [failedSrc, setFailedSrc] = useState('');
@@ -56,7 +58,7 @@ export function RedactionCanvas({ page, src, hidden, focused, textMode, locked, 
     return <button key={word.id} type="button" data-word-id={word.id} disabled={locked} tabIndex={textMode ? 0 : -1}
       className={`${textMode ? 'text-word' : 'pdf-word'} ${hidden.has(word.id) ? 'redacted' : ''} ${focus.has(word.id) ? 'focused' : ''}`}
       style={textMode ? undefined : { left: `${word.rect[0] / page.width * 100}%`, top: `${word.rect[1] / page.height * 100}%`, width: `${(word.rect[2] - word.rect[0]) / page.width * 100}%`, height: `${(word.rect[3] - word.rect[1]) / page.height * 100}%` }}
-      title={word.text} aria-label={`${hidden.has(word.id) ? 'Ascuns: ' : 'Selectează: '}${word.text}`} aria-pressed={focus.has(word.id)}
+      title={word.text} aria-label={t("{p0}{p1}", {p0:hidden.has(word.id) ? 'Ascuns: ' : 'Selectează: ',p1:word.text})} aria-pressed={focus.has(word.id)}
       onPointerDown={e => pointerDown(e, word)} onPointerMove={pointerMove} onPointerUp={pointerUp}
       onPointerCancel={() => { drag.current = null; setDragIds(undefined); }}
       onClick={e => {
@@ -65,15 +67,15 @@ export function RedactionCanvas({ page, src, hidden, focused, textMode, locked, 
       }}>{textMode ? word.text : null}</button>;
   }
   return <div className="paper-scroll" ref={scrollRef}>
-    {page.method === 'ocr' && <p className="ocr-note">Text recunoscut prin OCR · verifică fragmentele în copie.</p>}
+    {page.method === 'ocr' && <p className="ocr-note">{t("Text recunoscut prin OCR · verifică fragmentele în copie.")}</p>}
     {textMode ? <div className="studio-text-page"><div>{page.words.map(wordButton)}</div></div> :
       <div className="studio-paper" style={{ aspectRatio: `${page.width}/${page.height}` }}>
         <img draggable={false} alt={`Original, pagina ${page.number}`} src={src}
           onLoad={() => { setLoadedSrc(src); setFailedSrc(''); onImageError(false); }}
           onError={() => { setFailedSrc(src); onImageError(true); }} />
-        {failedSrc === src ? <div className="paper-notice">Pagina nu poate fi afișată. Redeschide documentul pentru a reîncerca.</div> :
-          loadedSrc !== src ? <div className="paper-notice"><LoaderCircle className="spin" size={20} />Se încarcă pagina…</div> : page.words.map(wordButton)}
+        {failedSrc === src ? <div className="paper-notice">{t("Pagina nu poate fi afișată. Redeschide documentul pentru a reîncerca.")}</div> :
+          loadedSrc !== src ? <div className="paper-notice"><LoaderCircle className="spin" size={20} />{t("Se încarcă pagina…")}</div> : page.words.map(wordButton)}
       </div>}
-    {!page.words.length && <p className="paper-empty">Nu există text selectabil pe această pagină. Verifică imaginile în original.</p>}
+    {!page.words.length && <p className="paper-empty">{t("Nu există text selectabil pe această pagină. Verifică imaginile în original.")}</p>}
   </div>;
 }

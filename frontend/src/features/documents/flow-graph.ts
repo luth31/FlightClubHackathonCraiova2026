@@ -16,7 +16,7 @@ export interface FlowGraphEdge {
   id: string;
   source: string;
   target: string;
-  kind: 'flow' | 'related' | 'reference' | 'correction';
+  kind: 'flow' | 'related' | 'reference' | 'correction' | 'association';
   label?: string;
 }
 
@@ -84,7 +84,8 @@ function makeEdge(source: FlowGraphNode, target: FlowGraphNode, kind: FlowGraphE
     id: `${source.id}->${target.id}`,
     source: source.id,
     target: target.id,
-    kind,
+    // A generic related_ids link is evidence of association, not a workflow guard.
+    kind: kind === 'flow' ? 'association' : kind,
     ...(kind === 'related' ? { label: 'Act adițional' } : {}),
     ...(kind === 'reference' ? { label: 'Contract de referință' } : {}),
   };
@@ -164,7 +165,7 @@ function layoutGroup(id: string, label: string, caseId: string | null, nodes: Fl
     }
     // Order by the average position of linked inputs, then pack without inheriting empty rows.
     const inputPosition = (node: FlowGraphNode) => {
-      const inputs = edges.filter((edge) => edge.target === node.id && edge.kind === 'flow')
+      const inputs = edges.filter((edge) => edge.target === node.id && ['flow','association'].includes(edge.kind))
         .map((edge) => ordered.find((candidate) => candidate.id === edge.source)!.row);
       return inputs.length ? inputs.reduce((sum, row) => sum + row, 0) / inputs.length : Number.MAX_SAFE_INTEGER;
     };

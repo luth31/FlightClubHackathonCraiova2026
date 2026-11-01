@@ -67,6 +67,7 @@ def seed(identifier):
     from sqlalchemy import delete
     from demo_documents import install_demo_documents
     from demo_equipment import install_demo_equipment
+    from demo_leave import install_demo_leave
     marker=RUNTIME/identifier/'initialized.json'
     command.upgrade(Config('alembic.ini'),'head');seed_workspace()
     with SessionLocal() as db:
@@ -85,6 +86,7 @@ def seed(identifier):
         # accounts, sessions and participation settings are never rewritten.
         install_demo_documents(db,identifier,node['env']['FLYLEAF_STORAGE_DIR'])
         install_demo_equipment(db,identifier)
+        install_demo_leave(db,identifier)
         db.commit()
     if not marker.exists():marker.write_text(json.dumps({'airport':identifier,'seeded':True}),encoding='utf-8')
 

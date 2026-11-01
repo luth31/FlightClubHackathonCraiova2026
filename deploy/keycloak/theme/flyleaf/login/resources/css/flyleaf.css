@@ -66,6 +66,8 @@ html, body { margin: 0; background: var(--surface-subtle); color: var(--ink); }
 .brand-mark { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; margin-right: 9px; }
 .brand-mark svg { width: 26px; height: 26px; }
 .brand-period, .login-benefits svg { color: #a4e5db; }
+.login-story .flyleaf-login-brand { display: inline-flex; width: 280px; max-width: 100%; padding: 12px 16px; background: #fff; border-radius: 10px; line-height: 0; box-sizing: border-box; }
+.flyleaf-login-brand img { display: block; width: 100%; height: auto; }
 .login-story-content { margin: auto 0; padding: 60px 0 120px; position: relative; z-index: 1; }
 .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .9px; color: var(--muted); }
 .login-story .eyebrow { letter-spacing: 1.8px; margin-bottom: 28px; color: #d4e3e9; }
@@ -148,6 +150,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outlin
   .pf-v5-c-login { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .login-story { min-height: 280px; padding: 30px 35px; }
   .login-story .brand { font-size: 22px; }
+  .login-story .flyleaf-login-brand { width: 190px; padding: 8px 10px; }
   .login-story-content { margin: 0; padding: 32px 0 20px; }
   .login-story-content .eyebrow { display: none; }
   .login-story-content h2 { font-size: 36px; line-height: 1.2; }

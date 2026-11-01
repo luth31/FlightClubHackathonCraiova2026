@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -61,6 +62,12 @@ def revoke_delegation(delegation_id: str, db: Session = Depends(get_db), user: U
 @router.post('/leave', status_code=201)
 def create_leave(payload: LeaveCreate, db: Session = Depends(get_db), user: User = Depends(current_user)):
     return service.create_leave(db, user, payload)
+
+
+@router.get('/leave/calendar')
+def leave_calendar(starts_at: date, ends_at: date, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    from app.people.leave_calendar import calendar
+    return calendar(db, user, starts_at, ends_at)
 
 
 @router.post('/leave/{leave_id}/decision')

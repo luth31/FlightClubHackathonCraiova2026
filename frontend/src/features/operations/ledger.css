@@ -37,6 +37,7 @@
 .ops-evidence-return{position:sticky;top:12px;z-index:8;display:flex;align-items:center;gap:8px;margin:0 0 16px;padding:10px 14px;border:1px solid #b9ccc3;border-radius:7px;background:#fff;color:#153c52;font-size:13px;box-shadow:0 2px 8px #14243212}
 .ops-ledger-event.is-evidence-target{background:#edf7f4;outline:2px solid #23766c;outline-offset:-2px;border-radius:5px;scroll-margin-block:80px}
 .ops-ledger-event.is-evidence-target:focus-visible{outline:3px solid #153c52}
+.ops-process{margin:16px 0;border-bottom:1px solid #d5e0e8;padding-bottom:16px;min-width:0}.ops-process>summary{display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 0;font-size:15px;font-weight:700;color:#153c52}.ops-process-help{font-size:12px;line-height:1.6;color:#526575;margin:10px 0}.ops-process .state-graph-scroll{max-height:580px}
 
 /* Entity links and independent activity streams keep the ledger inspectable. */
 .ops-ledger-entities,.ops-fact-entities,.ops-event-people{display:flex;flex-wrap:wrap;gap:6px}

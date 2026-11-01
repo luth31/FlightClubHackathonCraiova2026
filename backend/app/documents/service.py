@@ -76,8 +76,11 @@ def serialize(document, db=None, details=False, user=None, *, include_permission
         data['versions']=[{'version':v.version,'created_at':v.created_at,'created_by':v.created_by,'filename':v.filename,'sha256':v.sha256,'comment':v.comment,'approved_by':v.approved_by,'approved_at':v.approved_at,'signed':bool(v.signed_path),'file_url':f'/api/documents/{document.id}/file?version={v.version}','metadata_snapshot':v.snapshot} for v in versions]
         events=db.scalars(select(AuditEvent).where(AuditEvent.document_id==document.id).order_by(desc(AuditEvent.created_at),desc(AuditEvent.id))).all()
         data['audit']=[serialize_event(e) for e in events] if user is None or can_read(user, document, include_assignment=False) else []
-        steps=[('Încărcare','done'),('Validare metadate','done' if document.validated else 'current'),('Avizare','done' if document.status in ('approved','signed','archived') else 'current' if document.status=='in_review' else 'pending'),('Semnare','done' if document.status=='signed' else 'pending')]
-        data['workflow']={'steps':[{'label':a,'status':b} for a,b in steps],'current_step':document.status}
+        from app.workflows.definition import diagram
+        lifecycle = diagram(document,current_version(db,document))
+        steps=[('Încărcare','done'),('Validare metadate','done' if document.validated else 'current'),('Avizare','done' if document.status in ('approved','signed','archived') else 'current' if document.status=='in_review' else 'pending'),('Semnare','done' if lifecycle['version_signed'] else 'not_required' if document.status=='archived' else 'current' if document.status=='approved' else 'pending')]
+        if document.status=='archived': steps.append(('Arhivare','done'))
+        data['workflow']={'steps':[{'label':a,'status':b} for a,b in steps],'current_step':document.status,'diagram':lifecycle}
         data['related_documents']=[serialize(d,user=user) for d in [db.get(Document,i) for i in data['related_ids']] if d and (user is None or can_read(user,d))]
     if user and include_permissions:
         from app.people.service import can_review_department

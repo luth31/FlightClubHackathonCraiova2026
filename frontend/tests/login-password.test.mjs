@@ -36,7 +36,8 @@ test('sign-in shows only blank name and password fields with no account or airpo
   assert.equal(document.querySelectorAll('input').length,2);
   assert.equal(document.querySelector('input[name=username]').value,'');
   assert.equal(document.querySelector('input[name=password]').value,'');
-  assert.equal(document.querySelector('select'),null);
+  assert.equal(document.querySelectorAll('select:not(.language-switcher select)').length,0);
+  assert.deepEqual([...document.querySelector('.language-switcher select').options].map(option=>option.value),['ro','en']);
   await input('Correct-test-password');
   assert.equal(document.querySelector('.login-button').disabled,true);
 });

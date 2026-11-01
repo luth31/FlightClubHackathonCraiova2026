@@ -95,6 +95,34 @@ def test_invalid_pdf_rejected(admin):
     assert response.status_code==422
 
 
+def test_lifecycle_diagram_preserves_return_and_unsigned_archive_branches(admin,pdf_bytes):
+    id=approved(admin,pdf_bytes)
+    doc=admin.get(f'/api/documents/{id}').json()
+    graph=doc['workflow']['diagram']
+    transitions={(t['source'],t['target'],t['action']) for t in graph['transitions']}
+    assert ('in_review','draft','reject') in transitions
+    assert ('approved','archived','archive') in transitions
+    assert ('signed','archived','archive') in transitions
+    assert ('draft','draft','validate') in transitions
+    assert ('draft','signed','sign') not in transitions
+    response=act(admin,id,'archive')
+    assert response.status_code==200,response.text
+    flow=response.json()['workflow']
+    assert flow['diagram']['current']=='archived'
+    assert not flow['diagram']['version_signed']
+    assert next(s for s in flow['steps'] if s['label']=='Semnare')['status']=='not_required'
+
+
+def test_archived_signed_document_still_shows_the_signature_completed(admin,pdf_bytes):
+    id=approved(admin,pdf_bytes)
+    assert act(admin,id,'sign').status_code==200
+    response=act(admin,id,'archive')
+    assert response.status_code==200,response.text
+    flow=response.json()['workflow']
+    assert flow['diagram']['version_signed']
+    assert next(s for s in flow['steps'] if s['label']=='Semnare')['status']=='done'
+
+
 def test_concurrent_uploads_keep_distinct_versions(admin,pdf_bytes):
     from concurrent.futures import ThreadPoolExecutor
     id=approved(admin,pdf_bytes)

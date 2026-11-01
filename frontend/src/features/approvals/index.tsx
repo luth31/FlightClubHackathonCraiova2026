@@ -1,3 +1,4 @@
+import {t as translate,useLanguage} from '@/i18n';
 import {PersonReference} from '@/components/people/PersonReference';
 import { useEffect, useState, type FormEvent } from "react";
 import {
@@ -55,6 +56,7 @@ export function ApprovalsPage({
   embedded?: boolean;
   initialFilter?: string;
 }) {
+  useLanguage();
   const [data, setData] = useState<AssignedTask[]>(),
     [error, setError] = useState(""),
     [filter, setFilter] = useState(initialFilter),
@@ -114,16 +116,15 @@ export function ApprovalsPage({
     <>
       <div className="page-heading">
         <div>
-          {embedded ? <h2>Aprobări și sarcini documentare</h2> : <h1>{personalTasks(user)?'Sarcinile mele':'Aprobări'}</h1>}
+          {embedded ? <h2>{translate("Aprobări și sarcini documentare")}</h2> : <h1>{personalTasks(user)?translate("Sarcinile mele"):translate("Aprobări")}</h1>}
         </div>
         <span className="heading-pill">
           <Clock3 size={16} />
-          {data?.length ?? "—"} în așteptare
-        </span>
+          {data?.length ?? "—"} {translate("în așteptare")}</span>
       </div>
       {user?.roles.some(role=>['hr','director','admin'].includes(role))&&<AppointmentPanel revision={revision} notify={notify} hideEmpty/>}
       {data && (
-        <div className="task-filters" aria-label="Filtre sarcini">
+        <div className="task-filters" aria-label={translate("Filtre sarcini")}>
           {[
             ["all", "Toate"],
             ["mine", "De rezolvat de mine"],
@@ -136,7 +137,7 @@ export function ApprovalsPage({
               aria-pressed={filter === id}
               onClick={() => setFilter(id)}
             >
-              {label}
+              {translate(label)}
               <span>{data.filter(t => id === "all" || (id === "mine" && t.can_act) || (id === "overdue" && t.overdue) || (id === "unassigned" && t.assignment_state === "needs_reassignment")).length}</span>
             </button>
           ))}
@@ -151,13 +152,13 @@ export function ApprovalsPage({
           <Empty
             title={
               filter === "all"
-                ? "Toate la zi. Bună treabă."
-                : "Nicio sarcină în această categorie"
+                ? translate("Toate la zi. Bună treabă.")
+                : translate("Nicio sarcină în această categorie")
             }
             message={
               filter === "all"
-                ? "Când un document are nevoie de tine, îl găsești aici."
-                : "Poți vedea toate sarcinile accesibile schimbând filtrul."
+                ? translate("Când un document are nevoie de tine, îl găsești aici.")
+                : translate("Poți vedea toate sarcinile accesibile schimbând filtrul.")
             }
           />
         </div>
@@ -174,14 +175,14 @@ export function ApprovalsPage({
                   <div className="task-label">
                     <span>{t.department}</span>
                     {t.overdue ? (
-                      <span className="priority overdue">Termen depășit</span>
+                      <span className="priority overdue">{translate("Termen depășit")}</span>
                     ) : (
                       t.priority === "high" && (
-                        <span className="priority">Prioritar</span>
+                        <span className="priority">{translate("Prioritar")}</span>
                       )
                     )}
                     {t.assignment_state === "needs_reassignment" && (
-                      <span className="priority">De reatribuit</span>
+                      <span className="priority">{translate("De reatribuit")}</span>
                     )}
                   </div>
                   <h2>{t.title}</h2>
@@ -189,14 +190,13 @@ export function ApprovalsPage({
                     <UserRound size={13} />
                     <PersonReference name={t.assignee || "Responsabil de stabilit"} userId={t.assigned_to} embedded/>
                     <span className="meta-dot">·</span>
-                    {taskLabels[t.type] || t.type || "Verificare document"}
+                    {taskLabels[t.type] || t.type || translate("Verificare document")}
                   </p>
                   {t.assignment_state === "delegated" && (
                     <span className="delegated-task">
                       <ArrowRightLeft size={12} />
-                      Delegare activă
-                      {t.delegated_from
-                        ? <> · în locul lui <PersonReference name={t.delegated_from} embedded/></>
+                      {translate("Delegare activă")}{t.delegated_from
+                        ? <> {translate("· în locul lui")}{' '}<PersonReference name={t.delegated_from} embedded/></>
                         : ""}
                     </span>
                   )}
@@ -206,8 +206,7 @@ export function ApprovalsPage({
                 <div className={`task-deadline ${t.overdue ? "overdue" : ""}`}>
                   <small>
                     <CalendarClock size={12} />
-                    Termen
-                  </small>
+                    {translate("Termen")}</small>
                   <strong>{date(t.due_date)}</strong>
                 </div>
                 <div className="task-card-actions">
@@ -215,21 +214,20 @@ export function ApprovalsPage({
                     className="task-action"
                     onClick={() => onOpen(t.document_id)}
                   >
-                    {t.can_act ? "Deschide sarcina" : "Vezi documentul"}
+                    {t.can_act ? translate("Deschide sarcina") : translate("Vezi documentul")}
                     <ArrowRight size={17} />
                   </button>
                   {t.can_reassign && (
                     <button
                       className="reassign-button"
-                      aria-label={`Reatribuie sarcina: ${t.title}`}
+                      aria-label={translate("Reatribuie sarcina: {p0}", {p0:t.title})}
                       onClick={() => {
                         setSelected(t);
                         setFormError("");
                       }}
                     >
                       <UserRoundPen size={14} />
-                      Reatribuie
-                    </button>
+                      {translate("Reatribuie")}</button>
                   )}
                 </div>
               </div>
@@ -239,25 +237,23 @@ export function ApprovalsPage({
       )}
       {selected && (
         <Modal
-          title="Reatribuie sarcina"
+          title={translate("Reatribuie sarcina")}
           subtitle={selected.title}
           onClose={() => setSelected(undefined)}
         >
           <form className="modal-body" onSubmit={assign}>
             <div className="task-assignment-summary">
               <span>{taskLabels[selected.type] || selected.type}</span>
-              <strong>Versiunea {selected.document_version || 1}</strong>
+              <strong>{translate("Versiunea")}{' '}{selected.document_version || 1}</strong>
             </div>
             <label className="field">
-              Responsabil
-              <select
+              {translate("Responsabil")}<select
                 name="assigned_to"
                 required
                 defaultValue={selected.assigned_to || ""}
               >
                 <option value="" disabled>
-                  Alege o persoană autorizată
-                </option>
+                  {translate("Alege o persoană autorizată")}</option>
                 {selected.eligible_assignees?.map((person) => (
                   <option value={person.id} key={person.id}>
                     {person.name} · {person.department}
@@ -266,8 +262,7 @@ export function ApprovalsPage({
               </select>
             </label>
             <label className="field">
-              Termen
-              <input
+              {translate("Termen")}<input
                 name="due_date"
                 type="date"
                 defaultValue={selected.due_date?.slice(0, 10)}
@@ -275,21 +270,19 @@ export function ApprovalsPage({
               />
             </label>
             <label className="field">
-              Motivul reatribuirii
-              <textarea
+              {translate("Motivul reatribuirii")}<textarea
                 name="comment"
                 rows={3}
                 required
                 minLength={3}
-                placeholder="Ex. Preluare pe durata absenței sau redistribuirea responsabilităților…"
+                placeholder={translate("Ex. Preluare pe durata absenței sau redistribuirea responsabilităților…")}
               />
             </label>
             <p className="quiet-note">
-              Schimbarea se păstrează în istoric și nu aprobă documentul.
-            </p>
+              {translate("Schimbarea se păstrează în istoric și nu aprobă documentul.")}</p>
             {selected.history && selected.history.length > 0 && (
               <details className="assignment-history">
-                <summary>Istoricul sarcinii</summary>
+                <summary>{translate("Istoricul sarcinii")}</summary>
                 {selected.history.map((event, i) => (
                   <div key={i}>
                     <strong><PersonReference name={event.actor}/></strong>
@@ -306,16 +299,14 @@ export function ApprovalsPage({
                 className="button secondary"
                 onClick={() => setSelected(undefined)}
               >
-                Renunță
-              </button>
+                {translate("Renunță")}</button>
               <button className="button primary" disabled={busy}>
                 {busy ? (
                   <LoaderCircle size={16} className="spin" />
                 ) : (
                   <UserRoundPen size={16} />
                 )}
-                Salvează atribuirea
-              </button>
+                {translate("Salvează atribuirea")}</button>
             </div>
           </form>
         </Modal>

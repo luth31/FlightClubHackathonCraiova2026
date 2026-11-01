@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {useEffect, useId, useRef, useState} from 'react';
 import {Search, X} from 'lucide-react';
 import {PersonAvatar} from '@/components/people/PersonAvatar';
@@ -9,6 +10,7 @@ const normalize = (text:string) => text.normalize('NFD').replace(/[\u0300-\u036f
 export function EmployeePicker({people, value, onChange, required=false, disabled=false, teamName}: {
   people:EquipmentRecipient[]; value:string; onChange:(id:string)=>void; required?:boolean; disabled?:boolean; teamName?:string;
 }) {
+  useLanguage();
   const [query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(-1);
   const root=useRef<HTMLDivElement>(null), input=useRef<HTMLInputElement>(null);
   const id=useId();
@@ -22,15 +24,15 @@ export function EmployeePicker({people, value, onChange, required=false, disable
   useEffect(()=>{if(active>=0)document.getElementById(id+'-'+active)?.scrollIntoView({block:'nearest'})},[active,id]);
   function choose(person:EquipmentRecipient) {onChange(person.id);setQuery('');setOpen(false);setActive(-1)}
   return <div className="equipment-recipient" ref={root}>
-    <span className="equipment-recipient-label">Responsabil{required ? ' *' : ' (opțional)'}</span>
+    <span className="equipment-recipient-label">{t("Responsabil")}{required ? ' *' : t(" (opțional)")}</span>
     <input type="hidden" name="assigned_to" value={value}/>
     {selected ? <div className="equipment-recipient-chip">
       <PersonAvatar userId={selected.id} name={selected.name}/>
       <span><strong>{selected.name}</strong><small>{selected.job_title} · {selected.email}</small></span>
-      <button type="button" className="icon-button" aria-label="Schimbă responsabilul" disabled={disabled} onClick={()=>{onChange('');setOpen(true);setQuery('');setTimeout(()=>input.current?.focus(),0)}}><X size={16}/></button>
-    </div> : <div className="equipment-recipient-input"><Search size={17}/><input ref={input} aria-label="Caută angajat" role="combobox" autoComplete="off"
+      <button type="button" className="icon-button" aria-label={t("Schimbă responsabilul")} disabled={disabled} onClick={()=>{onChange('');setOpen(true);setQuery('');setTimeout(()=>input.current?.focus(),0)}}><X size={16}/></button>
+    </div> : <div className="equipment-recipient-input"><Search size={17}/><input ref={input} aria-label={t("Caută angajat")} role="combobox" autoComplete="off"
       aria-expanded={open} aria-controls={id} aria-autocomplete="list" aria-activedescendant={open&&active>=0?id+'-'+active:undefined}
-      placeholder="Nume, email, funcție sau departament…" required={required} disabled={disabled} value={query}
+      placeholder={t("Nume, email, funcție sau departament…")} required={required} disabled={disabled} value={query}
       onFocus={()=>setOpen(true)} onChange={e=>{e.currentTarget.setCustomValidity(e.target.value?'Alege o persoană din listă.':'');setQuery(e.target.value);setActive(-1);setOpen(true)}}
       onKeyDown={e=>{
         if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();setOpen(true);setActive(current=>options.length?(current+(e.key==='ArrowDown'?1:-1)+options.length)%options.length:-1)}
@@ -38,14 +40,14 @@ export function EmployeePicker({people, value, onChange, required=false, disable
         if(e.key==='Escape'&&open){e.preventDefault();e.stopPropagation();setOpen(false)}
         if(e.key==='Tab')setOpen(false);
       }}/></div>}
-    {open&&!selected&&<div id={id} role="listbox" aria-label="Angajații aeroportului" className="equipment-recipient-options">
+    {open&&!selected&&<div id={id} role="listbox" aria-label={t("Angajații aeroportului")} className="equipment-recipient-options">
       {options.length ? options.map((person,index)=><div key={person.id}>
-        {(index===0||!!options[index-1].suggested!==!!person.suggested)&&<div className="equipment-recipient-group" role="presentation">{person.suggested ? `Sugerați · ${teamName || 'Echipa responsabilă'}` : 'Alți angajați ai aeroportului'}</div>}
+        {(index===0||!!options[index-1].suggested!==!!person.suggested)&&<div className="equipment-recipient-group" role="presentation">{person.suggested ? t("Sugerați · {p0}", {p0:teamName || 'Echipa responsabilă'}) : t("Alți angajați ai aeroportului")}</div>}
         <button id={id+'-'+index} type="button" role="option" aria-selected={active===index} onMouseDown={e=>e.preventDefault()} onClick={()=>choose(person)}>
           <span className="avatar equipment-option-avatar" aria-hidden="true">{initials(person.name)}</span>
           <span><strong>{person.name}</strong><small>{person.job_title} · {person.department}</small><small>{person.email}</small></span>
         </button>
-      </div>) : <p>Niciun angajat activ pentru această căutare.</p>}
+      </div>) : <p>{t("Niciun angajat activ pentru această căutare.")}</p>}
     </div>}
   </div>;
 }

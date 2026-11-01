@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { useContext, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Building2, Check, ChevronDown } from 'lucide-react';
 import { ViewActiveContext } from '@/components/ui';
@@ -7,6 +8,7 @@ export function DepartmentFilter({ departments, value, onChange }: {
   value: string;
   onChange: (value: string) => void;
 }) {
+  useLanguage();
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const active = useContext(ViewActiveContext);
@@ -91,7 +93,7 @@ export function DepartmentFilter({ departments, value, onChange }: {
       type="button"
       ref={triggerRef}
       role="combobox"
-      aria-label="Departament echipă"
+      aria-label={t("Departament echipă")}
       aria-haspopup="listbox"
       aria-expanded={expanded}
       aria-controls={expanded ? listId : undefined}
@@ -100,10 +102,10 @@ export function DepartmentFilter({ departments, value, onChange }: {
       onKeyDown={handleKey}
     >
       <Building2 size={16} aria-hidden="true" />
-      <span>{value || 'Toate departamentele'}</span>
+      <span>{value || t("Toate departamentele")}</span>
       <ChevronDown size={16} aria-hidden="true" />
     </button>
-    {expanded && <div className="department-filter-menu" id={listId} role="listbox" aria-label="Departamente">
+    {expanded && <div className="department-filter-menu" id={listId} role="listbox" aria-label={t("Departamente")}>
       {options.map((option, index) => <div
         className="department-filter-option"
         id={`${listId}-${index}`}
@@ -115,7 +117,7 @@ export function DepartmentFilter({ departments, value, onChange }: {
         onPointerDown={event => event.preventDefault()}
         onClick={() => choose(index)}
       >
-        <span>{option || 'Toate departamentele'}</span>
+        <span>{option || t("Toate departamentele")}</span>
         {option === value && <Check size={15} aria-hidden="true" />}
       </div>)}
     </div>}

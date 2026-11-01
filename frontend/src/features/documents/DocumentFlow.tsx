@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ArrowRight, ArrowUpRight, CircleCheck, CircleDashed,
@@ -29,10 +30,11 @@ const geometry = {
   '--flow-inset': `${CARD_INSET}px`,
 } as CSSProperties;
 
-function FlowLegendArrow({ kind = 'flow' }: { kind?: 'flow' | 'reference' | 'correction' }) {
+function FlowLegendArrow({ kind = 'flow' }: { kind?: 'flow' | 'reference' | 'correction' | 'association' }) {
+  useLanguage();
   return <svg className={`flow-legend-arrow flow-legend-arrow-${kind}`} viewBox="0 0 32 20"
     fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M 3 10 H 28" strokeDasharray={kind === 'reference' ? '4 4' : kind === 'correction' ? '6 3' : undefined} />
+    <path d="M 3 10 H 28" strokeDasharray={kind === 'association' ? '2 4' : kind === 'reference' ? '4 4' : kind === 'correction' ? '6 3' : undefined} />
     <path d="m 23 5 5 5 -5 5" />
   </svg>;
 }
@@ -95,6 +97,7 @@ function connectorPath(edge: FlowGraphEdge, nodes: Map<string, PositionedNode>, 
 }
 
 function FlowCaseChart({ graph, onOpen }: { graph: FlowGraphGroup; onOpen: (id: string) => void }) {
+  useLanguage();
   const bodyRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(940);
   const [hovered, setHovered] = useState<string>();
@@ -130,7 +133,7 @@ function FlowCaseChart({ graph, onOpen }: { graph: FlowGraphGroup; onOpen: (id: 
         d={connectorPath(edge, nodeMap, width)} markerEnd={`url(#${arrowId})`}
         data-source-id={edge.source} data-target-id={edge.target} data-case-id={graphCaseId} />)}
       {graph.edges.filter((edge) => edge.kind === 'correction' && nodeMap.get(edge.source)!.stageIndex > nodeMap.get(edge.target)!.stageIndex)
-        .map((edge) => <text className="flow-edge-label" key={`label-${edge.id}`} x={width / 3} y={18} textAnchor="middle">{edge.label || 'Retur'}</text>)}
+        .map((edge) => <text className="flow-edge-label" key={`label-${edge.id}`} x={width / 3} y={18} textAnchor="middle">{edge.label || t("Retur")}</text>)}
     </svg>
     {positioned.map(({ document, stageIndex, top, height: cardHeight, compact }) => {
       const title = readableFlowLabel(document.title);
@@ -143,14 +146,14 @@ function FlowCaseChart({ graph, onOpen }: { graph: FlowGraphGroup; onOpen: (id: 
         onMouseEnter={() => setHovered(document.id)} onMouseLeave={() => setHovered(undefined)}
         onFocus={() => setFocused(document.id)} onBlur={() => setFocused(undefined)}>
         <button className="flow-document-open" onClick={() => onOpen(document.id)}
-          aria-label={`Deschide ${title} · ${statusLabel[document.status] || document.status}`}
-          title={`${title}\n${document.number}${document.supplier ? `\n${readableFlowLabel(document.supplier)}` : ''}${inputSummary ? `\n${inputSummary}` : ''}`}>
+          aria-label={t("Deschide {p0} · {p1}", {p0:title,p1:statusLabel[document.status] || document.status})}
+          title={t("{p0}\n{p1}{p2}{p3}", {p0:title,p1:document.number,p2:document.supplier ? `\n${readableFlowLabel(document.supplier)}` : '',p3:inputSummary ? `\n${inputSummary}` : ''})}>
           <span className="flow-document-kind"><span>{document.flow.document_type}</span><ArrowUpRight size={14} /></span>
           {!compact && <strong>{typeof document.metadata.flow_caption === 'string' ? document.metadata.flow_caption : title.replace(/^.+?\s[-–—]\s/, '')}</strong>}
           <span className="flow-document-number">{document.number}</span>
           <span className="flow-document-footer">
             <span className="flow-document-status"><Icon size={14} />{statusLabel[document.status] || document.status}</span>
-            {inputs.length > 1 && <span className="flow-input-count" aria-label={`${inputs.length} documente legate`} title={inputSummary}>
+            {inputs.length > 1 && <span className="flow-input-count" aria-label={t("{p0} documente legate", {p0:inputs.length})} title={inputSummary}>
               <ArrowRight size={12} />{inputs.length}
             </span>}
           </span>
@@ -159,7 +162,7 @@ function FlowCaseChart({ graph, onOpen }: { graph: FlowGraphGroup; onOpen: (id: 
     })}
     {graph.edges.length > 0 && <ul className="sr-only">{graph.edges.map((edge) => <li key={edge.id}>
       {readableFlowLabel(nodeMap.get(edge.source)!.document.title)} → {readableFlowLabel(nodeMap.get(edge.target)!.document.title)}
-      {edge.label && ` · ${edge.label}`}
+      {edge.label && t(" · {p0}", {p0:edge.label})}
     </li>)}</ul>}
   </div>;
 }
@@ -179,51 +182,53 @@ export function DocumentFlow({ data, caseId, onSelectCase, onOpen, onShowRegiste
   data: DocumentFlowData; caseId: string; onSelectCase: (id: string) => void;
   onOpen: (id: string) => void; onShowRegister: () => void;
 }) {
+  useLanguage();
   const graphs = useMemo(() => buildFlowGraphs(data.stages), [data.stages]);
   const [selected, setSelected] = useState('');
   const active = graphs.find((graph) => graph.id === selected) || graphs[0];
   const info = active ? caseInfo(active) : undefined;
   const headingId = useId();
-  return <section className="document-flow" aria-label="Fluxul documentelor de achiziție" style={geometry}>
+  return <section className="document-flow" aria-label={t("Fluxul documentelor de achiziție")} style={geometry}>
     <div className="flow-toolbar">
-      <div><h2>Flux achiziții</h2><p role="status">{graphs.length} dosare <span className="meta-dot">·</span> {data.classified_total} documente</p></div>
+      <div><h2>{t("Flux achiziții")}</h2><p role="status">{graphs.length} {t("dosare")}<span className="meta-dot">·</span> {data.classified_total} {t("documente")}</p></div>
       <label className="flow-case-filter"><FolderOpen size={16} />
-        <select aria-label="Dosar de achiziție" value={caseId} onChange={(event) => onSelectCase(event.target.value)}>
-          <option value="">Toate dosarele</option>
+        <select aria-label={t("Dosar de achiziție")} value={caseId} onChange={(event) => onSelectCase(event.target.value)}>
+          <option value="">{t("Toate dosarele")}</option>
           {caseId && !data.cases.some((item) => item.id === caseId) && <option value={caseId}>{caseId} (0)</option>}
           {data.cases.map((item) => <option key={item.id} value={item.id}>{readableFlowLabel(item.label)} ({item.count})</option>)}
         </select>
       </label>
     </div>
     <div className="flow-workspace">
-      <nav className="flow-case-nav" aria-label="Dosare de achiziție">
+      <nav className="flow-case-nav" aria-label={t("Dosare de achiziție")}>
         {graphs.map((graph) => {
           const item = caseInfo(graph);
           return <button key={graph.id} className="flow-case-choice" aria-pressed={active?.id === graph.id}
             onClick={() => setSelected(graph.id)}>
             <span className="flow-choice-id">{graph.label}</span><strong>{item.name}</strong>
-            <span className="flow-choice-meta">{graph.nodes.length} documente{item.attention > 0 && <span><Clock3 size={11} />{item.attention} de verificat</span>}</span>
+            <span className="flow-choice-meta">{graph.nodes.length} {t("documente")}{item.attention > 0 && <span><Clock3 size={11} />{item.attention} {t("de verificat")}</span>}</span>
           </button>;
         })}
-        {caseId && <button className="text-button" onClick={() => onSelectCase('')}>Toate dosarele</button>}
+        {caseId && <button className="text-button" onClick={() => onSelectCase('')}>{t("Toate dosarele")}</button>}
       </nav>
       <div className="flow-selected-case">
         {active && info && <>
           <div className="flow-case-intro"><div><h3>{info.name}</h3>{info.summary && <p>{info.summary}</p>}</div>
-            {info.demo && <span className="flow-demo-label">Demonstrație</span>}
           </div>
-          <div className="flow-legend"><span><FlowLegendArrow />Documente legate</span><span><FlowLegendArrow kind="reference" />Referință</span>
-            {active.edges.some((edge) => edge.kind === 'correction') && <span><FlowLegendArrow kind="correction" />Retur / corecție</span>}
-            <span className="flow-scroll-hint">Derulează pentru toate coloanele</span>
+          <p className="flow-semantics">{t("Fiecare document are propriile stări de aprobare. Coloanele grupează documentele; nu impun o succesiune unică între toate activitățile.")}</p>
+          <div className="flow-legend"><span><FlowLegendArrow />{t("Dependență declarată")}</span><span><FlowLegendArrow kind="reference" />{t("Referință")}</span>
+            {active.edges.some(edge=>edge.kind==='association')&&<span><FlowLegendArrow kind="association" />{t("Asociere · fără condiție de execuție")}</span>}
+            {active.edges.some((edge) => edge.kind === 'correction') && <span><FlowLegendArrow kind="correction" />{t("Retur / corecție")}</span>}
+            <span className="flow-scroll-hint">{t("Derulează pentru toate coloanele")}</span>
           </div>
-          <div className="flow-chart-scroll" role="region" aria-label="Diagrama fluxului de achiziții" tabIndex={0}>
+          <div className="flow-chart-scroll" role="region" aria-label={t("Diagrama fluxului de achiziții")} tabIndex={0}>
             <div className="flow-chart">
               <div className="flow-lanes" aria-hidden="true">{stages.map(({ id }) => <div key={id} className="flow-lane" />)}</div>
               <div className="flow-stage-headings"><div className="flow-stage-columns">
                 {stages.map(({id, label, Icon}) => {
                   const count = active.nodes.filter((node) => node.stage === id).length;
                   return <section className="flow-stage" key={id} aria-labelledby={`${headingId}-${id}`}>
-                    <Icon size={18} /><h3 id={`${headingId}-${id}`}>{label}</h3><span className="flow-stage-count" aria-label={`${count} documente`}>{count}</span>
+                    <Icon size={18} /><h3 id={`${headingId}-${id}`}>{label}</h3><span className="flow-stage-count" aria-label={t("{p0} documente", {p0:count})}>{count}</span>
                   </section>;
                 })}
               </div></div>
@@ -233,11 +238,11 @@ export function DocumentFlow({ data, caseId, onSelectCase, onOpen, onShowRegiste
             </div>
           </div>
         </>}
-        {!active && <div className="flow-empty-diagram">Niciun document în această selecție</div>}
+        {!active && <div className="flow-empty-diagram">{t("Niciun document în această selecție")}</div>}
         </div>
     </div>
-    {data.unclassified_total > 0 && <div className="flow-note"><span>{data.unclassified_total} documente în afara fluxului</span>
-      <button className="text-button" onClick={onShowRegister}>Vezi registrul <ArrowUpRight size={14} /></button>
+    {data.unclassified_total > 0 && <div className="flow-note"><span>{data.unclassified_total} {t("documente în afara fluxului")}</span>
+      <button className="text-button" onClick={onShowRegister}>{t("Vezi registrul")}<ArrowUpRight size={14} /></button>
     </div>}
   </section>;
 }

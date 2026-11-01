@@ -1,14 +1,16 @@
+import {t,getLocale} from '@/i18n';
+const translatedLabels=(source:Record<string,string>):Record<string,string>=>new Proxy(source,{get:(target,key)=>typeof key==='string'&&Object.hasOwn(target,key)?t(target[key]):Reflect.get(target,key)});
 export const date = (value?: string | null) =>
   value
-    ? new Intl.DateTimeFormat("ro-RO", {
+    ? new Intl.DateTimeFormat(getLocale(), {
         day: "2-digit",
         month: "short",
         year: "numeric",
         timeZone: "Europe/Bucharest",
       }).format(new Date(value))
-    : "Fără termen";
+    : t("Fără termen");
 export const time = (value: string) =>
-  new Intl.DateTimeFormat("ro-RO", {
+  new Intl.DateTimeFormat(getLocale(), {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -18,12 +20,12 @@ export const time = (value: string) =>
 export const money = (value?: number | null, currency = "RON") =>
   value == null
     ? "—"
-    : new Intl.NumberFormat("ro-RO", {
+    : new Intl.NumberFormat(getLocale(), {
         style: "currency",
         currency,
         maximumFractionDigits: 0,
       }).format(value);
-export const statusLabel: Record<string, string> = {
+export const statusLabel: Record<string, string> = translatedLabels({
   draft: "Ciornă",
   in_review: "În aprobare",
   approved: "Aprobat",
@@ -37,8 +39,8 @@ export const statusLabel: Record<string, string> = {
   completed: "Finalizat",
   cancelled: "Anulat",
   rejected: "Returnat",
-};
-export const roleLabel: Record<string, string> = {
+});
+export const roleLabel: Record<string, string> = translatedLabels({
   admin: "Administrator",
   manager: "Director",
   reviewer: "Avizator",
@@ -49,8 +51,8 @@ export const roleLabel: Record<string, string> = {
   department_head: "Șef de departament",
   director: "Director",
   signer: "Semnatar",
-};
-export const actionLabel: Record<string, string> = {
+});
+export const actionLabel: Record<string, string> = translatedLabels({
   created: "Document înregistrat",
   uploaded: "Document încărcat",
   upload: "Document încărcat",
@@ -80,7 +82,7 @@ export const actionLabel: Record<string, string> = {
   delegation_revoked: "Delegare revocată",
   account_activated: "Cont activat",
   account_deactivated: "Cont dezactivat",
-};
+});
 export const initials = (name: string) =>
   name
     .split(" ")

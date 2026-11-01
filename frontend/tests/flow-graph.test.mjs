@@ -41,8 +41,8 @@ test('dense associations retain the procurement flow and amendment without empty
   const original = JSON.stringify(input);
   const [group] = buildFlowGraphs(input);
   assert.deepEqual(paths(group), [
-    'need->spec:flow', 'spec->contract:flow', 'contract->amendment:related',
-    'contract->delivery:flow', 'delivery->receipt:flow', 'receipt->invoice:flow', 'contract->invoice:reference',
+    'need->spec:association', 'spec->contract:association', 'contract->amendment:related',
+    'contract->delivery:association', 'delivery->receipt:association', 'receipt->invoice:association', 'contract->invoice:reference',
   ]);
   const rows = Object.fromEntries(group.nodes.map((node) => [node.id, node.row]));
   assert.deepEqual(rows, { need: 0, spec: 1, contract: 2, amendment: 3, delivery: 0, receipt: 0, invoice: 0 });
@@ -78,17 +78,17 @@ test('unassigned documents form visible relation components and standalone group
   ]));
   assert.equal(groups.length, 2);
   assert.deepEqual(groups[0].nodes.map((node) => node.id), ['delivery', 'receipt']);
-  assert.deepEqual(paths(groups[0]), ['delivery->receipt:flow']);
+  assert.deepEqual(paths(groups[0]), ['delivery->receipt:association']);
   assert.deepEqual(groups[1].nodes.map((node) => node.id), ['invoice']);
   assert.deepEqual(groups[1].edges, []);
 });
 
-test('a visible direct dependency skips filtered stages and keeps its flow kind', () => {
+test('a visible association skips filtered stages without becoming a workflow dependency', () => {
   const [group] = buildFlowGraphs(stages([
     document('contract', 'purchasing', 'Contract', ['invoice', 'hidden-delivery']),
     document('invoice', 'invoice_verification', 'Factură'),
   ]));
-  assert.deepEqual(paths(group), ['contract->invoice:flow']);
+  assert.deepEqual(paths(group), ['contract->invoice:association']);
   assert.deepEqual(group.nodes.map((node) => node.stageIndex), [0, 3]);
   assert.equal(group.nodes[0].row, group.nodes[1].row);
 });
@@ -111,10 +111,10 @@ test('return and replacement orders feed their corresponding delivery directions
   ];
   for (const item of records) item.related_ids = records.filter((other) => other !== item).map((other) => other.id);
   const [group] = buildFlowGraphs(stages(records));
-  assert.ok(paths(group).includes('return->outbound:flow'));
-  assert.ok(paths(group).includes('replace->inbound:flow'));
-  assert.ok(paths(group).includes('order->return:flow'));
-  assert.ok(paths(group).includes('return->replace:flow'));
+  assert.ok(paths(group).includes('return->outbound:association'));
+  assert.ok(paths(group).includes('replace->inbound:association'));
+  assert.ok(paths(group).includes('order->return:association'));
+  assert.ok(paths(group).includes('return->replace:association'));
   const rows = Object.fromEntries(group.nodes.map((node) => [node.id, node.row]));
   assert.equal(rows.outbound, 0);
   assert.equal(rows.inbound, 1);
@@ -131,8 +131,8 @@ test('multiple documents in one stage never occupy the same grid cell', () => {
   const [group] = buildFlowGraphs(stages(records));
   const cells = group.nodes.map((node) => `${node.stageIndex}:${node.row}`);
   assert.equal(new Set(cells).size, cells.length);
-  assert.ok(paths(group).includes('delivery-a->receipt-a:flow'));
-  assert.ok(paths(group).includes('delivery-b->receipt-b:flow'));
+  assert.ok(paths(group).includes('delivery-a->receipt-a:association'));
+  assert.ok(paths(group).includes('delivery-b->receipt-b:association'));
 });
 
 test('an empty result produces no graphs', () => {
@@ -152,9 +152,9 @@ test('split deliveries and a consolidated invoice retain every linked input with
   ];
   const [group] = buildFlowGraphs(stages(records));
   assert.deepEqual(paths(group), [
-    'need->spec:flow', 'spec->contract:flow', 'contract->delivery-a:flow', 'contract->delivery-b:flow',
-    'delivery-a->receipt-a:flow', 'delivery-b->receipt-b:flow',
-    'receipt-a->invoice:flow', 'receipt-b->invoice:flow', 'contract->invoice:reference',
+    'need->spec:association', 'spec->contract:association', 'contract->delivery-a:association', 'contract->delivery-b:association',
+    'delivery-a->receipt-a:association', 'delivery-b->receipt-b:association',
+    'receipt-a->invoice:association', 'receipt-b->invoice:association', 'contract->invoice:reference',
   ]);
   assert.equal(group.rowCount, 3);
   for (const stage of stageIds) {
@@ -170,7 +170,7 @@ test('multiple requisitions can feed a shared specification', () => {
     document('need-b', 'purchasing', 'Referat de necesitate', ['spec']),
     document('spec', 'purchasing', 'Caiet de sarcini'),
   ]));
-  assert.deepEqual(paths(group), ['need-a->spec:flow', 'need-b->spec:flow']);
+  assert.deepEqual(paths(group), ['need-a->spec:association', 'need-b->spec:association']);
 });
 
 test('invoice references never expose hidden contracts or connect different cases', () => {
@@ -180,7 +180,7 @@ test('invoice references never expose hidden contracts or connect different case
     document('invoice', 'invoice_verification', 'Factură', [], 'CASE-1', { contract_id: 'contract' }),
     document('invoice-2', 'invoice_verification', 'Factură', [], 'CASE-1', { contract_id: 'hidden' }),
   ]));
-  assert.deepEqual(groups.flatMap(paths), ['receipt->invoice:flow', 'receipt->invoice-2:flow']);
+  assert.deepEqual(groups.flatMap(paths), ['receipt->invoice:association', 'receipt->invoice-2:association']);
 });
 
 test('explicit relationships support return loops and invoice corrections without inferred shortcuts', () => {

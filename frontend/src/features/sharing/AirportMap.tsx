@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {useEffect,useRef,useState} from 'react';
 import {Globe2,LocateFixed} from 'lucide-react';
 import type {Map as LeafletMap,Marker as LeafletMarker} from 'leaflet';
@@ -27,6 +28,7 @@ function pin(airport:PartnerConnection,selected:boolean){
 }
 
 export function AirportMap({airports,selected,onSelect,googleKey}:{airports:PartnerConnection[];selected?:string;onSelect:(id:string)=>void;googleKey?:string|null}){
+  useLanguage();
   const container=useRef<HTMLDivElement>(null),onSelectRef=useRef(onSelect);
   const engine=useRef<{world:()=>void;fit:()=>void;select:(id?:string)=>void;destroy:()=>void}|undefined>(undefined);
   const [ready,setReady]=useState(false),[notice,setNotice]=useState('');
@@ -60,5 +62,5 @@ export function AirportMap({airports,selected,onSelect,googleKey}:{airports:Part
     return()=>{disposed=true;engine.current?.destroy();engine.current=undefined};
   },[signature,googleKey]);
   useEffect(()=>{if(ready)engine.current?.select(selected)},[selected,ready]);
-  return <div className="airport-map-wrap"><div ref={container} className="airport-map" aria-label="Hartă aeroporturi"/><div className="airport-map-controls"><button disabled={!ready} onClick={()=>engine.current?.world()}><Globe2 size={15}/>Lume</button><button disabled={!ready} onClick={()=>engine.current?.fit()}><LocateFixed size={15}/>Rezultate</button></div><div className="airport-map-legend"><i/>În colaborare<span/><i className="inactive"/>Dezactivat</div>{notice&&<div className="airport-map-notice" role="status">{notice}</div>}</div>;
+  return <div className="airport-map-wrap"><div ref={container} className="airport-map" aria-label={t("Hartă aeroporturi")}/><div className="airport-map-controls"><button disabled={!ready} onClick={()=>engine.current?.world()}><Globe2 size={15}/>{t("Lume")}</button><button disabled={!ready} onClick={()=>engine.current?.fit()}><LocateFixed size={15}/>{t("Rezultate")}</button></div><div className="airport-map-legend"><i/>{t("În colaborare")}<span/><i className="inactive"/>{t("Dezactivat")}</div>{notice&&<div className="airport-map-notice" role="status">{notice}</div>}</div>;
 }

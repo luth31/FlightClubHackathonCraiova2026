@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {PersonReference} from '@/components/people/PersonReference';
 import { useEffect, useState, type FormEvent } from "react";
 import {
@@ -38,10 +39,11 @@ const labels: Record<string, string> = {
   rejected: "Respins",
 };
 function ReviewStatus({ status }: { status: string }) {
+  useLanguage();
   return (
     <span className={`supplier-status review-${status}`}>
       <span />
-      {labels[status] || status}
+      {t(labels[status] || status)}
     </span>
   );
 }
@@ -61,6 +63,7 @@ export function SuppliersPage({
   onOpen: (id: string) => void;
   user: User;
 }) {
+  useLanguage();
   const [data, setData] = useState<Registry>(),
     [catalog,setCatalog]=useState<Supplier[]>(),[catalogError,setCatalogError]=useState(''),
     [registrations,setRegistrations]=useState<Registration[]>([]),[registrationOpen,setRegistrationOpen]=useState(false),[registrationId,setRegistrationId]=useState<string>(),
@@ -126,26 +129,24 @@ export function SuppliersPage({
       <div className="page-heading supplier-page-heading">
         <div>
 
-          <h1>Furnizori</h1>
+          <h1>{t("Furnizori")}</h1>
 
         </div>
         <div className="heading-actions supplier-heading-actions">
           <button className="button secondary" onClick={()=>setRegistrationOpen(true)}>
             <Building2 size={17} />
-            Înregistrează furnizor
-          </button>
+            {t("Înregistrează furnizor")}</button>
           <button
             className="button primary"
             disabled={!data}
             onClick={() => {setRecheck(undefined);setCreate(true)}}
           >
             <Plus size={17} />
-            Verifică o solicitare
-          </button>
+            {t("Verifică o solicitare")}</button>
         </div>
       </div>
-      <ol className="supplier-process" aria-label="Pașii verificării">
-        <li><span>1</span>Compară datele</li><li><span>2</span>Confirmă independent</li><li><span>3</span>Aprobă cu un coleg</li>
+      <ol className="supplier-process" aria-label={t("Pașii verificării")}>
+        <li><span>1</span>{t("Compară datele")}</li><li><span>2</span>{t("Confirmă independent")}</li><li><span>3</span>{t("Aprobă cu un coleg")}</li>
       </ol>
       <SupplierContent error={error} loading={!data} retry={() => setRefresh((n) => n + 1)}>
       {data && (
@@ -154,17 +155,17 @@ export function SuppliersPage({
             <button onClick={()=>{setTab("reviews");setStatus("needs_review");setOffset(0)}}>
               <ShieldAlert size={19} />
               <strong>{data.counters.needs_review}</strong>
-              <span>de verificat</span>
+              <span>{t("de verificat")}</span>
             </button>
             <button onClick={()=>{setTab("reviews");setStatus("verified");setOffset(0)}}>
               <UserRound size={19} />
               <strong>{data.counters.verified}</strong>
-              <span>de aprobat</span>
+              <span>{t("de aprobat")}</span>
             </button>
             <button onClick={()=>setTab("registry")}>
               <Building2 size={19} />
               <strong>{catalog?.length ?? '—'}</strong>
-              <span>furnizori în registru</span>
+              <span>{t("furnizori în registru")}</span>
             </button>
           </div>
           <div className="panel">
@@ -173,45 +174,44 @@ export function SuppliersPage({
                 className={tab === "reviews" ? "active" : ""}
                 onClick={() => setTab("reviews")}
               >
-                Verificări<span>{data.total}</span>
+                {t("Verificări")}<span>{data.total}</span>
               </button>
               <button
                 className={tab === "registry" ? "active" : ""}
                 onClick={() => setTab("registry")}
               >
-                Registru furnizori<span>{catalog?.length ?? '—'}</span>
+                {t("Registru furnizori")}<span>{catalog?.length ?? '—'}</span>
               </button>
-              <button className={tab === "registrations" ? "active" : ""} onClick={()=>setTab("registrations")}>Înregistrări inițiale<span>{registrations.length}</span></button>
+              <button className={tab === "registrations" ? "active" : ""} onClick={()=>setTab("registrations")}>{t("Înregistrări inițiale")}<span>{registrations.length}</span></button>
             </div>
             <div className="filters">
               <label className="search-input">
                 <Search size={17} />
                 <input
-                  aria-label="Caută un furnizor"
-                  placeholder="Caută furnizorul sau contactul…"
+                  aria-label={t("Caută un furnizor")}
+                  placeholder={t("Caută furnizorul sau contactul…")}
                   value={query}
                   onChange={(e) => {setQuery(e.target.value);setOffset(0)}}
                 />
               </label>
               <span className="result-count">
                 {tab === "reviews" ? cases?.length : tab === "registrations" ? matchingRegistrations.length : suppliers?.length ?? '—'}{" "}
-                rezultate
-              </span>
+                {t("rezultate")}</span>
             </div>
             {tab==='reviews'&&<div className="supplier-query-controls">
               <button type="button" className="supplier-mine-toggle" role="switch" aria-checked={mine}
                 onClick={() => {setMine(!mine);setOffset(0)}}>
                 <span className="supplier-toggle-track" aria-hidden="true"><span /></span>
-                <span>Ale mele</span>
+                <span>{t("Ale mele")}</span>
               </button>
-              <label>Stare<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="">Toate</option>{Object.entries(labels).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>
-              <details className="supplier-extra-filters"><summary>Alte filtre{(risk||from||to)&&<span>{[risk,from,to].filter(Boolean).length}</span>}</summary><div>
-                <label>Risc orientativ<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">Toate</option><option value="high">Ridicat</option><option value="medium">Mediu</option><option value="low">Scăzut</option></select></label>
-                <label>De la<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>Până la<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
+              <label>{t("Stare")}<select value={status} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="">{t("Toate")}</option>{Object.entries(labels).map(([id,label])=><option key={id} value={id}>{t(label)}</option>)}</select></label>
+              <details className="supplier-extra-filters"><summary>{t("Alte filtre")}{(risk||from||to)&&<span>{[risk,from,to].filter(Boolean).length}</span>}</summary><div>
+                <label>{t("Risc orientativ")}<select value={risk} onChange={e=>{setRisk(e.target.value);setOffset(0)}}><option value="">{t("Toate")}</option><option value="high">{t("Ridicat")}</option><option value="medium">{t("Mediu")}</option><option value="low">{t("Scăzut")}</option></select></label>
+                <label>{t("De la")}<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label>{t("Până la")}<input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label>
               </div></details>
-              <button className="button secondary" onClick={()=>download(`/supplier-reviews/export.csv?${request}`,'verificari-furnizori.csv').catch(e=>notify(e.message))}>Export CSV</button>
+              <button className="button secondary" onClick={()=>download(`/supplier-reviews/export.csv?${request}`,'verificari-furnizori.csv').catch(e=>notify(e.message))}>{t("Export CSV")}</button>
             </div>}
-            {tab==='registrations' ? <div className="supplier-reviews-list">{matchingRegistrations.length?matchingRegistrations.map(r=><button className="supplier-review-row" key={r.id} onClick={()=>setRegistrationId(r.id)}><span className="review-row-copy"><strong>{r.payload.name} · CUI {r.payload.tax_id}</strong><small>{date(r.created_at)}</small></span><ReviewStatus status={r.status}/></button>):<Empty title="Niciun dosar de înregistrare"/>}</div> : tab === "reviews" ? (
+            {tab==='registrations' ? <div className="supplier-reviews-list">{matchingRegistrations.length?matchingRegistrations.map(r=><button className="supplier-review-row" key={r.id} onClick={()=>setRegistrationId(r.id)}><span className="review-row-copy"><strong>{r.payload.name} {t("· CUI")}{' '}{r.payload.tax_id}</strong><small>{date(r.created_at)}</small></span><ReviewStatus status={r.status}/></button>):<Empty title={t("Niciun dosar de înregistrare")}/>}</div> : tab === "reviews" ? (
               cases?.length ? (
                 <div className="supplier-reviews-list">
                   {cases.map((c) => (
@@ -234,7 +234,7 @@ export function SuppliersPage({
                         <small>
                           {c.reasons.length
                             ? c.reasons[0].message
-                            : "IBAN-ul și expeditorul coincid cu registrul."}
+                            : t("IBAN-ul și expeditorul coincid cu registrul.")}
                         </small>
                       </span>
                       <span className="review-row-date">
@@ -247,15 +247,14 @@ export function SuppliersPage({
                 </div>
               ) : (
                 <Empty
-                  title="Nicio solicitare găsită"
-                  message="Schimbă filtrele sau începe o verificare."
+                  title={t("Nicio solicitare găsită")}
+                  message={t("Schimbă filtrele sau începe o verificare.")}
                 >
                   <button
                     className="button secondary"
                     onClick={() => {setRecheck(undefined);setCreate(true)}}
                   >
-                    Verifică o solicitare
-                    <ArrowRight size={16} />
+                    {t("Verifică o solicitare")}<ArrowRight size={16} />
                   </button>
                 </Empty>
               )
@@ -271,8 +270,8 @@ export function SuppliersPage({
                         <h3>{s.name}</h3>
                         <small>
                           {s.trust_status === "demo_verified"
-                            ? "Date de referință"
-                            : "Verificat și aprobat"}
+                            ? t("Date de referință")
+                            : t("Verificat și aprobat")}
                         </small>
                       </div>
                     </div>
@@ -280,15 +279,13 @@ export function SuppliersPage({
                       <div>
                         <dt>
                           <Landmark size={13} />
-                          Cont în registru
-                        </dt>
+                          {t("Cont în registru")}</dt>
                         <dd className="iban">{groupedIban(s.expected_iban)}</dd>
                       </div>
                       <div>
                         <dt>
                           <Mail size={13} />
-                          Contact cunoscut
-                        </dt>
+                          {t("Contact cunoscut")}</dt>
                         <dd>{s.verified_contact}</dd>
                       </div>
                     </dl>
@@ -297,28 +294,23 @@ export function SuppliersPage({
                         className="text-button"
                         onClick={() => onOpen(s.document_id)}
                       >
-                        Contractul sursă
-                        <ArrowUpRight size={14} />
+                        {t("Contractul sursă")}<ArrowUpRight size={14} />
                       </button>
                       <span>
-                        <button className="text-button" onClick={()=>setRegistryId(s.id)}>Istoric complet</button> {s.bank_history.length}{" "}
-                        {s.bank_history.length === 1 ? "versiune" : "versiuni"}{" "}
-                        de cont păstrate
-                      </span>
+                        <button className="text-button" onClick={()=>setRegistryId(s.id)}>{t("Istoric complet")}</button> {s.bank_history.length}{" "}
+                        {s.bank_history.length === 1 ? t("versiune") : t("versiuni")}{" "}
+                        {t("de cont păstrate")}</span>
                     </div>
                   </article>
                 ))}
               </div>
             ) : (
-              <Empty title="Niciun furnizor găsit" />
+              <Empty title={t("Niciun furnizor găsit")} />
             )}</SupplierContent>}
           </div>
-          {tab==='reviews'&&(data.total>25||offset>0)&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>Anterior</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} din {data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>Următor</button></div>}
+          {tab==='reviews'&&(data.total>25||offset>0)&&<div className="supplier-pagination"><button className="button secondary" disabled={!offset} onClick={()=>setOffset(Math.max(0,offset-25))}>{t("Anterior")}</button><span>{data.total?offset+1:0}–{Math.min(offset+25,data.total)} {t("din")}{' '}{data.total}</span><button className="button secondary" disabled={offset+25>=data.total} onClick={()=>setOffset(offset+25)}>{t("Următor")}</button></div>}
           <p className="supplier-disclaimer">
-            Un rezultat fără diferențe nu
-            confirmă legitimitatea mesajului sau proprietarul contului. FlyLeaf
-            nu execută și nu blochează plăți externe.
-          </p>
+            {t("Un rezultat fără diferențe nu confirmă legitimitatea mesajului sau proprietarul contului. FlyLeaf nu execută și nu blochează plăți externe.")}</p>
         </>
       )}
       </SupplierContent>
@@ -368,6 +360,7 @@ function NewReview({
   onOpen: (id: string) => void;
   onCreated: (r: Review) => void;
 }) {
+  useLanguage();
   const [supplierId, setSupplierId] = useState(suppliers.find(s=>s.id===initialReview?.supplier_id)?.id||suppliers[0]?.id||""),
     [contractId,setContractId]=useState(initialReview?.document_id||suppliers[0]?.document_id||""),
     [currency,setCurrency]=useState(initialReview?.invoice_currency||"RON"),
@@ -433,40 +426,37 @@ function NewReview({
   }
   return (
     <Modal
-      title="Verifică o solicitare"
-      subtitle="Compară informațiile primite cu un contract și cu registrul furnizorului."
+      title={t("Verifică o solicitare")}
+      subtitle={t("Compară informațiile primite cu un contract și cu registrul furnizorului.")}
       wide
       onClose={onClose}
     >
       <form onSubmit={submit} className="new-review-grid">
         <aside className="supplier-baseline">
           <div className="step-label">
-            <span>1</span>Referința din registru
-          </div>
+            <span>1</span>{t("Referința din registru")}</div>
           <label className="field">
-            Furnizor
-            <select
+            {t("Furnizor")}<select
               value={supplierId}
               onChange={(e) => {setSupplierId(e.target.value);setContractId(suppliers.find(s=>s.id===e.target.value)?.document_id||"")}}
             >
               {suppliers.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} · {s.tax_id||"CUI neînregistrat"}
+                  {s.name} · {s.tax_id||t("CUI neînregistrat")}
                 </option>
               ))}
             </select>
           </label>
-          <label className="field">Contract<select required value={contractId} onChange={e=>setContractId(e.target.value)}>{supplier?.contracts.map(c=><option key={c.id} value={c.id} disabled={!c.eligible_for_review}>{c.title}{!c.eligible_for_review?" · Indisponibil":""}</option>)}</select></label>
+          <label className="field">{t("Contract")}<select required value={contractId} onChange={e=>setContractId(e.target.value)}>{supplier?.contracts.map(c=><option key={c.id} value={c.id} disabled={!c.eligible_for_review}>{c.title}{!c.eligible_for_review?t(" · Indisponibil"):""}</option>)}</select></label>
           {supplier ? (
             <>
               <div className="baseline-label">
                 <ShieldCheck size={15} />
-                Datele păstrate în registru
-              </div>
+                {t("Datele păstrate în registru")}</div>
               <dl>
-                <dt>IBAN de referință</dt>
+                <dt>{t("IBAN de referință")}</dt>
                 <dd className="iban">{groupedIban(supplier.expected_iban)}</dd>
-                <dt>Contact cunoscut</dt>
+                <dt>{t("Contact cunoscut")}</dt>
                 <dd>{supplier.verified_contact}</dd>
               </dl>
               <button
@@ -478,63 +468,55 @@ function NewReview({
                 }}
               >
                 <FileText size={14} />
-                Deschide contractul sursă
-                <ArrowUpRight size={14} />
+                {t("Deschide contractul sursă")}<ArrowUpRight size={14} />
               </button>
               <div className="note-box">
                 <ShieldCheck size={18} />
                 <p>
                   {supplier.trust_status === "demo_verified"
-                    ? "Date de referință din registrul furnizorilor."
-                    : "Date aprobate prin verificare independentă și decizia unui alt coleg."}{" "}
-                  Un IBAN valid nu dovedește cine deține contul.
-                </p>
+                    ? t("Date de referință din registrul furnizorilor.")
+                    : t("Date aprobate prin verificare independentă și decizia unui alt coleg.")}{" "}
+                  {t("Un IBAN valid nu dovedește cine deține contul.")}</p>
               </div>
             </>
           ) : (
-            <Empty title="Niciun contract disponibil" />
+            <Empty title={t("Niciun contract disponibil")} />
           )}
         </aside>
         <div className="supplier-request">
           <div className="step-label">
-            <span>2</span>Informațiile primite
-          </div>
+            <span>2</span>{t("Informațiile primite")}</div>
           <label className="field demo-example">
-            Completează un exemplu
-            <select defaultValue="" onChange={(e) => example(e.target.value)}>
+            {t("Completează un exemplu")}<select defaultValue="" onChange={(e) => example(e.target.value)}>
               <option value="" disabled>
-                Alege un exemplu
-              </option>
-              <option value="matched">Aceleași date ca în registru</option>
-              <option value="changed">Contact cunoscut, IBAN diferit</option>
+                {t("Alege un exemplu")}</option>
+              <option value="matched">{t("Aceleași date ca în registru")}</option>
+              <option value="changed">{t("Contact cunoscut, IBAN diferit")}</option>
               <option value="lookalike">
-                Adresă asemănătoare, IBAN diferit
-              </option>
+                {t("Adresă asemănătoare, IBAN diferit")}</option>
             </select>
           </label>
           <label className="field">
-            Adresa expeditorului
-            <input
+            {t("Adresa expeditorului")}<input
               required
               type="email"
               value={sender}
               onChange={(e) => setSender(e.target.value)}
-              placeholder="contact@furnizor.example"
+              placeholder={t("contact@furnizor.example")}
             />
           </label>
           <label className="field">
-            IBAN comunicat
-            <input
+            {t("IBAN comunicat")}<input
               required
               value={iban}
               onChange={(e) => setIban(e.target.value)}
-              placeholder="Introdu IBAN-ul comunicat"
+              placeholder={t("Introdu IBAN-ul comunicat")}
               autoComplete="off"
             />
           </label>
           <div className="form-grid">
             <label className="field">
-              Valoare factură <small>Opțional</small>
+              {t("Valoare factură")}{' '}<small>{t("Opțional")}</small>
               <input
                 type="number"
                 min="0"
@@ -544,9 +526,9 @@ function NewReview({
                 placeholder="0,00"
               />
             </label>
-            <label className="field">Monedă<input value={currency} maxLength={3} minLength={3} pattern="[A-Za-z]{3}" onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label>
+            <label className="field">{t("Monedă")}<input value={currency} maxLength={3} minLength={3} pattern="[A-Za-z]{3}" onChange={e=>setCurrency(e.target.value.toUpperCase())}/></label>
             <label className="field">
-              Data prestației <small>Opțional</small>
+              {t("Data prestației")}{' '}<small>{t("Opțional")}</small>
               <input
                 type="date"
                 value={serviceDate}
@@ -556,13 +538,12 @@ function NewReview({
             </label>
           </div>
           <label className="field">
-            Conținutul solicitării
-            <textarea
+            {t("Conținutul solicitării")}<textarea
               rows={3}
               value={message}
               onInput={(e) => setMessage(e.currentTarget.value)}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Introdu fragmentul relevant din mesaj sau factură…"
+              placeholder={t("Introdu fragmentul relevant din mesaj sau factură…")}
             />
           </label>
           {error && <ErrorMessage message={error} />}
@@ -572,16 +553,14 @@ function NewReview({
               className="button secondary"
               onClick={onClose}
             >
-              Renunță
-            </button>
+              {t("Renunță")}</button>
             <button className="button primary" disabled={busy || !supplier}>
               {busy ? (
                 <LoaderCircle className="spin" size={17} />
               ) : (
                 <ShieldCheck size={17} />
               )}
-              Compară detaliile
-            </button>
+              {t("Compară detaliile")}</button>
           </div>
         </div>
       </form>
@@ -605,6 +584,7 @@ export function ReviewDetail({
   onRecheck:()=>void;
   onReview:(id:string)=>void;
 }) {
+  useLanguage();
   const [loaded,setLoaded]=useState<Review>(),[loadError,setLoadError]=useState('');
   const r=loaded?.id===review.id && loaded.status===review.status && loaded.assignment_revision===review.assignment_revision ? loaded : review;
   useEffect(()=>{
@@ -653,16 +633,16 @@ export function ReviewDetail({
   return (
     <Modal
       title={r.supplier_name}
-      subtitle={`Verificare înregistrată la ${time(r.created_at)}`}
+      subtitle={t("Verificare înregistrată la {p0}", {p0:time(r.created_at)})}
       wide
       onClose={onClose}
     >
       <div className="review-detail">
         {loadError&&<ErrorMessage message={loadError}/>}
-        {(r.previous_review_id||r.rechecks?.length)&&<section className="review-control" aria-label="Istoric reevaluări">
-          <h3>Istoric reevaluări</h3>
-          {r.previous_review_id&&<button className="text-button" onClick={()=>onReview(r.previous_review_id!)}>Verificarea precedentă · {r.previous_review_id}</button>}
-          {r.rechecks?.map(c=><p key={c.id}><button className="text-button" onClick={()=>onReview(c.id)}>Reevaluare · {c.id} · {labels[c.status]||c.status} · {date(c.created_at)}</button></p>)}
+        {(r.previous_review_id||r.rechecks?.length)&&<section className="review-control" aria-label={t("Istoric reevaluări")}>
+          <h3>{t("Istoric reevaluări")}</h3>
+          {r.previous_review_id&&<button className="text-button" onClick={()=>onReview(r.previous_review_id!)}>{t("Verificarea precedentă ·")}{' '}{r.previous_review_id}</button>}
+          {r.rechecks?.map(c=><p key={c.id}><button className="text-button" onClick={()=>onReview(c.id)}>{t("Reevaluare ·")}{' '}{c.id} · {t(labels[c.status]||c.status)} · {date(c.created_at)}</button></p>)}
         </section>}
         <div className="review-result-heading">
           <ReviewStatus status={r.status} />
@@ -674,7 +654,7 @@ export function ReviewDetail({
                 onOpen(r.document_id!);
               }}
             >
-              Contract sursă · v{r.source_version}
+              {t("Contract sursă · v")}{r.source_version}
               <ArrowUpRight size={14} />
             </button>
           )}
@@ -685,12 +665,12 @@ export function ReviewDetail({
             <div>
               <strong>
                 {r.status === "approved"
-                  ? "Diferențe analizate și aprobate"
+                  ? t("Diferențe analizate și aprobate")
                   : r.status === "rejected"
-                    ? "Diferențe consemnate"
+                    ? t("Diferențe consemnate")
                     : r.reasons.length === 1
-                      ? "O diferență necesită atenție"
-                      : "Diferențe care necesită atenție"}
+                      ? t("O diferență necesită atenție")
+                      : t("Diferențe care necesită atenție")}
               </strong>
               {r.reasons.map((reason) => (
                 <p key={reason.code}>{reason.message}</p>
@@ -701,11 +681,9 @@ export function ReviewDetail({
           <div className="review-positive">
             <CheckCheck size={21} />
             <div>
-              <strong>Fără diferențe în controalele efectuate.</strong>
+              <strong>{t("Fără diferențe în controalele efectuate.")}</strong>
               <p>
-                Rezultatul nu confirmă legitimitatea solicitării. Nicio plată nu
-                a fost inițiată.
-              </p>
+                {t("Rezultatul nu confirmă legitimitatea solicitării. Nicio plată nu a fost inițiată.")}</p>
             </div>
           </div>
         )}
@@ -715,28 +693,26 @@ export function ReviewDetail({
           <div>
             <h3>
               <ShieldCheck size={16} />
-              În registru, la verificare
-            </h3>
+              {t("În registru, la verificare")}</h3>
             <dl>
-              <dt>IBAN de referință</dt>
+              <dt>{t("IBAN de referință")}</dt>
               <dd className="iban">{groupedIban(r.expected_iban)}</dd>
-              <dt>Contact cunoscut</dt>
-              <dd>{r.verified_contact || "Fără contact verificat"}</dd>
+              <dt>{t("Contact cunoscut")}</dt>
+              <dd>{r.verified_contact || t("Fără contact verificat")}</dd>
             </dl>
           </div>
           <div>
             <h3>
               <Mail size={16} />
-              În solicitare
-            </h3>
+              {t("În solicitare")}</h3>
             <dl>
-              <dt>IBAN comunicat</dt>
+              <dt>{t("IBAN comunicat")}</dt>
               <dd
                 className={`iban ${r.expected_iban !== r.observed_iban ? "mismatch" : ""}`}
               >
                 {groupedIban(r.observed_iban)}
               </dd>
-              <dt>Expeditor</dt>
+              <dt>{t("Expeditor")}</dt>
               <dd
                 className={
                   r.sender_email !== r.verified_contact ? "mismatch" : ""
@@ -746,14 +722,14 @@ export function ReviewDetail({
               </dd>
               {r.invoice_amount != null && (
                 <>
-                  <dt>Valoare factură</dt>
+                  <dt>{t("Valoare factură")}</dt>
                   <dd>{new Intl.NumberFormat('ro-RO',{style:'currency',currency:r.invoice_currency||'RON'}).format(r.invoice_amount)}</dd>
                 </>
               )}
-              <dt>Data prestației</dt>
-              <dd>{r.service_date ? date(r.service_date) : 'Neînregistrat'}</dd>
-              <dt>Perioada evaluată</dt>
-              <dd>{r.contract_snapshot ? `${r.contract_snapshot.effective_date ? date(r.contract_snapshot.effective_date) : 'Început neînregistrat'} — ${r.contract_snapshot.expires_at ? date(r.contract_snapshot.expires_at) : 'Sfârșit neînregistrat'}` : 'Neînregistrat'}</dd>
+              <dt>{t("Data prestației")}</dt>
+              <dd>{r.service_date ? date(r.service_date) : t("Neînregistrat")}</dd>
+              <dt>{t("Perioada evaluată")}</dt>
+              <dd>{r.contract_snapshot ? t("{p0} — {p1}", {p0:r.contract_snapshot.effective_date ? date(r.contract_snapshot.effective_date) : 'Început neînregistrat',p1:r.contract_snapshot.expires_at ? date(r.contract_snapshot.expires_at) : 'Sfârșit neînregistrat'}) : t("Neînregistrat")}</dd>
             </dl>
           </div>
         </div>
@@ -764,7 +740,7 @@ export function ReviewDetail({
           <div className="recorded-decision">
             <UserRound size={17} />
             <div>
-              <strong>Verificare independentă înregistrată</strong>
+              <strong>{t("Verificare independentă înregistrată")}</strong>
               <p>{r.verification_note}</p>
               <small>
                 <PersonReference name={r.actors?.verified_by?.name||(r.verified_by === user.id ? user.name : r.verified_by)} userId={r.verified_by}/> ·{" "}
@@ -779,8 +755,8 @@ export function ReviewDetail({
             <div>
               <strong>
                 {r.status === "rejected"
-                  ? "Motivul respingerii"
-                  : "Decizia celei de-a doua persoane"}
+                  ? t("Motivul respingerii")
+                  : t("Decizia celei de-a doua persoane")}
               </strong>
               <p>{r.decision_note}</p>
               <small>
@@ -794,22 +770,21 @@ export function ReviewDetail({
             <UserRound size={18} />
             <p>
               {r.verified_by === user.id
-                ? "Un alt coleg autorizat trebuie să aprobe această confirmare. Nu îți poți aproba propria verificare."
-                : "Există și neconcordanțe de contract sau factură. Verificarea contactului nu le rezolvă."}
+                ? t("Un alt coleg autorizat trebuie să aprobe această confirmare. Nu îți poți aproba propria verificare.")
+                : t("Există și neconcordanțe de contract sau factură. Verificarea contactului nu le rezolvă.")}
             </p>
           </div>
         )}
         {!mode && (
           <div className="review-detail-actions">
-            <button className="button secondary" onClick={onRecheck}>Verifică din nou</button>
+            <button className="button secondary" onClick={onRecheck}>{t("Verifică din nou")}</button>
             {["needs_review", "verified"].includes(r.status) && (
               <button
                 className="button secondary"
                 onClick={() => setMode("reject")}
               >
                 <X size={16} />
-                Respinge solicitarea
-              </button>
+                {t("Respinge solicitarea")}</button>
             )}
             {r.can_verify && (
               <button
@@ -817,8 +792,7 @@ export function ReviewDetail({
                 onClick={() => setMode("verify")}
               >
                 <ShieldCheck size={16} />
-                Înregistrează verificarea independentă
-              </button>
+                {t("Înregistrează verificarea independentă")}</button>
             )}
             {r.can_approve && (
               <button
@@ -826,8 +800,7 @@ export function ReviewDetail({
                 onClick={() => setMode("approve")}
               >
                 <Check size={16} />
-                Aprobă modificarea
-              </button>
+                {t("Aprobă modificarea")}</button>
             )}
           </div>
         )}
@@ -835,21 +808,17 @@ export function ReviewDetail({
           <form onSubmit={decide} className="review-decision-form">
             <h3>
               {mode === "verify"
-                ? "Confirmă printr-un contact cunoscut"
+                ? t("Confirmă printr-un contact cunoscut")
                 : mode === "approve"
-                  ? "Decizia celei de-a doua persoane"
-                  : "Motivul respingerii"}
+                  ? t("Decizia celei de-a doua persoane")
+                  : t("Motivul respingerii")}
             </h3>
             {mode === "verify" && (
               <>
                 <p>
-                  Înregistrează rezultatul verificării realizate separat de
-                  solicitarea primită. Această acțiune este o confirmare umană,
-                  nu un contact automat.
-                </p>
+                  {t("Înregistrează rezultatul verificării realizate separat de solicitarea primită. Această acțiune este o confirmare umană, nu un contact automat.")}</p>
                 <label className="field">
-                  Contact utilizat
-                  <input
+                  {t("Contact utilizat")}<input
                     required
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
@@ -859,8 +828,8 @@ export function ReviewDetail({
             )}
             <label className="field">
               {mode === "verify"
-                ? "Dovada / rezultatul verificării"
-                : "Observații"}
+                ? t("Dovada / rezultatul verificării")
+                : t("Observații")}
               <textarea
                 rows={3}
                 required={mode !== "approve"}
@@ -870,8 +839,8 @@ export function ReviewDetail({
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={
                   mode === "verify"
-                    ? "Ce ai confirmat, prin cine și când…"
-                    : "Contextul deciziei pentru colegi…"
+                    ? t("Ce ai confirmat, prin cine și când…")
+                    : t("Contextul deciziei pentru colegi…")
                 }
               />
             </label>
@@ -882,8 +851,7 @@ export function ReviewDetail({
                 className="button secondary"
                 onClick={() => setMode(undefined)}
               >
-                Renunță
-              </button>
+                {t("Renunță")}</button>
               <button
                 className={`button ${mode === "reject" ? "danger" : "primary"}`}
                 disabled={busy}
@@ -894,18 +862,16 @@ export function ReviewDetail({
                   <Check size={16} />
                 )}{" "}
                 {mode === "verify"
-                  ? "Salvează verificarea"
+                  ? t("Salvează verificarea")
                   : mode === "approve"
-                    ? "Confirmă aprobarea"
-                    : "Confirmă respingerea"}
+                    ? t("Confirmă aprobarea")
+                    : t("Confirmă respingerea")}
               </button>
             </div>
           </form>
         )}
         <p className="supplier-disclaimer">
-          FlyLeaf păstrează dovezile și deciziile. Acest flux nu execută și nu
-          blochează plăți într-un sistem financiar extern.
-        </p>
+          {t("FlyLeaf păstrează dovezile și deciziile. Acest flux nu execută și nu blochează plăți într-un sistem financiar extern.")}</p>
       </div>
     </Modal>
   );

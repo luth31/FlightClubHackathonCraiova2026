@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Search, ArrowUpRight } from 'lucide-react';
 import { api } from '@/services/api-client';
@@ -6,6 +7,7 @@ import { readableText } from '@/utils/text';
 import type { DocumentRecord } from '@/types';
 
 export function QuickSearch({ onClose, onOpen, onAll }: { onClose: () => void; onOpen: (id: string) => void; onAll: (q: string) => void }) {
+  useLanguage();
   const [query, setQuery] = useState('');
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => { input.current?.focus(); }, []);
@@ -23,13 +25,13 @@ export function QuickSearch({ onClose, onOpen, onAll }: { onClose: () => void; o
     }, 180);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [query]);
-  return <Modal title="Caută documente" subtitle="În toate documentele la care ai acces, din orice pagină." onClose={onClose} initialFocusRef={input}>
+  return <Modal title={t("Caută documente")} subtitle={t("În toate documentele la care ai acces, din orice pagină.")} onClose={onClose} initialFocusRef={input}>
     <div className="quick-lookup">
       <form onSubmit={e => { e.preventDefault(); onAll(query); }}>
-        <label className="search-input"><Search size={18}/><input ref={input} maxLength={200} aria-label="Caută în toate documentele" placeholder="Titlu, număr, furnizor sau echipament…" value={query} onChange={e => setQuery(e.target.value)}/></label>
+        <label className="search-input"><Search size={18}/><input ref={input} maxLength={200} aria-label={t("Caută în toate documentele")} placeholder={t("Titlu, număr, furnizor sau echipament…")} value={query} onChange={e => setQuery(e.target.value)}/></label>
       </form>
-      {error ? <ErrorMessage message={error}/> : busy ? <Loading/> : items.length ? <div className="lookup-results">{items.map(d => <button key={d.id} onClick={() => onOpen(d.id)}><span><strong>{readableText(d.title)}</strong><small>{readableText(d.number)} · {d.category} · v{d.version}</small></span><ArrowUpRight size={16}/></button>)}</div> : <Empty title={query ? 'Niciun rezultat' : 'Găsește documentul potrivit'} message={query ? 'Încearcă alt număr, furnizor sau titlu.' : 'Căutarea include documentele autorizate, indiferent de filtrele paginii curente.'}/>}
-      <button className="button secondary" onClick={() => onAll(query)}>Vezi toate rezultatele în Documente <ArrowUpRight size={16}/></button>
+      {error ? <ErrorMessage message={error}/> : busy ? <Loading/> : items.length ? <div className="lookup-results">{items.map(d => <button key={d.id} onClick={() => onOpen(d.id)}><span><strong>{readableText(d.title)}</strong><small>{readableText(d.number)} · {d.category} {t("· v")}{d.version}</small></span><ArrowUpRight size={16}/></button>)}</div> : <Empty title={query ? t("Niciun rezultat") : t("Găsește documentul potrivit")} message={query ? t("Încearcă alt număr, furnizor sau titlu.") : t("Căutarea include documentele autorizate, indiferent de filtrele paginii curente.")}/>}
+      <button className="button secondary" onClick={() => onAll(query)}>{t("Vezi toate rezultatele în Documente")}{' '}<ArrowUpRight size={16}/></button>
     </div>
   </Modal>;
 }

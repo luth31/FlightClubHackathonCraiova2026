@@ -49,6 +49,7 @@ export interface LedgerEvent {
 }
 export interface LedgerEvidenceTarget {eventId:string;groupId:string}
 export interface LedgerFlight {
+  process?:OperationProcess;
   id:string;callsign:string;route:string;gate_id:string|null;scheduled_at:string;
   actual_at:string|null;status:string;severity:Severity;delay_minutes:number|null;
   events:LedgerEvent[];event_count?:number;category?:string;current?:boolean;source?:string;
@@ -69,3 +70,10 @@ export interface LedgerOperation {code:string;activity:string;activity_label:str
 export interface LedgerAudit {event_id:string;recorded_at:string|null;recorded_by:string;source:string;run_id:string|null;sequence:number|null;provenance:string;schema_version:number;indexed_at?:string}
 export interface LedgerFact extends Omit<LedgerEvent,'operation'|'entities'|'audit'> {operation:LedgerOperation;entities:LedgerEntity[];audit:LedgerAudit;group_id:string;integrity_verified:boolean;dependencies:{id:string;title:string;actual_at:string}[]}
 export interface LedgerEntityDetail {entity:LedgerEntity;kind_label:string;events:(LedgerEvent & {operation:LedgerOperation})[];total:number;offset:number;limit:number}
+
+export interface OperationProcess {
+  nodes:Array<{id:string;title:string;kind:string;activity:string;from_label:string;to_label:string;tone:string;status:string;recorded:boolean;planned_at:string|null;actual_at:string|null;actor:string;detail:string;missing:string[]}>;
+  edges:Array<{source:string;target:string;kind:string}>;
+  machines:Array<{id:string;label:string;current:string;states:Array<{id:string;label:string}>;transitions:Array<{source:string;target:string;label:string;code:string;requires:string[]}>}>;
+  guards:string[];observations:string[];
+}

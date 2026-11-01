@@ -19,6 +19,7 @@ export interface Person {
 export interface Department {id:string;name:string;label?:string;areas?:string[];head_user_id?:string|null;head_name?:string|null;revision?:number;job_titles?:string[]}
 export interface Delegation {id:string;from_user:string;to_user:string;from_name:string;to_name:string;starts_at:string;ends_at:string;reason:string;status:string;scope:string;active:boolean}
 export interface CalendarLeave {id:string;user_id:string;name:string;department:string;starts_at:string;ends_at:string;status:string}
+export interface LeaveRange {starts_at:string;ends_at:string}
 export interface LeaveReviewer {id:string;name:string;delegated_from_id?:string;delegated_from_name?:string;via?:'delegation'|'hierarchy'}
 export interface Leave extends CalendarLeave {reason:string;can_decide:boolean;reviewers?:LeaveReviewer[];document_id?:string|null;document_number?:string;document_version?:number;document_url?:string}
 export interface Directory {

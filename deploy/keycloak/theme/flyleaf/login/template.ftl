@@ -40,11 +40,7 @@
         </#list>
     </#if>
     <title>${title!}</title>
-    <#if themeResources?? && themeResources.favicons?has_content>
-        <@themeResourceTags.renderFavicons themeResources.favicons url.resourcesPath />
-    <#else>
-        <link rel="icon" href="${url.resourcesPath}/img/favicon.ico" />
-    </#if>
+    <link rel="icon" type="image/svg+xml" href="${url.resourcesPath}/img/favicon.svg" />
     <#if themeResources?? && themeResources.stylesCommon?has_content>
         <@themeResourceTags.renderStyles themeResources.stylesCommon url.resourcesCommonPath />
     <#elseif properties.stylesCommon?has_content>
@@ -152,10 +148,10 @@
 <body id="keycloak-bg" class="${properties.kcBodyClass!}" data-page-id="login-${pageId}">
 <div class="${properties.kcLogin!}">
   <aside class="login-story" aria-label="FlyLeaf">
-    <div class="brand"><span class="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 25 16 5l11 20h-7l-4-8-4 8z" fill="currentColor"/><path d="M8 21h18" stroke="#a4e5db" stroke-width="2"/></svg></span>FlyLeaf<span class="brand-period">.</span></div>
+    <div class="brand flyleaf-login-brand"><img src="${url.resourcesPath}/img/flyleaf-logo.png" alt="FlyLeaf" width="340" height="130"/></div>
     <div class="login-story-content">
       <div class="eyebrow">${msg("flyleafTagline")}</div>
-      <h2>${msg("flyleafHeadline")}<br/><em>${msg("flyleafTogether")}</em></h2>
+      <h2>Less paperwork. More possibility.</h2>
       <p>${msg("flyleafDescription")}</p>
       <div class="login-benefits">
         <#list ["flyleafDocuments", "flyleafDecisions", "flyleafCollaboration"] as benefit>

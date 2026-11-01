@@ -109,7 +109,7 @@ def directory(db, user, reference_date=None):
         person = local_user(db, leave.user_id)
         summary = {'id': leave.id, 'user_id': leave.user_id, 'name': person.name, 'department': person.department,
             'starts_at': leave.starts_at, 'ends_at': leave.ends_at, 'status': leave.status}
-        if leave.status in ('pending', 'approved'):
+        if person.active and leave.status in ('pending', 'approved'):
             leave_calendar.append(summary)
         if not can_view_leave(db, user, leave):
             continue

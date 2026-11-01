@@ -12,7 +12,8 @@ The workspace includes searchable PDFs and local OCR, procurement dossiers, vers
 | Work on one airport with Vite and FastAPI | [Native development](#native-development) |
 | Understand the technologies and design choices | [Tech stack and concepts](docs/TECH_STACK_AND_CONCEPTS.md) |
 | Find the code, data and dependencies for each module | [Module architecture](docs/MODULE_ARCHITECTURE.md) |
-| Present the product | [Presentation, PDF and speaker notes](docs/presentation/README.md) |
+| Present the product | [Current product presentation and PDF](docs/presentation/README.md) |
+| Review the product, business proposal and engineering evidence | [Reviewer guide](docs/review/README.md) |
 | Reach the existing Docker installation over private HTTPS | [Optional Tailscale access](docs/TAILSCALE.md) |
 | Explore the four-airport contact/message scenario | [Four-airport local setup](docs/PARTNER_COORDINATION_API.md#four-airport-local-demonstration) |
 

@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import { useEffect, useRef, useState } from "react";
 import { Search, SlidersHorizontal, Download, X, List, Workflow, ChevronLeft, ChevronRight } from "lucide-react";
 import { api, download, getIdentity } from "@/services/api-client";
@@ -31,6 +32,7 @@ export function DocumentLibrary({
   onChanged?: () => void;
   user: User;
 }) {
+  useLanguage();
   const caseStorageKey = `flyleaf-document-case:${getIdentity()}`;
   const panelRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<LibraryView>(
@@ -117,27 +119,23 @@ export function DocumentLibrary({
     <>
       <div className="page-heading">
         <div>
-          <h1>Documente</h1>
+          <h1>{t("Documente")}</h1>
         </div>
         <div className="heading-actions">
           <button className="button secondary" onClick={exportCsv}>
             <Download size={17} />
-            Exportă registrul
-          </button>
+            {t("Exportă registrul")}</button>
           <button className="button primary" onClick={onUpload}>
-            <span className="plus">+</span>Adaugă document
-          </button>
+            <span className="plus">+</span>{t("Adaugă document")}</button>
         </div>
       </div>
       <div className="panel library-panel" ref={panelRef}>
       <div className="library-navigation">
-      <div className="library-view-switch" role="group" aria-label="Vizualizare documente">
+      <div className="library-view-switch" role="group" aria-label={t("Vizualizare documente")}>
         <button aria-pressed={view === "list"} onClick={() => changeView("list")}>
-          <List size={16} /> Registru
-        </button>
+          <List size={16} /> {t("Registru")}</button>
         <button aria-pressed={view === "procurement"} onClick={() => changeView("procurement")}>
-          <Workflow size={16} /> Dosare achiziții
-        </button>
+          <Workflow size={16} /> {t("Dosare achiziții")}</button>
       </div>
         {view !== "procurement" && <div className="library-tabs">
           {[
@@ -154,7 +152,7 @@ export function DocumentLibrary({
               aria-pressed={status === id}
               onClick={() => {setStatus(id);setPage(1)}}
             >
-              {label}
+              {t(label)}
               {id === "" && !loading && !status && !query && !category && (
                 <span>{view === "flow" ? flowData?.total : data?.total}</span>
               )}
@@ -166,13 +164,13 @@ export function DocumentLibrary({
           <label className="search-input">
             <Search size={18} />
             <input
-              aria-label="Caută documente"
-              placeholder="Caută după titlu, număr, furnizor…"
+              aria-label={t("Caută documente")}
+              placeholder={t("Caută după titlu, număr, furnizor…")}
               value={query}
               onChange={(e) => {setQuery(e.target.value);setPage(1)}}
             />
             {query && (
-              <button onClick={() => {setQuery("");setPage(1)}} aria-label="Șterge căutarea">
+              <button onClick={() => {setQuery("");setPage(1)}} aria-label={t("Șterge căutarea")}>
                 <X size={15} />
               </button>
             )}
@@ -180,13 +178,13 @@ export function DocumentLibrary({
           <label className="filter-select">
             <SlidersHorizontal size={16} />
             <select
-              aria-label="Tip document"
+              aria-label={t("Tip document")}
               value={category}
               onChange={(e) => {setCategory(e.target.value);setPage(1)}}
             >
-              <option value="">Toate tipurile</option>
+              <option value="">{t("Toate tipurile")}</option>
               {((view === "flow" ? flowData?.categories : data?.categories) || []).map((c) => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </label>
@@ -211,12 +209,11 @@ export function DocumentLibrary({
             <DocumentTable documents={visibleDocuments} onOpen={onOpen} />
             <div className="table-footer library-pagination">
               <span role="status">
-                {data.items.length ? `${firstIndex + 1}–${firstIndex + visibleDocuments.length}` : "0"} din {data.total} documente
-              </span>
-              {pageCount > 1 && <nav aria-label="Paginare documente">
-                <button className="button secondary small" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}><ChevronLeft size={16}/>Anterior</button>
+                {data.items.length ? t("{p0}–{p1}", {p0:firstIndex + 1,p1:firstIndex + visibleDocuments.length}) : "0"} {t("din")}{' '}{data.total} {t("documente")}</span>
+              {pageCount > 1 && <nav aria-label={t("Paginare documente")}>
+                <button className="button secondary small" disabled={currentPage === 1} onClick={() => changePage(currentPage - 1)}><ChevronLeft size={16}/>{t("Anterior")}</button>
                 <span>{currentPage} / {pageCount}</span>
-                <button className="button secondary small" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)}>Următor<ChevronRight size={16}/></button>
+                <button className="button secondary small" disabled={currentPage === pageCount} onClick={() => changePage(currentPage + 1)}>{t("Următor")}<ChevronRight size={16}/></button>
               </nav>}
             </div>
           </>

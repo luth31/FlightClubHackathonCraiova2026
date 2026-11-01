@@ -1,3 +1,4 @@
+import {t,useLanguage} from '@/i18n';
 import {PersonReference} from '@/components/people/PersonReference';
 import {useEffect,useState} from 'react';
 import {Check,ArrowRight,RefreshCw} from 'lucide-react';
@@ -8,13 +9,15 @@ import {UploadDialog} from '@/features/documents/UploadDialog';
 import type {DocumentRecord,Session,User} from '@/types';
 
 export function UploadAttachment({onClose,onCreated}:{onClose:()=>void;onCreated:(doc:DocumentRecord)=>void}){
+  useLanguage();
   const [user,setUser]=useState<User>(),[error,setError]=useState('');
   useEffect(()=>{const controller=new AbortController();void api<Session>('/session',{signal:controller.signal}).then(s=>{if(!controller.signal.aborted&&s.current_user)setUser(s.current_user)}).catch(e=>{if(!controller.signal.aborted)setError(e.message)});return()=>controller.abort()},[]);
   if(user)return <UploadDialog user={user} onClose={onClose} onCreated={onCreated}/>;
-  return <Modal title="Încarcă un fișier pentru mesaj" onClose={onClose}><div className="modal-body">{error?<ErrorMessage message={error}/>:<Loading/>}</div></Modal>;
+  return <Modal title={t("Încarcă un fișier pentru mesaj")} onClose={onClose}><div className="modal-body">{error?<ErrorMessage message={error}/>:<Loading/>}</div></Modal>;
 }
 
 export function AttachmentPreparation({initial,onClose,onReady,onOpen}:{initial:DocumentRecord;onClose:()=>void;onReady:(doc:DocumentRecord)=>void;onOpen:(id:string)=>void}){
+  useLanguage();
   const [doc,setDoc]=useState(initial),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [userId,setUserId]=useState(''),[canTake,setCanTake]=useState(false);
   const task=doc.workflow?.task;
@@ -38,18 +41,18 @@ export function AttachmentPreparation({initial,onClose,onReady,onOpen}:{initial:
     }catch(e){setError((e as Error).message)}finally{setBusy(false)}
   }
   const approved=['approved','signed'].includes(doc.status);
-  return <Modal title="Pregătește fișierul pentru mesaj" subtitle="Încărcare → verificare și aprobare → cenzurare → atașare" wide onClose={()=>{if(!busy)onClose()}}><div className="modal-body attachment-preparation">
-    <div className="attachment-preparation-heading"><div><strong>{doc.title}</strong><small>{doc.category} · {doc.department} · v{doc.version}</small></div><Status value={doc.status}/></div>
+  return <Modal title={t("Pregătește fișierul pentru mesaj")} subtitle={t("Încărcare → verificare și aprobare → cenzurare → atașare")} wide onClose={()=>{if(!busy)onClose()}}><div className="modal-body attachment-preparation">
+    <div className="attachment-preparation-heading"><div><strong>{doc.title}</strong><small>{doc.category} · {doc.department} {t("· v")}{doc.version}</small></div><Status value={doc.status}/></div>
     <ReadOnlyPdf source={`${doc.file_url}?version=${doc.version}`} title={doc.title} word={false}/>
     {error&&<ErrorMessage message={error}/>}
-    <p className="quiet-note">Fișierul este înregistrat în biblioteca aeroportului. Va ajunge la destinatar după pregătirea copiei și trimiterea mesajului.</p>
-    {task&&!approved&&<p className="quiet-note">Responsabil: <strong><PersonReference name={task.assignee}/></strong></p>}
-    <div className="attachment-preparation-actions"><button className="text-button" disabled={busy} onClick={()=>void act('refresh')}><RefreshCw size={15}/>Actualizează starea</button><button className="text-button" disabled={busy} onClick={()=>onOpen(doc.id)}>Vezi metadatele și fluxul</button>
-      {doc.status==='draft'&&!doc.validated&&doc.permissions?.can_validate&&<button className="button primary" disabled={busy} onClick={()=>void act('validate')}><Check size={16}/>Confirm informațiile documentului</button>}
-      {doc.status==='draft'&&doc.validated&&doc.permissions?.can_submit&&<button className="button primary" disabled={busy} onClick={()=>void act('submit')}>Trimite spre avizare<ArrowRight size={16}/></button>}
-      {doc.status==='in_review'&&doc.permissions?.can_review&&<button className="button primary" disabled={busy} onClick={()=>void act('approve')}><Check size={16}/>Aprobă această versiune</button>}
-      {doc.status==='in_review'&&!doc.permissions?.can_review&&canTake&&<button className="button secondary" disabled={busy} onClick={()=>void act('take')}>Preia avizarea</button>}
-      {approved&&doc.permissions?.can_share&&<button className="button primary" disabled={busy} onClick={()=>onReady(doc)}>Verifică datele pentru partajare<ArrowRight size={16}/></button>}
+    <p className="quiet-note">{t("Fișierul este înregistrat în biblioteca aeroportului. Va ajunge la destinatar după pregătirea copiei și trimiterea mesajului.")}</p>
+    {task&&!approved&&<p className="quiet-note">{t("Responsabil:")}{' '}<strong><PersonReference name={task.assignee}/></strong></p>}
+    <div className="attachment-preparation-actions"><button className="text-button" disabled={busy} onClick={()=>void act('refresh')}><RefreshCw size={15}/>{t("Actualizează starea")}</button><button className="text-button" disabled={busy} onClick={()=>onOpen(doc.id)}>{t("Vezi metadatele și fluxul")}</button>
+      {doc.status==='draft'&&!doc.validated&&doc.permissions?.can_validate&&<button className="button primary" disabled={busy} onClick={()=>void act('validate')}><Check size={16}/>{t("Confirm informațiile documentului")}</button>}
+      {doc.status==='draft'&&doc.validated&&doc.permissions?.can_submit&&<button className="button primary" disabled={busy} onClick={()=>void act('submit')}>{t("Trimite spre avizare")}<ArrowRight size={16}/></button>}
+      {doc.status==='in_review'&&doc.permissions?.can_review&&<button className="button primary" disabled={busy} onClick={()=>void act('approve')}><Check size={16}/>{t("Aprobă această versiune")}</button>}
+      {doc.status==='in_review'&&!doc.permissions?.can_review&&canTake&&<button className="button secondary" disabled={busy} onClick={()=>void act('take')}>{t("Preia avizarea")}</button>}
+      {approved&&doc.permissions?.can_share&&<button className="button primary" disabled={busy} onClick={()=>onReady(doc)}>{t("Verifică datele pentru partajare")}<ArrowRight size={16}/></button>}
     </div>
   </div></Modal>;
 }
