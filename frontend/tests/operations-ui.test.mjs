@@ -41,13 +41,13 @@ test('map styles retain their instances across ledger, SOP and traffic navigatio
   const initialMounts=globalThis.sceneMounts;
   for(const destination of ['Registru','Proceduri SOP']){
     await click(destination);assert.equal(google.dataset.active,'false');assert.ok(google.closest('[hidden]'));
-    await click('Simulare');
+    await click('Tura curentă');
     assert.equal(document.querySelector('[data-scene="photorealistic"]'),google);
     assert.equal(google.dataset.active,'true');assert.equal(globalThis.sceneMounts,initialMounts);
   }
   await selectMapStyle('model');const model=document.querySelector('[data-scene="model"]');assert.ok(model);
   const mounts=globalThis.sceneMounts;
-  await selectMapStyle('photorealistic');await click('Trafic ADS-B');await click('Simulare');
+  await selectMapStyle('photorealistic');await click('Trafic ADS-B');await click('Scenariu');
   assert.equal(document.querySelector('[data-scene="photorealistic"]'),google);
   assert.equal(google.dataset.active,'true');assert.equal(model.dataset.active,'false');
   await selectMapStyle('model');assert.equal(document.querySelector('[data-scene="model"]'),model);
@@ -56,12 +56,12 @@ test('map styles retain their instances across ledger, SOP and traffic navigatio
 test('direct ledger entry does not initialize Google imagery in the hidden shift',async t=>{
   await setup(t,{hash:'#operations?view=ledger',mapConfig:googleConfig});
   assert.equal(globalThis.sceneMounts,0);
-  await click('Simulare');assert.equal(globalThis.sceneMounts,1);
+  await click('Tura curentă');assert.equal(globalThis.sceneMounts,1);
 });
 
 
 async function scrub(seconds){
-  const slider=document.querySelector('[aria-label="Momentul simulării"]');
+  const slider=document.querySelector('[aria-label="Momentul turei"]');
   await act(async()=>{Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set.call(slider,String(seconds));slider.dispatchEvent(new window.Event('input',{bubbles:true}));});
 }
 async function waitTimeline(ms=210){await act(async()=>{await new Promise(resolve=>setTimeout(resolve,ms))});}
@@ -127,7 +127,7 @@ test('dragging keeps playback usable and Play advances from the selected time',a
   const play=document.querySelector('.ops-control-actions > button');
   assert.equal(play.disabled,false,'scrubbing must not disable Play');
   assert.equal(document.querySelector('.ops-control-actions > button:nth-child(2)').disabled,false,'event stepping remains usable');
-  assert.equal(document.querySelector('[aria-label="Viteza simulării"]').disabled,false,'playback speed remains usable');
+  assert.equal(document.querySelector('[aria-label="Viteza redării"]').disabled,false,'playback speed remains usable');
   await act(async()=>play.click());await waitTimeline(400);
   assert.ok(Number(document.querySelector('[type=range]').value)>240,'Play must advance from the dragged cursor');
   assert.equal(state.simulation.elapsed_seconds,1800,'reviewing a run must preserve recorded time');
@@ -170,7 +170,7 @@ test('review playback supports next event, speed changes and returning to the cu
   await scrub(240);await waitTimeline();
   await click('Următorul eveniment');await waitTimeline();
   assert.equal(document.querySelector('[type=range]').value,'1200');
-  const speed=document.querySelector('[aria-label="Viteza simulării"]');
+  const speed=document.querySelector('[aria-label="Viteza redării"]');
   await act(async()=>{speed.value='60';speed.dispatchEvent(new window.Event('change',{bubbles:true}))});
   await act(async()=>document.querySelector('.ops-control-actions > button').click());await waitTimeline(220);
   assert.equal(speed.value,'60');
@@ -209,7 +209,7 @@ test('camera lock transfers with explicit selection, survives style changes, and
   assert.equal(globalThis.sceneProps.followFlightId,'flight-202');
   await selectMapStyle('model');await selectMapStyle('photorealistic');
   assert.equal(globalThis.sceneProps.followFlightId,'flight-202');
-  await click('Trafic ADS-B');await click('Simulare');
+  await click('Trafic ADS-B');await click('Scenariu');
   assert.equal(globalThis.sceneProps.followFlightId,null);
 });
 
@@ -245,7 +245,7 @@ test('locking and releasing live traffic does not restart or accelerate polling'
 test('routine flights show automatic status and hide manual gate controls',async t=>{
   await setup(t,{flightRows:[{...fixture().flights[0],automatic:true}]});
   assert.equal(document.querySelector('.ops-manual-actions'),null);
-  assert.match(document.querySelector('.ops-flight-detail').textContent,/gestionat automat/);
+  assert.match(document.querySelector('.ops-flight-detail').textContent,/Zbor de rutină/);
 });
 
 

@@ -307,7 +307,7 @@ export function AirportScene(props:AirportSceneProps){
       {props.selectedFlightId&&<button type="button" title={following?'Oprește urmărirea':'Urmărește aeronava'} aria-label={following?'Oprește urmărirea aeronavei':'Urmărește aeronava selectată'} aria-pressed={!!following} onClick={()=>props.onFollowChange?.(following?null:props.selectedFlightId||null)}>{following?<LockKeyhole size={17}/>:<Focus size={17}/>}</button>}
     </div>
     {notice.status!=='ready'&&<div className={`airport-scene-notice is-${notice.status}`} role={notice.status==='error'?'alert':'status'}>{notice.status==='loading'&&<span className="airport-scene-loader"/>}<span>{notice.message}</span>{notice.status==='error'&&(mapMode==='photorealistic'&&props.onMapModeChange?<button type="button" onClick={()=>props.onMapModeChange?.('model')}>Deschide modelul 3D</button>:<button type="button" onClick={()=>setRestart(n=>n+1)}><RotateCcw size={14}/> Reîncearcă</button>)}</div>}
-    <div className="airport-scene-attribution">{mapMode==='photorealistic'?<><img src="/operations/google-maps.svg" alt="Google Maps"/><span>{credits}</span></>:<><span>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></span><span>Volumetrie ilustrativă · geometrie reală</span></>}</div>
+    <div className="airport-scene-attribution">{mapMode==='photorealistic'?<><img src="/operations/google-maps.svg" alt="Google Maps"/><span>{credits}</span></>:<><span>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></span></>}</div>
   </div>;
 }
 export default AirportScene;

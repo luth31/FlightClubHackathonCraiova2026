@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from app.config import settings
 from app.operations.models import OperationEvent, OperationLedgerGroup
 from app.core.exceptions import DomainError
+from app.core.presentation import operational_text
 from app.operations import service
 from app.operations.scenario import STAFF
 
@@ -143,9 +144,9 @@ def active_groups(snapshot):
         if planned is None: planned=flight.get('scheduled_arrival_seconds',0)
         schedule=datetime.fromisoformat(service.clock_time(planned))
         identifier=snapshot['simulation']['run_id']+':'+flight['id']
-        events=[entry(identifier+'-scheduled','flight_scheduled','Zbor programat',schedule-timedelta(days=3),schedule-timedelta(days=3),'Planificare demo',f'Programat pentru {schedule:%d.%m %H:%M}; scenariu de prezentare.',source='scenario')]
+        events=[entry(identifier+'-scheduled','flight_scheduled','Zbor programat',schedule-timedelta(days=3),schedule-timedelta(days=3),'Planificare zboruri',f'Programat pentru {schedule:%d.%m %H:%M}.',source='scenario')]
         assigned=staff.get(gate.get('assigned_staff_id'))
-        events.append(entry(identifier+'-assigned','gate_assigned','Poartă și agent alocate',schedule-timedelta(days=1),schedule-timedelta(days=1),'Coordonator demo',f"{gate['id']} · {assigned['name'] if assigned else 'echipă sosiri'}",source='scenario'))
+        events.append(entry(identifier+'-assigned','gate_assigned','Poartă și agent alocate',schedule-timedelta(days=1),schedule-timedelta(days=1),'Coordonare operațională',f"{gate['id']} · {assigned['name'] if assigned else 'echipă sosiri'}",source='scenario'))
         for item in snapshot['events']:
             linked=item['flight_id']==flight['id'] or (item['staff_id'] and item['staff_id'] in (gate.get('assigned_staff_id'),gate.get('opened_by')) and item['kind'].startswith('nfc_'))
             if not linked: continue
@@ -200,7 +201,6 @@ def get_ledger(db,user,day=None,status='all',search='',scope='all',run_id=None,a
         seed_history(db,user)
     snapshot=service.get_snapshot(db,user)
     if run_id and snapshot['simulation']['run_id'] != run_id:
-        from app.core.exceptions import DomainError
         raise DomainError('Scenariul s-a schimbat. Reîncarcă registrul.',409)
     if at_seconds is not None and run_id:
         snapshot=service.timeline_preview(db,user,at_seconds,run_id)
@@ -209,7 +209,7 @@ def get_ledger(db,user,day=None,status='all',search='',scope='all',run_id=None,a
         OperationLedgerGroup.operational_date <= (settings.reference_date+timedelta(days=3)).isoformat())))
     if scope == 'current':
         stored=[]
-    groups=[row.data for row in stored]+active_groups(snapshot)
+    groups=[present_group(row.data) for row in stored]+active_groups(snapshot)
     all_metrics=metrics(groups)
     selected=[]
     query=search.strip().casefold()
@@ -227,7 +227,7 @@ def get_ledger(db,user,day=None,status='all',search='',scope='all',run_id=None,a
             'reference_date':settings.reference_date.isoformat(),'seeded_events':sum(row.data['event_count'] for row in stored),
             'total_groups':len(groups),'filtered_groups':len(selected),'current_run_id':snapshot['simulation']['run_id'],
             'event_count':sum(g['event_count'] for g in selected),
-            'notice':'Istoric demonstrativ persistent + acțiunile sesiunii curente. Jurnalul documentelor și al personalului păstrează separat drepturile de acces. ADS-B nu produce pontaje sau timpi de poartă.'}
+            'notice':'Istoricul operațiunilor și activitatea turei curente. Jurnalul documentelor și al personalului păstrează separat drepturile de acces. ADS-B nu produce pontaje sau timpi de poartă.'}
 
 
 def evidence_entry(db, user, event_id, group_id):
@@ -240,7 +240,7 @@ def evidence_entry(db, user, event_id, group_id):
     service.airport_for(user)
     row = db.scalar(select(OperationLedgerGroup).where(
         OperationLedgerGroup.id == group_id, OperationLedgerGroup.airport_id == user.airport_id))
-    group = row.data if row else None
+    group = present_group(row.data) if row else None
     run_id = None
     if group is None:
         event = db.scalar(select(OperationEvent).where(
@@ -268,3 +268,7 @@ def evidence_entry(db, user, event_id, group_id):
         'reference_date':day, 'seeded_events':group['event_count'] if row else 0,
         'total_groups':1, 'filtered_groups':1, 'event_count':group['event_count'],
         'current_run_id':None}
+
+
+def present_group(group):
+    return {**group, 'events':[{**event, **{key:operational_text(event[key]) for key in ('title','actor','detail')}} for event in group['events']]}
