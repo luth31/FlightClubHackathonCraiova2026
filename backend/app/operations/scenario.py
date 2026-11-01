@@ -13,7 +13,10 @@ AIRPORTS = {
     'craiova': {'id': 'craiova', 'name': 'Aeroportul Craiova', 'icao': 'LRCV',
         'lat': 44.318055556, 'lon': 23.888611111, 'elevation_m': 191.4144,
         'runway_west': [23.8729972, 44.3179308], 'runway_east': [23.904048, 44.3183433],
-        'stand_positions': [[23.8776442,44.3141609],[23.8776362,44.3144123],[23.8776469,44.3147232],[23.8776872,44.315084],[23.8777086,44.3154563]],
+        # Use the established southern apron: the northern OSM extension is
+        # still vegetation in Google's photorealistic mesh. These staggered
+        # demo positions are illustrative, not surveyed operational stands.
+        'stand_positions': [[23.87772,44.31329],[23.87826,44.31329],[23.87882,44.31329],[23.87800,44.31358],[23.87855,44.31358]],
         'stand_heading': 270,
         'taxi_path': [[23.8783289,44.3158604],[23.8782853,44.3176479],[23.8782182,44.3177918],[23.8781083,44.3178955],[23.8779741,44.3179569],[23.877797,44.3179945]]},
     'sibiu': {'id': 'sibiu', 'name': 'Aeroportul Sibiu', 'icao': 'LRSB',
@@ -86,13 +89,14 @@ def interpolate(points, progress):
 
 
 def taxi_path(airport, start):
-    # OSM stand lead-ins connect to the public taxiway geometry. These short
-    # interpolation connectors and timings are explicitly simulation-only.
+    # Demonstration stand connectors join the public taxiway geometry.
     if airport['id'] == 'craiova':
-        connector = [23.878385 - (start[1]-44.3141685)*0.03, start[1], start[2]]
+        # Reach the established apron exit before heading north. Connecting
+        # diagonally to the old northern stand area would cross vegetation.
+        connectors = [[23.87837, start[1], start[2]], [23.87837, 44.31370, start[2]]]
     else:
-        connector = [start[0], 45.7880826-(start[0]-24.0915425)*0.0219, start[2]]
-    return [start, connector] + [[*point, start[2]] for point in airport['taxi_path']]
+        connectors = [[start[0], 45.7880826-(start[0]-24.0915425)*0.0219, start[2]]]
+    return [start, *connectors] + [[*point, start[2]] for point in airport['taxi_path']]
 
 
 def position(airport, gate, flight, elapsed, departed_at=None):
