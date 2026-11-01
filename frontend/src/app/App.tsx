@@ -2,7 +2,6 @@ import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
-import {rememberNfcLink,pendingNfcCard,cardFromHash} from '@/features/operations/nfc-links';
 import {api,setIdentity,clearIdentity} from '@/services/api-client';
 import {Loading,ErrorMessage,Toast,ViewActiveContext,Modal} from '@/components/ui';
 import {DashboardPage} from '@/features/dashboard';
@@ -52,8 +51,6 @@ export function App() {
   const mainRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<{element: HTMLElement; page: Page; userId: string} | undefined>(undefined);
   const userId = session?.current_user?.id;
-  useEffect(()=>{rememberNfcLink();window.addEventListener('hashchange',rememberNfcLink);return()=>window.removeEventListener('hashchange',rememberNfcLink)},[]);
-  useEffect(()=>{if(!userId)return;const card=pendingNfcCard();if(card&&!cardFromHash(window.location.hash))window.location.hash=`#operations?view=station&card=${encodeURIComponent(card)}`},[userId]);
   useEffect(()=>{
     if(doc){mainRef.current?.querySelector<HTMLElement>('.back-button')?.focus({preventScroll:true});return}
     const previous = returnFocus.current;

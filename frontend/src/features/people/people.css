@@ -115,3 +115,20 @@
 .organization-card-department{border-top-color:#0f6e68}
 .organization-card-leadership{background:#e7f3f1}
 @media(max-width:700px){.people-heading-actions{gap:8px}.people-overview{gap:14px}.people-grid{padding:12px}.people-tabs{gap:14px}.delegation-actions{gap:10px;flex-wrap:wrap}}
+
+/* Directory toolbar and aligned, readable staff cards. */
+.people-directory-toolbar{display:flex;align-items:center;gap:16px;padding:18px 20px 10px}
+.people-directory-toolbar .people-search{flex:1;max-width:520px;height:42px}
+.people-directory-toolbar .department-filter{margin-left:auto;width:240px}
+.people-directory-toolbar .department-filter-trigger{height:42px;font-size:13px}
+.people-results{padding:0 20px 8px;font-size:12px;color:#62746d}
+.people-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));align-items:start;padding:8px 20px 20px;gap:16px}
+.person-card{min-height:300px;padding:20px;gap:0;box-shadow:0 2px 5px #183c2e04}
+.person-card-top{justify-content:flex-start;align-items:flex-start;gap:12px;margin-bottom:14px;min-height:62px}
+.person-identity{min-width:0}.person-identity h2{line-height:1.35;margin:0 0 5px;font-size:16px}.person-identity .person-job{margin:0;line-height:1.5;min-height:38px;font-size:12px}
+.person-card .person-avatar{width:42px;height:42px;flex:none}
+.person-card-labels{margin-bottom:10px;min-height:18px}.person-card .person-department{margin:0}.person-card .person-authority{min-height:0;line-height:1.4}
+.person-details{margin-top:16px;line-height:1.6;padding-top:14px}.person-details span{align-items:flex-start}.person-details svg{flex:none;margin-top:3px}
+.person-management-disclosure{margin-top:16px;padding-top:0;border-top:1px solid #e5ebe7}.person-management-disclosure>summary{padding:12px 0 0;font-size:12px}
+@media(max-width:700px){.people-directory-toolbar{align-items:stretch;flex-direction:column;padding:14px 14px 8px;gap:10px}.people-directory-toolbar .people-search{max-width:none;flex:auto}.people-directory-toolbar .department-filter{width:100%;margin:0;flex:auto}.people-grid{padding:8px 14px 14px}.people-results{padding-left:14px}.person-card{min-height:0}}
+.people-grid{align-items:stretch}.person-card-top{min-height:54px;margin-bottom:12px}.person-card .person-authority,.person-card .person-authority:empty{display:flex;min-height:24px;margin-top:8px}.person-card .person-details{min-height:66px}.person-management-disclosure{margin-top:auto;padding-top:10px}

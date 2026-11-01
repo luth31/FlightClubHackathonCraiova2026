@@ -162,15 +162,14 @@ test('a refreshed dashboard dismisses stale source rows before they can be expor
   assert.equal(find('.px-kpi','Total documente').querySelector('strong').textContent,'0');
 });
 
-test('leaving the retained mobile NFC station restores the normal application shell',async t=>{
-  await setup(t,'#operations?view=station');
-  assert.ok(document.querySelector('.ops-station-mode'));
-  await click(find('aside button','Acasă'));
+test('obsolete NFC session links do not redirect the user away from their work',async t=>{
+  await setup(t,'#home',{sessionResponse:response=>{
+    sessionStorage.setItem('flyleaf.pendingNfc',JSON.stringify({card:'DEMO-NFC-101',at:Date.now()}));
+    return response;
+  }});
   assert.equal(heading(),'Bine ai venit, Ana.');
-  const retained=document.querySelector('.operations-page');
-  assert.ok(retained?.closest('[hidden]'),'The operations page remains mounted for session state');
-  assert.equal(document.querySelector('.ops-station-mode'),null,
-    'A hidden station must not trigger the CSS rule that hides the global sidebar and topbar');
+  assert.equal(location.hash,'#home');
+  assert.equal(document.querySelector('.ops-station-mode'),null);
 });
 
 test('technician sidebar contains only personal work and forbidden hashes do not fetch sections',async t=>{
