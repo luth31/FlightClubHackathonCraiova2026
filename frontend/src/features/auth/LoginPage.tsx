@@ -46,6 +46,6 @@ export function LoginPage({session,onLogin}:{session:Session;onLogin:(s:Session)
         <button type="submit" className="button primary full-width login-button" disabled={busy||!name.trim()||!password.trim()}>{busy?<LoaderCircle className="spin" size={18}/>:<>Intră în spațiul de lucru<ArrowRight size={18}/></>}</button>
       </form>}
       {error&&<ErrorMessage message={error}/>}
-    </div><small className="login-copyright">FlyLeaf · Pentru aeroporturi românești</small></div>
+    </div><small className="login-copyright">FlyLeaf©</small></div>
   </main>;
 }
