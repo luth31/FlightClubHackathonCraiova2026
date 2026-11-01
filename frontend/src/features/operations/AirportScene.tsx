@@ -2,11 +2,12 @@ import {useEffect, useRef, useState} from 'react';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
-import {Focus, Maximize2, Minus, Plus, Radar, RotateCcw, Plane} from 'lucide-react';
+import {Focus, LockKeyhole, Maximize2, Minus, Plus, Radar, RotateCcw, Plane, X} from 'lucide-react';
 import {createAirportModel, type AirportGeoJSON} from './airport-model';
 import {createAircraft, disposeObject} from './aircraft-model';
 import {AIRPORT_REFERENCE, flightCoordinates, fitTrafficFrame, REFERENCE_GEOID_OFFSET_M, type AirportSceneProps, type SceneFlight} from './scene-types';
 import {installMapWheelBoundary} from './map-input';
+import {AircraftCameraFollow} from './camera-follow';
 import './airport-scene.css';
 import type {TilesRenderer} from '3d-tiles-renderer';
 
@@ -41,6 +42,7 @@ export function AirportScene(props:AirportSceneProps){
     const abort=new AbortController(),reference=AIRPORT_REFERENCE[airportId];
     const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const flights=new Map<string,FlightObject>();
+    const cameraFollow=new AircraftCameraFollow();let followedId:string|null=null;
     const report=(status:Notice['status'],message:string)=>{if(disposed)return;setNotice({status,message});latest.current.onMapStatus?.(status,message);};
     report('loading',mapMode==='photorealistic'?'Încărcăm aeroportul fotorealist…':'Construim aeroportul din geometria reală…');
     setCredits('');
@@ -77,6 +79,14 @@ export function AirportScene(props:AirportSceneProps){
     const mapBounds=new THREE.Box3(new THREE.Vector3(-1450,0,-600),new THREE.Vector3(1450,0,600));
     let mapObject:THREE.Group|undefined;
     const wake=()=>{if(!disposed&&!contextLost&&!raf&&latest.current.active!==false&&!document.hidden)raf=requestAnimationFrame(render);};
+    const releaseFollow=()=>{
+      cameraFollow.stop();followedId=null;controls.enablePan=true;
+      if(latest.current.followFlightId){
+        const onFollowChange=latest.current.onFollowChange;
+        latest.current={...latest.current,followFlightId:null};
+        onFollowChange?.(null);
+      }
+    };
     const airportOverview=()=>{
       const center=mapBounds.getCenter(new THREE.Vector3());const size=mapBounds.getSize(new THREE.Vector3());const distance=Math.max(size.x,size.z)*1.08;
       controls.target.copy(center).add(new THREE.Vector3(0,0,airportId==='craiova'?150:-100));
@@ -89,8 +99,8 @@ export function AirportScene(props:AirportSceneProps){
       trafficFramed=flights.size>0;
     };
     const overview=()=>latest.current.trafficMode?trafficOverview():airportOverview();
-    const focus=()=>{
-      const selected=flights.get(latest.current.selectedFlightId||'');if(!selected)return;
+    const focus=(id=latest.current.selectedFlightId||'')=>{
+      const selected=flights.get(id);if(!selected)return;
       if(latest.current.trafficMode){
         // Keep its geographic footprint visible too: an airborne close-up alone
         // hides the airport/terrain that makes a reported position meaningful.
@@ -99,6 +109,14 @@ export function AirportScene(props:AirportSceneProps){
         controls.target.fromArray(frame.target);camera.position.fromArray(frame.position);
       }else{controls.target.copy(selected.mesh.position);camera.position.copy(selected.mesh.position).add(new THREE.Vector3(115,100,140));}
       controls.update();settleFrames=12;wake();
+    };
+    const updateFollow=()=>{
+      const id=latest.current.followFlightId,selected=id?flights.get(id):undefined;
+      if(!id||!selected){releaseFollow();return false;}
+      if(followedId!==id){focus(id);cameraFollow.start(selected.mesh.position);followedId=id;}
+      // Orbit and zoom remain available; panning requires releasing the lock.
+      controls.enablePan=false;
+      return cameraFollow.update(camera,controls.target,selected.mesh.position);
     };
     const zoom=(factor:number)=>{camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);controls.update();settleFrames=12;wake();};
     const removeFlight=(id:string,item:FlightObject)=>{aircraftGroup.remove(item.mesh,item.projection,item.footprint);disposeObject(item.mesh,false);(item.mesh.userData.ownedMaterials as THREE.Material[]).forEach(material=>material.dispose());item.projection.geometry.dispose();(item.projection.material as THREE.Material).dispose();item.footprint.geometry.dispose();(item.footprint.material as THREE.Material).dispose();flights.delete(id);};
@@ -109,13 +127,17 @@ export function AirportScene(props:AirportSceneProps){
         let item=flights.get(flight.id);const [x,y,z]=flightCoordinates(flight,reference,mapMode);
         if(item&&item.flight.status!==flight.status){removeFlight(flight.id,item);item=undefined;}
         if(!item){
-          const mesh=createAircraft(flight.status);mesh.userData.flightId=flight.id;mesh.position.set(x,y,z);mesh.rotation.y=-(flight.heading||0)*Math.PI/180;
+          const mesh=createAircraft(flight.status,flight.display_scale);mesh.userData.flightId=flight.id;mesh.position.set(x,y,z);mesh.rotation.y=-(flight.heading||0)*Math.PI/180;
           const projection=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineDashedMaterial({color:'#ffffff',transparent:true,opacity:.85,dashSize:100,gapSize:70,depthTest:false}));
           const footprint=new THREE.Mesh(new THREE.RingGeometry(28,38,32),new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));footprint.rotation.x=-Math.PI/2;
           aircraftGroup.add(mesh,projection,footprint);item={mesh,target:mesh.position.clone(),heading:mesh.rotation.y,flight,ground:0,base:new THREE.Vector3(),projection,footprint};flights.set(flight.id,item);
         }
         item.base.fromArray(flightCoordinates({...flight,altitude_m:0,reported_altitude_m:reference.elevation+REFERENCE_GEOID_OFFSET_M,altitude_reference:'geometric_ellipsoid'},reference,mapMode));
         item.flight=flight;item.target.set(x,y+(flight.source==='live'&&!flight.ground?0:item.ground),z);item.heading=-(flight.heading||0)*Math.PI/180;
+        item.mesh.scale.setScalar(flight.display_scale??1);
+        // A timeline seek is a new instant, not a straight taxi route between
+        // distant snapshots. Never sweep through terrain or occupied stands.
+        if(flight.source==='simulation'&&latest.current.animateFlights===false){item.mesh.position.copy(item.target);item.mesh.rotation.y=item.heading;}
         const ring=item.mesh.getObjectByName('selection-ring');if(ring)ring.visible=latest.current.selectedFlightId===flight.id;
       }
       const trafficMode=Boolean(latest.current.trafficMode);
@@ -160,6 +182,7 @@ export function AirportScene(props:AirportSceneProps){
         const diff=Math.atan2(Math.sin(item.heading-item.mesh.rotation.y),Math.cos(item.heading-item.mesh.rotation.y));
         if(Math.abs(diff)>.0001){item.mesh.rotation.y+=diff*(reducedMotion?1:Math.min(1,delta*5));moving=true;}
       }
+      moving=updateFollow()||moving;
       for(const item of flights.values()){
         const show=Boolean(latest.current.trafficMode&&item.flight.source==='live'&&!item.flight.ground&&item.mesh.position.y>30);
         item.projection.visible=item.footprint.visible=show;
@@ -188,7 +211,7 @@ export function AirportScene(props:AirportSceneProps){
       if(controlsChanged||moving||settleFrames-->0)wake();
     }
     const onControls=()=>{settleFrames=12;wake();};controls.addEventListener('change',onControls);
-    const observer=new ResizeObserver(()=>{const width=container.clientWidth,height=container.clientHeight;if(!width||!height||width===dimensions.width&&height===dimensions.height)return;dimensions={width,height};renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();tiles?.setResolutionFromRenderer(camera,renderer);if(latest.current.trafficMode&&trafficFramed)trafficOverview();wake();});observer.observe(container);
+    const observer=new ResizeObserver(()=>{const width=container.clientWidth,height=container.clientHeight;if(!width||!height||width===dimensions.width&&height===dimensions.height)return;dimensions={width,height};renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();tiles?.setResolutionFromRenderer(camera,renderer);if(latest.current.trafficMode&&trafficFramed&&!latest.current.followFlightId)trafficOverview();wake();});observer.observe(container);
     const onVisibility=()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0;}else wake();};document.addEventListener('visibilitychange',onVisibility);
     const onContextLost=(event:Event)=>{event.preventDefault();contextLost=true;cancelAnimationFrame(raf);raf=0;report('error','Sesiunea grafică a fost întreruptă. Reîncarcă harta pentru a continua.');};
     renderer.domElement.addEventListener('webglcontextlost',onContextLost);
@@ -201,14 +224,16 @@ export function AirportScene(props:AirportSceneProps){
       if(object?.userData.flightId)latest.current.onSelectFlight(String(object.userData.flightId));
     };
     renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointerup',pointerUp);
-    const keyDown=(e:KeyboardEvent)=>{if(e.key==='+'||e.key==='='){e.preventDefault();zoom(.8);}if(e.key==='-'){e.preventDefault();zoom(1.2);}if(e.key==='Home'){e.preventDefault();overview();}};renderer.domElement.addEventListener('keydown',keyDown);
+    const keyDown=(e:KeyboardEvent)=>{if(e.key==='+'||e.key==='='){e.preventDefault();zoom(.8);}if(e.key==='-'){e.preventDefault();zoom(1.2);}if(e.key==='Home'){e.preventDefault();releaseFollow();overview();}};renderer.domElement.addEventListener('keydown',keyDown);
+    const escapeFollow=(e:KeyboardEvent)=>{if(e.key==='Escape'&&latest.current.active!==false&&latest.current.followFlightId){releaseFollow();wake();}};
+    document.addEventListener('keydown',escapeFollow);
     const checkLoadingTimeout=()=>{if(!mapReady&&!disposed){tileFailure=true;report('error','Harta fotorealistă răspunde prea lent. Poți continua cu modelul aeroportului.');}};
-    handle.current={wake,syncFlights,overview,airport:airportOverview,traffic:trafficOverview,focus,zoom,checkLoadingTimeout};syncFlights();overview();
+    handle.current={wake,syncFlights,overview:()=>{releaseFollow();overview()},airport:()=>{releaseFollow();airportOverview()},traffic:()=>{releaseFollow();trafficOverview()},focus,zoom,checkLoadingTimeout};syncFlights();overview();
     if(mapMode==='model'){
       const load=async()=>{
         try{
           let data=modelCache.get(airportId);if(!data){const response=await fetch(`/airports/${airportId}.geojson`,{signal:abort.signal});if(!response.ok)throw new Error('geometry unavailable');data=await response.json() as AirportGeoJSON;modelCache.set(airportId,data);}
-          if(disposed)return;const model=createAirportModel(data,reference);mapObject=model.group;scene.add(model.group);mapBounds.copy(model.bounds);mapReady=true;report('ready','');overview();
+          if(disposed)return;const model=createAirportModel(data,reference);mapObject=model.group;scene.add(model.group);mapBounds.copy(model.bounds);mapReady=true;report('ready','');if(!latest.current.followFlightId)overview();
         }catch{if(!disposed&&!abort.signal.aborted)report('error','Geometria aeroportului nu s-a încărcat. Reîncearcă harta.');}
       };void load();
     }else if(googleApiKey){
@@ -233,23 +258,26 @@ export function AirportScene(props:AirportSceneProps){
     return()=>{
       disposed=true;abort.abort();cancelAnimationFrame(raf);handle.current=null;observer.disconnect();document.removeEventListener('visibilitychange',onVisibility);
       renderer.domElement.removeEventListener('webglcontextlost',onContextLost);renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.domElement.removeEventListener('keydown',keyDown);
+      document.removeEventListener('keydown',escapeFollow);
       removeWheelBoundary();controls.removeEventListener('change',onControls);controls.dispose();tiles?.dispose();
       if(mapObject){disposeObject(mapObject);const textures=new Set<THREE.Texture>();mapObject.traverse(o=>{if(o instanceof THREE.Mesh){const materials=Array.isArray(o.material)?o.material:[o.material];for(const material of materials)if('map'in material&&material.map instanceof THREE.Texture)textures.add(material.map);}});textures.forEach(t=>t.dispose());}
       for(const [id,item]of flights)removeFlight(id,item);regionalGuide.traverse(object=>{if(object instanceof THREE.Mesh||object instanceof THREE.Line){object.geometry.dispose();(object.material as THREE.Material).dispose();}});environmentTarget.dispose();renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();
     };
   },[airportId,mapMode,googleApiKey,restart]);
 
+  const following=props.flights.find(flight=>flight.id===props.followFlightId);
   return <div ref={host} className={`airport-scene ${active?'':'is-paused'}`}>
     <div ref={labelLayer} className="airport-scene-labels">{props.flights.map(flight=><button type="button" key={flight.id} data-flight-id={flight.id} className={`airport-flight-label is-${flight.status} ${props.selectedFlightId===flight.id?'is-selected':''}`} onClick={()=>props.onSelectFlight(flight.id)} aria-label={`${flight.callsign}, ${statusLabel[flight.status]}`}>{flight.source==='live'?<Plane size={13} style={{transform:`rotate(${(flight.heading||0)-45}deg)`}} aria-hidden="true"/>:<span className="airport-flight-dot"/>}<strong>{flight.callsign}</strong>{props.selectedFlightId===flight.id&&<span title={flight.source==='live'?'Altitudine raportată de aeronavă':'Altitudine relativă la aeroport'}>{flight.ground?'La sol':flight.source==='live'?`${Math.round(flight.reported_altitude_m??flight.altitude_m??0).toLocaleString('ro-RO')} m`:Math.round(flight.altitude_m||0)>15?`${Math.round(flight.altitude_m||0)} m`:'La sol'}</span>}</button>)}</div>
     <button ref={airportAnchor} hidden={!props.trafficMode} className="airport-origin-label" onClick={()=>handle.current?.airport()} title="Încadrează aeroportul">{AIRPORT_REFERENCE[airportId].icao}<span>{AIRPORT_REFERENCE[airportId].label}</span></button>
     {props.trafficMode&&<div className="airport-traffic-caption">Poziții geografice ADS-B<span>Liniile leagă aeronavele de poziția lor pe hartă</span></div>}
     <div className="airport-scene-orientation"><span ref={compass}><i/>N</span></div>
+    {following&&<button type="button" className="airport-follow-status" onClick={()=>props.onFollowChange?.(null)} aria-label={`Oprește urmărirea ${following.callsign}`}><LockKeyhole size={13}/><span>Urmărire · <strong>{following.callsign}</strong></span><X size={13}/></button>}
     <div className="airport-scene-controls" aria-label="Control hartă">
       <button type="button" title="Apropie" aria-label="Apropie harta" onClick={()=>handle.current?.zoom(.75)}><Plus size={17}/></button>
       <button type="button" title="Depărtează" aria-label="Depărtează harta" onClick={()=>handle.current?.zoom(1.3)}><Minus size={17}/></button>
       <button type="button" title="Încadrează aeroportul" aria-label="Încadrează aeroportul" onClick={()=>handle.current?.airport()}><Maximize2 size={16}/></button>
       {props.trafficMode&&<button type="button" title="Încadrează toate aeronavele" aria-label="Încadrează toate aeronavele" onClick={()=>handle.current?.traffic()}><Radar size={17}/></button>}
-      {props.selectedFlightId&&<button type="button" title="Urmărește aeronava" aria-label="Încadrează aeronava selectată" onClick={()=>handle.current?.focus()}><Focus size={17}/></button>}
+      {props.selectedFlightId&&<button type="button" title={following?'Oprește urmărirea':'Urmărește aeronava'} aria-label={following?'Oprește urmărirea aeronavei':'Urmărește aeronava selectată'} aria-pressed={!!following} onClick={()=>props.onFollowChange?.(following?null:props.selectedFlightId||null)}>{following?<LockKeyhole size={17}/>:<Focus size={17}/>}</button>}
     </div>
     {notice.status!=='ready'&&<div className={`airport-scene-notice is-${notice.status}`} role={notice.status==='error'?'alert':'status'}>{notice.status==='loading'&&<span className="airport-scene-loader"/>}<span>{notice.message}</span>{notice.status==='error'&&(mapMode==='photorealistic'&&props.onMapModeChange?<button type="button" onClick={()=>props.onMapModeChange?.('model')}>Deschide modelul 3D</button>:<button type="button" onClick={()=>setRestart(n=>n+1)}><RotateCcw size={14}/> Reîncearcă</button>)}</div>}
     <div className="airport-scene-attribution">{mapMode==='photorealistic'?<><img src="/operations/google-maps.svg" alt="Google Maps"/><span>{credits}</span></>:<><span>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></span><span>Volumetrie ilustrativă · geometrie reală</span></>}</div>

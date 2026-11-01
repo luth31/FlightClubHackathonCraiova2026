@@ -8,13 +8,20 @@ from math import atan2, cos, degrees, hypot, radians
 DURATION_SECONDS = 3600
 MINOR_DELAY_MINUTES = 1
 MAJOR_DELAY_MINUTES = 15
+AIRCRAFT_DISPLAY_SCALE = 0.62
 
 AIRPORTS = {
     'craiova': {'id': 'craiova', 'name': 'Aeroportul Craiova', 'icao': 'LRCV',
         'lat': 44.318055556, 'lon': 23.888611111, 'elevation_m': 191.4144,
         'runway_west': [23.8729972, 44.3179308], 'runway_east': [23.904048, 44.3183433],
-        'stand_positions': [[23.8776442,44.3141609],[23.8776362,44.3144123],[23.8776469,44.3147232],[23.8776872,44.315084],[23.8777086,44.3154563]],
-        'stand_heading': 270,
+        # Use the established southern apron: the northern OSM extension is
+        # still vegetation in Google's photorealistic mesh. These staggered
+        # demo positions are illustrative, not surveyed operational stands.
+        # Reserve the eastern apron for the aircraft baked into Google's mesh
+        # (23.87860–23.87906 E, 44.31328–44.31364 N, including a margin).
+        # All demo stands and apron routes remain west of that occupied area.
+        'stand_positions': [[23.87784,44.31325],[23.87813,44.31325],[23.87842,44.31325],[23.87784,44.31359],[23.87813,44.31359]],
+        'stand_heading': 180,
         'taxi_path': [[23.8783289,44.3158604],[23.8782853,44.3176479],[23.8782182,44.3177918],[23.8781083,44.3178955],[23.8779741,44.3179569],[23.877797,44.3179945]]},
     'sibiu': {'id': 'sibiu', 'name': 'Aeroportul Sibiu', 'icao': 'LRSB',
         'lat': 45.785833333, 'lon': 24.085555556, 'elevation_m': 463.296,
@@ -86,13 +93,18 @@ def interpolate(points, progress):
 
 
 def taxi_path(airport, start):
-    # OSM stand lead-ins connect to the public taxiway geometry. These short
-    # interpolation connectors and timings are explicitly simulation-only.
+    # Demonstration stand connectors join the public taxiway geometry.
     if airport['id'] == 'craiova':
-        connector = [23.878385 - (start[1]-44.3141685)*0.03, start[1], start[2]]
+        # Reach the established apron exit before heading north. Connecting
+        # diagonally to the old northern stand area would cross vegetation.
+        # South-facing departures push back north; arrivals approach their
+        # northern row from the north, ending nose-in toward the terminal.
+        lane_lat = 44.31343 if start[1] < 44.31343 else 44.31373
+        connectors = [[start[0], lane_lat, start[2]], [23.87837, lane_lat, start[2]],
+                      [23.87837, 44.31376, start[2]]]
     else:
-        connector = [start[0], 45.7880826-(start[0]-24.0915425)*0.0219, start[2]]
-    return [start, connector] + [[*point, start[2]] for point in airport['taxi_path']]
+        connectors = [[start[0], 45.7880826-(start[0]-24.0915425)*0.0219, start[2]]]
+    return [start, *connectors] + [[*point, start[2]] for point in airport['taxi_path']]
 
 
 def position(airport, gate, flight, elapsed, departed_at=None):
@@ -106,6 +118,13 @@ def position(airport, gate, flight, elapsed, departed_at=None):
         if departed_at is None or elapsed < departed_at:
             return dict(gate['position']), 'boarding' if elapsed > 0 else 'at_gate'
         if elapsed < departed_at + 180:
+            if airport['id'] == 'craiova':
+                # Keep the nose toward the terminal during the first 20 s of
+                # pushback; ground travel direction is not aircraft heading.
+                if elapsed < departed_at + 20:
+                    point = interpolate(route[:2], (elapsed-departed_at)/20)
+                    return {**point, 'heading': airport['stand_heading']}, 'taxiing'
+                return interpolate([*route[1:], west], (elapsed-departed_at-20)/160), 'taxiing'
             return interpolate([*route, west], (elapsed-departed_at)/180), 'taxiing'
         if elapsed < departed_at + 225:
             return interpolate([west, east], (elapsed-departed_at-180)/45), 'takeoff'

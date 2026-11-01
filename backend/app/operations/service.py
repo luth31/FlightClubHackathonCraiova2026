@@ -13,7 +13,7 @@ from app.core.audit import record
 from app.core.exceptions import DomainError
 from app.core.security import has_role
 from app.operations.models import OperationEvent, OperationSimulation
-from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, TIMELINE, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, gates, position
+from app.operations.scenario import AIRPORTS, DURATION_SECONDS, FLIGHTS, STAFF, TIMELINE, MINOR_DELAY_MINUTES, MAJOR_DELAY_MINUTES, AIRCRAFT_DISPLAY_SCALE, gates, position
 
 
 KINDS = {
@@ -290,6 +290,7 @@ def snapshot(db, state, user, events):
         'airport': {key: airport[key] for key in ('id','name','icao','lat','lon','elevation_m')},
         'mode': 'simulation', 'simulated': True,
         'model': {'departure_basis': 'open_gate_boarding_then_offblock_then_taxi', 'gate_reclosures_affect_departure': True,
+            'aircraft_display_scale': AIRCRAFT_DISPLAY_SCALE,
             'notice': 'Pontaj → deschidere poartă → 16 min îmbarcare → plecare de la stand → 3 min rulaj. Închiderea porții întrerupe îmbarcarea. Durate demonstrative, fără autorizare ATC.'},
         'simulation': {'scenario_mode':state.scenario_mode, 'run_id': state.run_id, 'revision': state.revision, 'running': state.running, 'speed': state.speed,
             'elapsed_seconds': round(state.elapsed_seconds, 2), 'duration_seconds': DURATION_SECONDS,

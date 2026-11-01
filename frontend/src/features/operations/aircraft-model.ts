@@ -23,8 +23,9 @@ function mesh(geometry: THREE.BufferGeometry, mat: THREE.Material, x:number,y:nu
 }
 
 /** Authored narrow-body aircraft, in metres; nose faces local -Z. */
-export function createAircraft(status: SceneStatus) {
+export function createAircraft(status: SceneStatus, displayScale=1) {
   const group=new THREE.Group();
+  group.scale.setScalar(displayScale);
   const accent=material(status==='critical'?'#e85f52':status==='caution'?'#edb63e':'#3c5558', .32,.3);
   const fuselageMaterial=white.clone();
   if(status!=='neutral')fuselageMaterial.color.set(status==='critical'?'#f5ada4':'#f3d88e');

@@ -28,7 +28,7 @@ export interface OperationsData {
   kpis:Record<string,number|null>;
   thresholds:{minor_delay_minutes:number;major_delay_minutes:number};
   permissions:{can_control:boolean};
-  model?:{notice:string;departure_basis:string;gate_reclosures_affect_departure:boolean};
+  model?:{notice:string;departure_basis:string;gate_reclosures_affect_departure:boolean;aircraft_display_scale?:number};
 }
 export interface LiveTraffic {
   source:string;mode:'live';status:'fresh'|'stale'|'unavailable';fetched_at:string|null;
