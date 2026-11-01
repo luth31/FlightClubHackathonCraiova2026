@@ -1,4 +1,4 @@
-# AeroDesk reports
+# FlyLeaf reports
 
 Open **Rapoarte** in the workspace navigation, or `/#reports`. Individual reports support direct links such as `/#reports/contracts`. The inspiration board remains at `/reports-design`.
 
@@ -16,7 +16,7 @@ The expandable library below the dashboard retains all authorized detailed repor
 
 PDF export prints the current analytical view, date and active filters without app navigation or the library. Presentation mode uses browser fullscreen. Mobile layouts expose a collapsible filter panel. No flight, passenger, delay or geographic data is fabricated; the app supplies administrative records, so the template's geographic map is replaced by actual contract exposure.
 
-Design references: Microsoft's [dashboard design guidance](https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips), the [Airport Authority Performance Summary](https://community.fabric.microsoft.com/t5/Data-Stories-Gallery/Airport-Authority-Performance-Summary/td-p/628963), and ZoomCharts' [airport Power BI example](https://zoomcharts.com/en/microsoft-power-bi-custom-visuals/dashboard-and-report-examples/view/airline-delays-dashboard-power-bi). The implementation uses AeroDesk records and code-native visuals.
+Design references: Microsoft's [dashboard design guidance](https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips), the [Airport Authority Performance Summary](https://community.fabric.microsoft.com/t5/Data-Stories-Gallery/Airport-Authority-Performance-Summary/td-p/628963), and ZoomCharts' [airport Power BI example](https://zoomcharts.com/en/microsoft-power-bi-custom-visuals/dashboard-and-report-examples/view/airline-delays-dashboard-power-bi). The implementation uses FlyLeaf records and code-native visuals.
 
 | Report | Permitted account roles | Source and purpose |
 | --- | --- | --- |
