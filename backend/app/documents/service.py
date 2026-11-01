@@ -43,6 +43,8 @@ def serialize(document, db=None, details=False, user=None, *, include_permission
     fields=('id','title','number','category','department','status','created_at','updated_at','expires_at','supplier','value','currency','owner','created_by','confidentiality','summary','version','validated')
     data={k:getattr(document,k) for k in fields}
     data.update(document.extra or {})
+    # The responsible account is identified by its ID, including after a name change.
+    data['owner_id'] = document.owner_id
     data['flow']=classify(document)
     data['flow_case_id']=case_id(document)
     if user:

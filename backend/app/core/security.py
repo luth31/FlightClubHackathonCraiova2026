@@ -101,7 +101,7 @@ def page_permissions(user):
     compliance = has_role(user, 'reviewer') and canonical_department(user.department) == 'Conformitate'
     procurement = head and canonical_department(user.department) == 'Achiziții'
     technician = has_role(user, 'technician') and not head and not director
-    return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True, 'reports': True,
+    return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True, 'reports': True, 'equipment': True, 'assistant': True,
             'contracts': not technician and (director or finance or (head and not has_role(user, 'hr'))),
             'suppliers': director or finance or procurement,
             'sharing': page_access(user),

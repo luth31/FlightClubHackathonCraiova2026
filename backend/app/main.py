@@ -1,4 +1,5 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from fastapi import FastAPI,Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,10 @@ from app.suppliers.registration_router import router as registration_router
 from app.operations.router import router as operations_router
 from app.operations.map_config import router as operations_map_router
 from app.collaboration.router import router as collaboration_router
+from app.equipment.router import router as equipment_router
+from app.renewals.router import router as renewals_router
+from app.workspace.router import router as workspace_router
+from app.documents.followup import router as document_followup_router
 
 @asynccontextmanager
 async def lifespan(app):
@@ -35,14 +40,20 @@ async def lifespan(app):
     config=Config(str(Path(__file__).resolve().parents[1]/'alembic.ini'))
     command.upgrade(config,'head')
     seed()
+    from app.renewals.service import sync_all, monitor
+    await asyncio.to_thread(sync_all)
     from app.database import SessionLocal
     from app.extraction.service import backfill
     from app.extraction.worker import start
     with SessionLocal() as db: backfill(db)
     worker = start() if settings.extraction_enabled else None
+    renewal_monitor = asyncio.create_task(monitor())
     try:
         yield
     finally:
+        renewal_monitor.cancel()
+        with suppress(asyncio.CancelledError):
+            await renewal_monitor
         if worker:
             worker[0].set()
             worker[1].join(timeout=2)
@@ -65,7 +76,7 @@ async def security_headers(request: Request,call_next):
     response.headers['Cache-Control']='no-store'
     return response
 
-for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router,catalog_router,registration_router,operations_map_router,operations_router,reports_router,collaboration_router):
+for router in (auth_router,identity_router,documents_router,contracts_router,sharing_router,assistant_router,people_router,exchange_router,suppliers_router,tasks_router,catalog_router,registration_router,operations_map_router,operations_router,reports_router,collaboration_router,equipment_router,renewals_router,workspace_router,document_followup_router):
     app.include_router(router)
 
 @app.get('/api/health')

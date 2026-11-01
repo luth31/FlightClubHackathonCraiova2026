@@ -44,15 +44,19 @@ export function ApprovalsPage({
   revision,
   notify,
   user,
+  embedded = false,
+  initialFilter = 'all',
 }: {
   onOpen: (id: string) => void;
   revision: number;
   notify: (message: string) => void;
   user?: User;
+  embedded?: boolean;
+  initialFilter?: string;
 }) {
   const [data, setData] = useState<AssignedTask[]>(),
     [error, setError] = useState(""),
-    [filter, setFilter] = useState("all"),
+    [filter, setFilter] = useState(initialFilter),
     [selected, setSelected] = useState<AssignedTask>(),
     [refresh, setRefresh] = useState(0),
     [busy, setBusy] = useState(false),
@@ -109,7 +113,7 @@ export function ApprovalsPage({
     <>
       <div className="page-heading">
         <div>
-          <h1>{personalTasks(user)?'Sarcinile mele':'Aprobări'}</h1>
+          {embedded ? <h2>Aprobări și sarcini documentare</h2> : <h1>{personalTasks(user)?'Sarcinile mele':'Aprobări'}</h1>}
         </div>
         <span className="heading-pill">
           <Clock3 size={16} />

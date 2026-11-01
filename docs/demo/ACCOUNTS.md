@@ -1,6 +1,6 @@
 # Conturile demo FlyLeaf
 
-Deschide [aplicația](http://127.0.0.1:5184), introdu numele complet din tabel și parola **`FlyLeaf2026!`**. Aceasta este parola tuturor celor 28 de conturi demo de mai jos. Aeroportul este identificat automat din cont, după verificarea parolei.
+Deschide [aplicația](http://127.0.0.1:5184), introdu numele complet din tabel și parola **`FlyLeaf2026!`**. Aceasta este parola tuturor celor 32 de conturi demo de mai jos. Aeroportul este identificat automat din cont, după verificarea parolei.
 
 De exemplu, `Alexandru Mureșan` + `FlyLeaf2026!` deschide spațiul Aeroportului Sibiu. Numele se poate scrie și fără diacritice; majusculele și spațiile suplimentare nu schimbă identificarea. Parola trebuie introdusă exact.
 
@@ -17,6 +17,10 @@ Pentru alt cont, apasă **Ieși din cont**, apoi introdu celălalt nume și paro
 | Ioana Stancu | Craiova | Responsabil resurse umane |
 | Sorin Pavel | Craiova | Șef tehnic și operațiuni |
 | Andrei Neagu | Craiova | Tehnician mentenanță |
+| Irina Dobre | Craiova | Tehnician sisteme bagaje |
+| Vlad Dumitru | Craiova | Tehnician instalații electrice |
+| Cristian Ilie | Craiova | Mecanic utilaje aeroportuare |
+| Daria Stoica | Craiova | Tehnician climatizare |
 | Alexandru Mureșan | Sibiu | Director aeroport |
 | Mihai Popescu | Sibiu | Șef achiziții și financiar |
 | Elena Stan | Sibiu | Responsabil conformitate |
@@ -38,6 +42,12 @@ Pentru alt cont, apasă **Ieși din cont**, apoi introdu celălalt nume și paro
 | Laura Tudor | Iași | Responsabil resurse umane |
 | Victor Ilie | Iași | Șef tehnic și operațiuni |
 | Mihnea Radu | Iași | Tehnician mentenanță |
+
+## Intervenții pe echipamente în direct
+
+Pentru intervenții în direct, folosește **Ana Ionescu** ca director și **Andrei Neagu** ca responsabil. **Irina Dobre** primește avertizarea echipei „Mentenanță bagaje”. În Echipamente, **BB-01** este pregătit pentru raportarea unui incident nou. Selectează Andrei în formular și înregistrează incidentul: acțiunea apare automat în Acasă, pe contul lui. Confirmă primirea, începe lucrarea și trimite rezultatul spre verificare; directorul verifică rezultatul și confirmă separat disponibilitatea.
+
+Echipamentele se inițializează prin `scripts/start-collaboration-demo.ps1`. Relansarea păstrează incidentele, lucrările, stările, echipele și conturile modificate. Pentru două conturi simultan, utilizează sesiuni de browser separate.
 
 ## Cazurile de colaborare pregătite
 

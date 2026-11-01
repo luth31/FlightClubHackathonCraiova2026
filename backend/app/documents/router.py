@@ -20,6 +20,8 @@ router=APIRouter(prefix='/api/documents',tags=['Documents'])
 
 def detail(db,user,document):
     data=service.serialize(document,db,details=True,user=user)
+    from app.documents.followup import state
+    data['follow_up'] = state(db, document, user, include_candidates=True)
     data['related_documents']=[d for d in data['related_documents'] if can_read(user,db.get(service.Document,d['id']))]
     return data
 

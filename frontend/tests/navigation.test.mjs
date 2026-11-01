@@ -88,12 +88,16 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/supplier-registrations')body={items:[]};
     else if(path==='/api/documents'&&options.method==='POST')return uploadResponse?await uploadResponse():Response.json(documentRecord);
     else if(path==='/api/documents')body={items:[documentRecord],total:1,categories:['Contract']};
+    else if(path==='/api/workspace/documents')body={items:[{...documentRecord,validity:'valid'}],total:1,my_approvals:1,my_actions:1,reference_date:'2026-10-30',counters:{total:1,expired:0,expiring:0,unknown:0},facets:{categories:['Contract'],departments:['Achiziții'],suppliers:['Demo SRL'],owners:[user.name]}};
+    else if(path.startsWith('/api/workspace/recent/'))body={ok:true};
+    else if(path==='/api/workspace/home')body={reference_date:'2026-10-30',stats:{tasks:1,due_today:0,overdue:1,approvals:1,renewals:0},actions:[{id:'personal-task',document_id:documentRecord.id,title:documentRecord.title,type:'approval',due_date:'2026-10-29',description:'În responsabilitatea ta',overdue:true,target:'document'}],recent_documents:[documentRecord],activity:[]};
+    else if(path==='/api/equipment')body={items:[],technicians:[],can_manage:true,reference_date:'2026-10-30'};
     else if(path==='/api/contracts')body={items:[documentRecord]};
     else if(path==='/api/operations')body=operationsRecord;
     else if(path==='/api/operations/map-config')body={google_api_key:null,photorealistic_available:false,default_mode:'model'};
     else if(path==='/api/dashboard')body={stats:{documents:1,pending:0,expiring:0,approved:1},recent_documents:[documentRecord],attention:[],activity:[],departments:[]};
     else if(path==='/api/tasks')body={items:[{id:'task-demo',document_id:documentRecord.id,title:documentRecord.title,department:'Achiziții',
-      assignee:user.name,status:'pending',priority:'normal',due_date:'2026-11-01',type:'approval',can_act:false}]};
+      assignee:user.name,status:'pending',priority:'normal',due_date:'2026-11-01',type:'approval',can_act:true}]};
     else if(path==='/api/collaboration')body={partner:{id:'sibiu',name:'Aeroportul Sibiu'},partners:[],local_airport:{id:'craiova',name:'Aeroportul Craiova'},participation:{enabled:false,revision:0,can_manage:true,updated_at:null},sender:{id:'admin',name:'Director demo',email:'admin@craiova.example',department:'Conducere',job_title:'Director',role:'director'},can_create:false,connected:false,requests:[]};
     else if(path==='/api/shares')body={items:[{id:'share-demo',document_id:documentRecord.id,document_title:documentRecord.title,
       source_version:1,recipient_airport:'Demo partner',expires_at:'2026-12-01',created_at:'2026-10-01',status:'active'}]};
@@ -174,7 +178,7 @@ test('obsolete NFC session links do not redirect the user away from their work',
     sessionStorage.setItem('flyleaf.pendingNfc',JSON.stringify({card:'DEMO-NFC-101',at:Date.now()}));
     return response;
   }});
-  assert.equal(heading(),'Bine ai venit, Ana.');
+  assert.equal(heading(),'Bună, Ana.');
   assert.equal(location.hash,'#home');
   assert.equal(document.querySelector('.ops-station-mode'),null);
 });
@@ -187,11 +191,12 @@ test('technician sidebar contains only personal work and forbidden hashes do not
     return response;
   }});
   assert.deepEqual([...document.querySelectorAll('aside nav button')].map(e=>e.textContent),
-    ['Acasă','Operațiuni la sol','Documente','Sarcinile mele','Echipă','Rapoarte']);
+    ['Acasă','Operațiuni la sol','Documente','Echipamente','Întreabă FlyLeaf','Echipă','Rapoarte']);
   assert.equal(heading(),'Documente');
   assert.ok(!paths.includes('/api/audit'));
-  await click(find('aside button','Sarcinile mele'));
-  assert.equal(heading(),'Sarcinile mele');
+  await click(find('.workspace-tabs button','Aprobări și sarcini'));
+  assert.equal(heading(),'Documente');
+  assert.ok(find('.task-filters [aria-pressed="true"]','De rezolvat de mine'));
 });
 
 test('server capabilities override role shortcuts and guard document origins',async t=>{
@@ -334,7 +339,7 @@ test('confirmed logout clears the workspace without another session request',asy
   await setInput(document.querySelector('.login-page input[type="password"]'),'typed-demo-password');
   await click(find('.login-page button','Intră în spațiul de lucru'));
   assert.ok(find('.user-button',technician.name));
-  assert.equal(heading(),'Bine ai venit, Teo.');
+  assert.equal(heading(),'Bună, Teo.');
   assert.equal(document.querySelector('[role="dialog"]'),null);
 });
 
@@ -480,7 +485,7 @@ test('supplier contract returns to the registry with its query and scroll positi
   assert.equal(browser.scrollY,650);
 });
 
-for(const [page,label] of [['documents','Documente'],['approvals','Aprobări'],
+for(const [page,label] of [['documents','Documente'],['approvals','Documente'],
   ['sharing','Colaborare'],['audit','Jurnal de activitate'],['home','Acasă']])
   test(`document return preserves ${page} origin`,async t=>{
     await setup(t,`#${page}`);
@@ -502,12 +507,13 @@ test('assistant document return does not reuse a previous list trigger',async t=
   await click(document.querySelector('.back-button'));
   assert.ok(document.activeElement===trigger);
   await click(find('button','Întreabă FlyLeaf'));
-  assert.equal(document.activeElement.id,'flyleaf-question');
-  await click(find('[role="dialog"] button','Documente în aprobare'));
-  await click(find('[role="dialog"] button',related.title));
+  assert.equal(heading(),'Întreabă FlyLeaf');
+  await click(find('main button','Câte documente sunt în aprobare?'));
+  await click(find('main button',related.title));
   assert.equal(heading(),related.title);
   await click(document.querySelector('.back-button'));
-  assert.equal(heading(),'Furnizori');
+  assert.equal(heading(),'Întreabă FlyLeaf');
+  assert.ok(find('.assistant-response', 'Demo answer'));
   assert.equal(document.activeElement.tagName,'MAIN');
 });
 
@@ -592,13 +598,14 @@ test('browser Forward dismisses supplier dialogs and releases their scroll lock'
   assert.equal(document.querySelector('[role="dialog"]'),null);
 });
 
-test('native workflow links close global overlays and select Approvals',async t=>{
+test('native workflow links close global search and select document approvals',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers',{workflowTask:true});
-  await click(find('button','Întreabă FlyLeaf'));
+  await click(document.querySelector('.quick-search'));
   assert.ok(document.querySelector('[role="dialog"]'));
   // A native hash link must be handled just like a sidebar button.
   await click(find('a','Vezi sarcinile echipei'));
-  assert.equal(heading(),'Aprobări');
+  assert.equal(heading(),'Documente');
+  assert.ok(find('.workspace-tabs [aria-current="page"]','Aprobări și sarcini'));
   assert.equal(document.querySelector('[role="dialog"]'),null);
   assert.equal(document.body.style.overflow,'');
 });
@@ -666,7 +673,7 @@ for (const [hash,pageHeading] of [['#document','Documente'],['#document/','Docum
 test('every sidebar section works and mobile navigation closes its drawer',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
   for (const [page,label] of [['home','Acasă'],['documents','Documente'],
-    ['suppliers','Furnizori'],['approvals','Aprobări'],['people','Echipă'],
+    ['suppliers','Furnizori'],['equipment','Echipamente'],['assistant','Întreabă FlyLeaf'],['people','Echipă'],
     ['sharing','Colaborare'],['audit','Jurnal de activitate']]) {
     await click(document.querySelector('.mobile-menu'));
     assert.ok(document.querySelector('.sidebar-overlay'));
@@ -749,7 +756,7 @@ test('session expiry dismisses logout confirmation before the next sign-in',asyn
 
 test('legacy contracts routes open the document library and preserve contract documents',async t=>{
   await setup(t,'#contracts');
-  assert.equal(find('nav button','Contracte'),undefined);
+  assert.equal(find('aside nav button','Contracte'),undefined);
   assert.ok(find('nav [aria-current="page"]','Documente'));
   await click(find('button',documentRecord.title));
   assert.equal(location.hash,'#document/doc-contract?from=documents');
@@ -763,13 +770,16 @@ test('permission denial does not log the user out',async t=>{
   assert.equal(document.querySelector('.login-page'),null);
 });
 
-test('the home expiry metric opens its filtered documents without a Contracts section',async t=>{
+test('personal Home filters assigned actions and opens the source with a return path',async t=>{
   await setup(t,'#home');
-  await click(find('button','Expiră în 60 zile'));
-  await settle(230);
-  assert.equal(location.hash,'#documents');
-  assert.ok(find('.library-tabs .active','Expiră în 60 zile'));
-  assert.equal(find('nav button','Contracte'),undefined);
+  await click(find('.workspace-kpis button','Termen depășit'));
+  assert.ok(find('.personal-actions button',documentRecord.title));
+  await click(find('.personal-actions button',documentRecord.title));
+  assert.equal(location.hash,'#document/doc-contract?from=home');
+  await click(document.querySelector('.back-button'));
+  assert.equal(location.hash,'#home');
+  assert.ok(find('.workspace-kpis [aria-pressed="true"]','Termen depășit'));
+  assert.equal(find('aside nav button','Contracte'),undefined);
 });
 
 
@@ -788,4 +798,50 @@ test('previously written station cards open the restored attendance page',async 
   assert.equal(heading(),'Pontajul echipei');
   assert.equal(document.querySelector('#nfc-card').value,'DEMO-NFC-104');
   assert.equal(document.querySelector('.operations-page'),null);
+});
+
+test('global search opens from a report and transfers its query to Documents',async t=>{
+  await setup(t,'#reports');
+  await click(document.querySelector('.quick-search'));
+  await setInput(document.querySelector('[aria-label="Caută în toate documentele"]'),'Demo');
+  assert.ok(find('.lookup-results button',documentRecord.title));
+  await click(find('.quick-lookup button','Vezi toate rezultatele'));
+  await settle(230);
+  assert.equal(document.querySelector('[role="dialog"]'),null);
+  assert.equal(heading(),'Documente');
+  assert.equal(document.querySelector('[aria-label="Caută în documente"]').value,'Demo');
+  assert.match(location.hash,/q=Demo/);
+});
+
+test('document register preserves filter, pagination and view through a source visit',async t=>{
+  await setup(t,'#documents/contracts?q=Demo&status=approved&page=2&created_from=2026-10-01&created_to=2026-10-31&expires_from=2026-11-01&expires_to=2026-12-31&sort_by=expires_at&sort_order=asc');
+  assert.ok(find('.workspace-tabs [aria-current="page"]','Contracte'));
+  assert.equal(document.querySelector('.workspace-filters select').value,'approved');
+  await click(find('.workspace-document-row .record-title',documentRecord.title));
+  await click(document.querySelector('.back-button'));
+  await settle(230);
+  assert.ok(find('.workspace-tabs [aria-current="page"]','Contracte'));
+  assert.equal(document.querySelector('[aria-label="Caută în documente"]').value,'Demo');
+  assert.equal(document.querySelector('.workspace-filters select').value,'approved');
+  assert.match(location.hash,/page=2/);
+  assert.equal(document.querySelector('[aria-label="Creat de la"]').value,'2026-10-01');
+  assert.equal(document.querySelector('[aria-label="Expiră până la"]').value,'2026-12-31');
+  assert.match(location.hash,/sort_by=expires_at/);
+  assert.match(location.hash,/sort_order=asc/);
+  await click(find('button','Resetează filtrele'));
+  await settle(230);
+  assert.equal(document.querySelector('[aria-label="Creat de la"]').value,'');
+  assert.equal(document.querySelector('[aria-label="Expiră până la"]').value,'');
+  assert.doesNotMatch(location.hash,/page=2|created_from|expires_to/);
+});
+
+test('assistant context clears when returning to the general assistant',async t=>{
+  await setup(t,'#assistant?document=doc-contract');
+  assert.ok(find('.assistant-scope strong',documentRecord.title));
+  await click(find('.assistant-suggestions button','Rezumă acest document'));
+  assert.ok(find('.assistant-response','Demo answer'));
+  await click(document.querySelector('[aria-label="Elimină documentul din context"]'));
+  assert.equal(location.hash,'#assistant');
+  assert.equal(document.querySelector('.assistant-response'),null);
+  assert.ok(find('.assistant-scope strong','Toate documentele validate'));
 });
