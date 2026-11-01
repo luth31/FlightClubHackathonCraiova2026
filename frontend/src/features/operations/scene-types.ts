@@ -18,6 +18,8 @@ export interface AirportSceneProps {
   airportId: 'craiova' | 'sibiu';
   flights: SceneFlight[];
   selectedFlightId?: string | null;
+  followFlightId?: string | null;
+  onFollowChange?: (id:string|null) => void;
   onSelectFlight: (id: string | null) => void;
   active?: boolean;
   focusRequest?: number;

@@ -10,6 +10,31 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 async function load(file){const bundle=await build({entryPoints:[fileURLToPath(new URL(file,import.meta.url))],bundle:true,write:false,platform:'node',format:'cjs',packages:'external'});const module={exports:{}};new Function('require','module','exports',bundle.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports);return module.exports;}
 const geometry=await load('../src/features/operations/scene-types.ts');
 
+test('camera lock follows motion and timeline jumps while preserving orbit, zoom and framing',async()=>{
+  const {AircraftCameraFollow}=await load('../src/features/operations/camera-follow.ts');
+  const follow=new AircraftCameraFollow(),camera=new THREE.PerspectiveCamera(43,1.6,2,400000);
+  const aircraft=new THREE.Vector3(100,20,200),target=aircraft.clone();
+  camera.position.copy(target).add(new THREE.Vector3(115,100,140));camera.lookAt(target);camera.updateMatrixWorld();
+  follow.start(aircraft);
+  for(const destination of [[120,20,205],[800,1000,-400],[100,20,200]]){
+    // The user can zoom/orbit between position updates without losing lock.
+    camera.position.sub(target).multiplyScalar(.8).applyAxisAngle(new THREE.Vector3(0,1,0),.15).add(target);
+    camera.lookAt(target);camera.updateMatrixWorld();
+    const offset=camera.position.clone().sub(target),rotation=camera.quaternion.clone(),screen=aircraft.clone().project(camera);
+    aircraft.fromArray(destination);
+    assert.equal(follow.update(camera,target,aircraft),true);
+    camera.updateMatrixWorld();
+    assert.ok(target.distanceTo(aircraft)<1e-9);
+    assert.ok(camera.position.clone().sub(target).distanceTo(offset)<1e-9);
+    assert.ok(camera.quaternion.angleTo(rotation)<1e-7);
+    assert.ok(aircraft.clone().project(camera).distanceTo(screen)<1e-9);
+    assert.equal(follow.update(camera,target,aircraft),false,'stationary aircraft must not keep the render loop awake');
+  }
+  follow.stop();const unlocked=camera.position.clone();
+  assert.equal(follow.update(camera,target,new THREE.Vector3(2000,0,0)),false);
+  assert.deepEqual(camera.position.toArray(),unlocked.toArray());
+});
+
 test('reduced demo aircraft fit the reserved clearance at every heading',async()=>{
   const {createAircraft}=await load('../src/features/operations/aircraft-model.ts');
   for(const status of ['neutral','caution','critical']){
