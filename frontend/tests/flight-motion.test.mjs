@@ -70,3 +70,32 @@ test('severity changes preserve aircraft geometry, transform and animation ident
   assert.deepEqual(plane.children,children);assert.deepEqual(plane.position.toArray(),[100,200,300]);assert.equal(plane.rotation.y,1);
   assert.equal(plane.userData.ownedMaterials[0].color.getHexString(),'e85f52');
 });
+
+const {LiveMotionBuffer}=await load('../src/features/operations/live-motion.ts');
+test('buffered ADS-B advances evenly between readings and wraps heading via the short turn',()=>{
+  const buffer=new LiveMotionBuffer(),p=new THREE.Vector3();
+  buffer.push(0,new THREE.Vector3(0,100,0),350*Math.PI/180);
+  buffer.push(10000,new THREE.Vector3(1000,200,500),10*Math.PI/180);
+  for(let t=0;t<=10000;t+=100){
+    const sample=buffer.sample(t+15000,p);
+    assert.ok(Math.abs(p.x-t/10)<1e-8);
+    assert.ok(Math.abs(p.y-(100+t/100))<1e-8);
+    if(t===5000)assert.ok(Math.abs(sample.heading-2*Math.PI)<1e-8);
+  }
+  assert.equal(buffer.sample(90000,p).pending,false);
+  assert.deepEqual(p.toArray(),[1000,200,500]);
+});
+test('cached or reordered packets do not rewind playback; startup holds without extrapolation',()=>{
+  const buffer=new LiveMotionBuffer(),p=new THREE.Vector3();
+  assert.equal(buffer.sample(0,p),null);
+  buffer.push(10000,new THREE.Vector3(10,0,0),0);
+  buffer.sample(12000,p);assert.equal(p.x,10);
+  buffer.push(20000,new THREE.Vector3(20,0,0),0);
+  buffer.push(20000,new THREE.Vector3(999,0,0),0);
+  buffer.push(15000,new THREE.Vector3(-999,0,0),0);
+  buffer.sample(30000,p);assert.equal(p.x,15);
+  buffer.sample(40000,p);assert.equal(p.x,20);
+  buffer.push(90000,new THREE.Vector3(90,0,0),0);
+  buffer.sample(80000,p);assert.equal(p.x,20,'hold during a long provider gap');
+  buffer.sample(105000,p);assert.equal(p.x,90);
+});

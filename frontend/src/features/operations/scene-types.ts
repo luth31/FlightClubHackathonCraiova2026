@@ -13,6 +13,7 @@ export interface SceneFlight {
   reported_altitude_m?: number;
   altitude_reference?: string;
   ground?: boolean;
+  observed_at_ms?: number;
   display_scale?: number;
   trajectory?: MotionPoint[];
 }

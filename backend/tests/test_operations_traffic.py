@@ -122,25 +122,23 @@ def test_reported_position_has_geographic_distance_bearing_and_no_invented_altit
     assert result[1]['phase'] == 'taxiing'
 
 
-def test_tracking_refreshes_at_two_seconds_and_all_viewers_share_the_cache(feed,monkeypatch):
+def test_tracking_shares_ten_second_cache_and_stable_observation_time(feed,monkeypatch):
     now=[100.0]
     monkeypatch.setattr(traffic.time,'monotonic',lambda:now[0])
     calls=[]
     monkeypatch.setattr(traffic,'fetch_payload',lambda _:(calls.append(now[0]) or {'ac':[aircraft()]}))
-    assert traffic.get_traffic(feed)['poll_after_seconds']==5
-    now[0]=101
-    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==1
+    first=traffic.get_traffic(feed)
+    assert first['poll_after_seconds']==10
+    for second in range(101,110):
+        now[0]=second
+        cached=traffic.get_traffic(feed,tracking=True)
+        assert cached['poll_after_seconds']==110-second
+        assert cached['aircraft'][0]['observed_at']==first['aircraft'][0]['observed_at']
     assert calls==[100]
-    now[0]=102
-    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==2
-    assert traffic.get_traffic(feed)['poll_after_seconds']==5
-    assert calls==[100,102]
-    now[0]=106
-    traffic.get_traffic(feed)
-    assert len(calls)==2
-    now[0]=107
-    traffic.get_traffic(feed)
-    assert calls==[100,102,107]
+    now[0]=110
+    assert traffic.get_traffic(feed,tracking=True)['poll_after_seconds']==10
+    assert traffic.get_traffic(feed)['poll_after_seconds']==10
+    assert calls==[100,110]
 
 
 def test_tracking_honors_provider_retry_after_without_bypassing_cache(feed,monkeypatch):

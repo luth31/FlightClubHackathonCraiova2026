@@ -5,7 +5,7 @@ its fixed HTTPS origin. Airport coordinates are public; user data is never sent.
 """
 from copy import deepcopy
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import math
 import threading
@@ -15,8 +15,7 @@ import httpx
 
 from app.operations.service import airport_for
 
-CACHE_SECONDS = 5
-TRACKING_CACHE_SECONDS = 2
+CACHE_SECONDS = 10
 FAILURE_BACKOFF_SECONDS = 10
 MAX_STALE_SECONDS = 300
 MAX_POSITION_AGE_SECONDS = 120
@@ -142,6 +141,7 @@ def _response(entry, now, interval=CACHE_SECONDS):
     status = 'fresh' if usable and not entry.error and age <= CACHE_SECONDS else ('stale' if usable else 'unavailable')
     aircraft = deepcopy(entry.aircraft) if usable else []
     for item in aircraft:
+        item['observed_at'] = (datetime.fromisoformat(entry.fetched_at)-timedelta(seconds=item['position_age_seconds'])).isoformat()
         item['position_age_seconds'] += age
         item['stale'] = status != 'fresh' or item['position_age_seconds'] > 15
     notice = 'Poziții ADS-B publice. Sursa nu furnizează orare, întârzieri sau porți; acoperirea nu este completă.'
@@ -159,7 +159,7 @@ def _response(entry, now, interval=CACHE_SECONDS):
 def get_traffic(user, tracking=False):
     airport = airport_for(user)
     entry = _cache[airport['id']]
-    interval = TRACKING_CACHE_SECONDS if tracking else CACHE_SECONDS
+    interval = CACHE_SECONDS  # Camera tracking never increases provider demand.
     # Single-flight: simultaneous browsers share one provider request per cache period.
     with entry.lock:
         now = time.monotonic()
@@ -170,7 +170,7 @@ def get_traffic(user, tracking=False):
                 entry.aircraft, entry.fetched_monotonic = aircraft, now
                 entry.fetched_at = datetime.now(timezone.utc).isoformat()
                 entry.failures, entry.error = 0, None
-                entry.retry_at = now+TRACKING_CACHE_SECONDS
+                entry.retry_at = now+CACHE_SECONDS
             except (httpx.HTTPError, ValueError, TypeError, OverflowError) as error:
                 now = time.monotonic()
                 entry.failures += 1

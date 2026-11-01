@@ -10,9 +10,10 @@ import {installMapWheelBoundary} from './map-input';
 import {AircraftCameraFollow} from './camera-follow';
 import {SimulationMotionClock,prepareRoute,sampleRoute,aircraftCloseUp,smoothGroundHeight,SURFACE_CLEARANCE,type MotionRoute} from './flight-motion';
 import './airport-scene.css';
+import {LiveMotionBuffer} from './live-motion';
 import type {TilesRenderer} from '3d-tiles-renderer';
 
-type FlightObject={mesh:THREE.Group;target:THREE.Vector3;heading:number;flight:SceneFlight;ground:number;groundTarget:number;surfaceCell:string;route:MotionRoute;base:THREE.Vector3;projection:THREE.Line;footprint:THREE.Mesh};
+type FlightObject={live:LiveMotionBuffer;mesh:THREE.Group;target:THREE.Vector3;heading:number;flight:SceneFlight;ground:number;groundTarget:number;surfaceCell:string;route:MotionRoute;base:THREE.Vector3;projection:THREE.Line;footprint:THREE.Mesh};
 type SceneHandle={wake:()=>void;syncFlights:()=>void;overview:()=>void;airport:()=>void;traffic:()=>void;focus:()=>void;zoom:(factor:number)=>void;checkLoadingTimeout:()=>void};
 type Notice={status:'loading'|'ready'|'error';message:string};
 const modelCache=new Map<string,AirportGeoJSON>();
@@ -44,6 +45,7 @@ export function AirportScene(props:AirportSceneProps){
     const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const flights=new Map<string,FlightObject>();
     const motionClock=new SimulationMotionClock();
+    const epochOffset=Date.now()-performance.now();
     const cameraFollow=new AircraftCameraFollow();let followedId:string|null=null;
     const report=(status:Notice['status'],message:string)=>{if(disposed)return;setNotice({status,message});latest.current.onMapStatus?.(status,message);};
     report('loading',mapMode==='photorealistic'?'Încărcăm aeroportul fotorealist…':'Construim aeroportul din geometria reală…');
@@ -128,11 +130,12 @@ export function AirportScene(props:AirportSceneProps){
           const mesh=createAircraft(flight.status,flight.display_scale);mesh.userData.flightId=flight.id;mesh.position.set(x,y,z);mesh.rotation.y=-(flight.heading||0)*Math.PI/180;
           const projection=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineDashedMaterial({color:'#ffffff',transparent:true,opacity:.85,dashSize:100,gapSize:70,depthTest:false}));
           const footprint=new THREE.Mesh(new THREE.RingGeometry(28,38,32),new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));footprint.rotation.x=-Math.PI/2;
-          aircraftGroup.add(mesh,projection,footprint);item={mesh,target:mesh.position.clone(),heading:mesh.rotation.y,flight,ground:0,groundTarget:0,surfaceCell:'',route:[],base:new THREE.Vector3(),projection,footprint};flights.set(flight.id,item);
+          aircraftGroup.add(mesh,projection,footprint);item={live:new LiveMotionBuffer(),mesh,target:mesh.position.clone(),heading:mesh.rotation.y,flight,ground:0,groundTarget:0,surfaceCell:'',route:[],base:new THREE.Vector3(),projection,footprint};flights.set(flight.id,item);
         }
         item.base.fromArray(flightCoordinates({...flight,altitude_m:0,reported_altitude_m:reference.elevation+REFERENCE_GEOID_OFFSET_M,altitude_reference:'geometric_ellipsoid'},reference,mapMode));
         item.flight=flight;item.target.set(x,y,z);item.heading=-(flight.heading||0)*Math.PI/180;
         item.route=prepareRoute(flight.trajectory||[],reference,mapMode);
+        if(flight.source==='live'&&flight.observed_at_ms!=null)item.live.push(flight.observed_at_ms,item.target,item.heading);
         item.mesh.scale.setScalar(flight.display_scale??1);
         // A timeline seek is a new instant, not a straight taxi route between
         // distant snapshots. Never sweep through terrain or occupied stands.
@@ -185,6 +188,13 @@ export function AirportScene(props:AirportSceneProps){
           item.mesh.position.copy(item.target);item.mesh.position.y+=item.ground+SURFACE_CLEARANCE;
           item.mesh.rotation.y=-heading*Math.PI/180;
           moving=Boolean(latest.current.simulationClock.playing&&simulationSeconds<item.route.at(-1)!.seconds)||groundMoving||moving;
+        }else if(item.flight.source==='live'&&item.flight.observed_at_ms!=null){
+          const sample=item.live.sample(now+epochOffset,item.target);
+          if(sample){
+            item.mesh.position.copy(item.target);
+            if(item.flight.ground)item.mesh.position.y+=item.ground+SURFACE_CLEARANCE;
+            item.mesh.rotation.y=sample.heading;moving=sample.pending||groundMoving||moving;
+          }
         }else{
           // Observed live positions are interpolated, never extrapolated beyond the feed.
           const target=item.target.clone();

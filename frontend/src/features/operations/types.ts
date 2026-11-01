@@ -6,7 +6,7 @@ export interface Flight {
   id:string;callsign:string;aircraft_type:string;origin:string;destination:string;
   gate_id:string|null;scheduled_departure_seconds:number|null;actual_departure_seconds:number|null;
   delay_minutes:number|null;severity:Severity;emergency:boolean;phase:string;position:Position;
-  direction?:'arrival'|'departure';delay_basis?:string;estimated_departure_seconds?:number|null;scheduled_arrival_seconds?:number;registration?:string;position_age_seconds?:number;stale?:boolean;
+  direction?:'arrival'|'departure';delay_basis?:string;estimated_departure_seconds?:number|null;scheduled_arrival_seconds?:number;registration?:string;position_age_seconds?:number;observed_at?:string;stale?:boolean;
   status?:string;boarding_remaining_seconds?:number;altitude_reference?:string;ground?:boolean;distance_nm?:number;
 }
 export interface Staff {
