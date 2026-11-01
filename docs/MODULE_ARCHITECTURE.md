@@ -165,6 +165,8 @@ The 3D layer turns geographic route/state data into visual movement. Live ADS-B 
 
 `event_rules.py` defines controlled event kinds and transitions. Each transition belongs to an activity stream; cross-stream prerequisites form a directed acyclic graph. Fueling, cleaning and baggage work can overlap, while readiness requires their completion plus boarding/load documentation. Assignment, attendance, gate opening and aircraft movements are separate facts. Observations such as an absence alert do not pretend to move the aircraft's physical state.
 
+See the [state-machine diagrams and guard table](ATOMIC_OPERATIONS_LEDGER.md#state-machines) for aircraft movement, concurrent ground activities and the conditions that allow each transition. The separate [event-dependency graph](ATOMIC_OPERATIONS_LEDGER.md#dependencies-between-activities) shows how those machines coordinate before departure.
+
 The read model groups by date/flight/work order, then exposes atomic rows and parallel activity timelines. Entity inspection opens a person's/gate's/flight's history. Fact inspection exposes before/after state, planned/actual and recorded/indexed times, participants, recorder and dependency links. Deep links resolve the exact fact outside the current scenario/date filter and preserve the return path to strategy evidence.
 
 New accepted source events and their audit projection persist together. Historical indexing is idempotent. Facts have immutable snapshots/hash checks and database update/delete protection; forecasts are not inserted as actual facts. Legacy entries remain visibly unverified where their original rules/timestamps were not known. [Detailed schema, research and invariants](ATOMIC_OPERATIONS_LEDGER.md).
