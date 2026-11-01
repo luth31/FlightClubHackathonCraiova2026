@@ -13,6 +13,7 @@ from app.database import Base
 from app.collaboration import service
 from app.collaboration.models import CollaborationEvent as Event, CollaborationSync as Sync, CollaborationThread as Thread
 from app.collaboration.schemas import CreateRequest, MessageRequest, StatusRequest
+from app.collaboration.models import CollaborationParticipation
 from app.core.exceptions import DomainError
 from conftest import login
 from test_exchange import gateway_headers
@@ -20,9 +21,14 @@ from test_exchange import gateway_headers
 
 @pytest.fixture(autouse=True)
 def clear_coordination(client, db):
-    for model in (Event, Thread, Sync):
+    for model in (Event, Thread, Sync, CollaborationParticipation):
         db.execute(delete(model))
+    db.add(CollaborationParticipation(airport_id='craiova', enabled=True))
     db.commit()
+
+
+REMOTE_CONTACT = {'id':'director','name':'Alexandru Mureșan','email':'tehnic@sibiu.example',
+    'department':'Tehnic','job_title':'Director tehnic','role':'department_head'}
 
 
 @pytest.fixture
@@ -35,13 +41,14 @@ def connected(monkeypatch, tmp_path):
     def get(url, **kwargs):
         calls.append((url, kwargs))
         return httpx.Response(200, json={'source_airport_id': 'sibiu', 'recipient_airport_id': 'craiova',
+            'participation_enabled': True, 'contacts': [REMOTE_CONTACT],
             'source_airport_name':'Aeroportul Sibiu', 'departments':[{'name':'Tehnic','label':'Tehnic și operațiuni'}], 'events': [], 'next_cursor': kwargs['params']['after'], 'acknowledged_cursor': 0, 'has_more': False})
     monkeypatch.setattr(service.httpx, 'get', get)
     return calls
 
 
 def request_payload(key='request-key-0001'):
-    return {'recipient_airport_id': 'sibiu', 'recipient_department': 'Tehnic', 'subject': 'Cum confirmați echipamentul de rezervă?', 'topic': 'Echipamente',
+    return {'recipient_airport_id': 'sibiu', 'recipient_user_id': 'director', 'subject': 'Cum confirmați echipamentul de rezervă?', 'topic': 'Echipamente',
         'body': 'Avem nevoie de un exemplu de checklist aprobat pentru analiză locală.', 'idempotency_key': key}
 
 
@@ -81,14 +88,14 @@ def test_gateway_requires_authenticated_peer_and_collaboration_authority(admin, 
     admin.post('/api/collaboration', json=request_payload())
     headers = gateway_headers(monkeypatch, tmp_path)
     assert admin.get('/api/exchange/collaboration', headers=headers).status_code == 403  # reviewer, no department
-    permitted = {**headers, 'X-Requester-Department': 'Conformitate'}
+    permitted = {**headers, 'X-Requester-Roles': 'director'}
     result = admin.get('/api/exchange/collaboration', headers=permitted)
     assert result.status_code == 200 and len(result.json()['events']) == 1
     assert result.json()['events'][0]['author_role'] == 'director'
-    assert 'author_id' not in result.json()['events'][0]
+    assert result.json()['events'][0]['author_id'] == 'admin'
     for change in ({'Authorization': 'Bearer wrong'}, {'X-Peer-Airport': 'craiova'},
                    {'X-Peer-Airport': 'other'}, {'X-Requester-Roles': 'technician'},
-                   {'X-Requester-Department': 'Achizitii'}):
+                   {'X-Requester-Roles': 'reviewer', 'X-Requester-Department': 'Conformitate'}):
         assert admin.get('/api/exchange/collaboration', headers={**permitted, **change}).status_code in (401, 403)
     assert admin.post('/api/exchange/collaboration', headers=permitted, json={}).status_code == 405
 
@@ -171,8 +178,12 @@ def two_airports(monkeypatch, tmp_path):
         engine = create_engine(f'sqlite:///{tmp_path / (airport + ".db")}')
         Base.metadata.create_all(engine)
         stores[airport] = sessionmaker(bind=engine, expire_on_commit=False)()
-        from app.people.models import Department
+        from app.people.models import Department, User
         stores[airport].add(Department(id='dept-tehnic',name='Tehnic',airport_id=airport,head_user_id=None))
+        stores[airport].add(User(id='director',name='Director demo',email=f'director@{airport}.example',
+            roles=['director'],role='director',department='Conducere',job_title='Director aeroport',
+            airport_id=airport,active=True,password_hash='unused'))
+        stores[airport].add(CollaborationParticipation(airport_id=airport,enabled=True))
         stores[airport].commit()
     token = tmp_path / 'two-airport-token'; token.write_text('private-test-token')
     monkeypatch.setattr(settings, 'exchange_token_file', token)
@@ -182,8 +193,7 @@ def two_airports(monkeypatch, tmp_path):
         before = settings.airport_id
         settings.airport_id = airport
         try:
-            yield stores[airport], SimpleNamespace(id='director', name='Director demo', active=True,
-                roles=['director'], department='Conducere', airport_id=airport)
+            yield stores[airport], stores[airport].get(User, 'director')
         finally:
             settings.airport_id = before
     def transport(url, **kwargs):
@@ -315,10 +325,10 @@ def test_overlapping_polls_refresh_cached_cursors_under_write_lock(admin, db, co
         assert second.scalar(select(func.count()).select_from(Event)) == 2
 
 
-def test_departments_are_required_and_validated_against_verified_partner_directory(admin, connected):
-    for patch in ({'recipient_airport_id':'craiova'}, {'recipient_airport_id':'unknown'}, {'recipient_department':'Unknown'}):
+def test_contacts_are_required_and_validated_against_verified_partner_directory(admin, connected):
+    for patch in ({'recipient_airport_id':'craiova'}, {'recipient_airport_id':'unknown'}, {'recipient_user_id':'Unknown'}):
         assert admin.post('/api/collaboration',json={**request_payload(),**patch}).status_code == 422
-    missing=request_payload();missing.pop('recipient_department')
+    missing=request_payload();missing.pop('recipient_user_id')
     assert admin.post('/api/collaboration',json=missing).status_code == 422
     result=admin.get('/api/collaboration').json()
     assert result['partners'][0]['id']=='sibiu'
@@ -339,12 +349,12 @@ def test_current_department_heads_can_create_but_ordinary_reviewers_cannot(admin
     login(admin,'manager')
     assert admin.get('/api/collaboration').json()['requests']==[]
     assert admin.get('/api/collaboration/'+created.json()['id']).status_code==404
-    # Compliance readers retain oversight, but only their appointed head can write.
+    # A reviewer who is not an appointed main department head has no collaboration access.
     dept=db.get(Department,'dept-conformitate');original=dept.head_user_id
     try:
         dept.head_user_id='admin';db.commit()
         login(admin,'reviewer')
-        assert admin.get('/api/collaboration').json()['can_create'] is False
+        assert admin.get('/api/collaboration').status_code == 403
         assert admin.post('/api/collaboration',json=request_payload('compliance-reader-key')).status_code==403
     finally:
         dept.head_user_id=original;db.commit()

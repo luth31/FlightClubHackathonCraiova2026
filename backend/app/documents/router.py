@@ -12,6 +12,7 @@ from app.documents import service
 from app.documents.models import DocumentVersion
 from app.documents.schemas import DocumentPatch,Action
 from app.documents.flow import document_flow
+from app.documents.representations import Representation,represent
 from app.workflows.service import apply_action
 from app.people.organization import canonical_department
 
@@ -61,7 +62,7 @@ def action(document_id: str,body: Action,db: Session=Depends(get_db),user=Depend
     return detail(db,user,apply_action(db,user,document_id,body.action,body.comment,body.version))
 
 @router.get('/{document_id}/file')
-def file(document_id: str,version: int | None=None,download: bool=False,db: Session=Depends(get_db),user=Depends(current_user)):
+def file(document_id: str,version: int | None=None,download: bool=False,representation: Representation='pdf',page: int=Query(1,ge=1),db: Session=Depends(get_db),user=Depends(current_user)):
     doc=service.get_document(db,document_id,user)
     v=db.scalar(select(DocumentVersion).where(DocumentVersion.document_id==doc.id,DocumentVersion.version==(version or doc.version)))
     if not v: raise DomainError('Versiunea nu există.',404)
@@ -70,16 +71,17 @@ def file(document_id: str,version: int | None=None,download: bool=False,db: Sess
     if not path.is_file(): raise DomainError('Fișierul nu este disponibil.',404)
     expected=v.signed_sha256 or v.sha256
     if service.file_hash(path)!=expected: raise DomainError('Fișierul nu corespunde amprentei înregistrate.',409)
+    if representation!='pdf': return represent(path.read_bytes(),representation,page)
     record(db,user,'Document descărcat' if download else 'Document consultat',doc,f'Versiunea {v.version}')
     db.commit()
     return FileResponse(path,media_type='application/pdf',filename=v.filename,content_disposition_type='attachment' if download else 'inline',headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
 
 @router.get('/{document_id}/extraction')
 def extraction(document_id: str,page: int=Query(1,ge=1),db: Session=Depends(get_db),user=Depends(current_user)):
-    from app.core.security import require_role
+    from app.core.security import require_role,can_share_documents
     from app.extraction import service as extraction_service
     doc=service.get_document(db,document_id,user)
-    require_role(user,'director','reviewer','finance','hr')
+    if not can_share_documents(user): require_role(user,'director','reviewer','finance','hr')
     version=service.current_version(db,doc)
     if service.file_hash(version.file_path)!=version.sha256:
         raise DomainError('Integritatea originalului nu poate fi confirmată.',409)

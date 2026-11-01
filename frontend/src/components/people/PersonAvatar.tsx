@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent} from 'react';
 import {createPortal} from 'react-dom';
-import {Building2, LogOut, Mail, UserRound, X} from 'lucide-react';
+import {Building2, Check, ChevronDown, Copy, LogOut, Mail, UserRound, X} from 'lucide-react';
 import {date, initials, roleLabel} from '@/utils/format';
 import {usePersonDirectory, type Person} from './PersonDirectory';
 import {OwnProfileControls} from './OwnProfileControls';
@@ -21,28 +21,31 @@ export function PersonStatus({person}: {person: Person}) {
   return <span className={`availability availability-${status}`}><i aria-hidden="true"/>{status === 'offline' ? 'Offline' : presenceLabels[status]}</span>;
 }
 
-export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, onLogout, logoutDisabled = false, openOnFocus = true}: {
+export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled, openOnFocus = true}: {
   userId?: string;
   name: string;
   person?: Person;
   referenceDate?: string;
   className?: string;
   style?: CSSProperties;
-  onLogout?: () => void;
-  logoutDisabled?: boolean;
+  externalAirport?: string;
+  accountRole?: string;
+  disabled?: boolean;
   openOnFocus?: boolean;
 }) {
   const directory = usePersonDirectory();
   // Audit entries can contain names rather than IDs. Ambiguous names stay unresolved.
   const personId = userId || person?.id;
-  const matches = directory.data?.items.filter(item => personId ? item.id === personId : item.name === name);
+  const matches = externalAirport ? undefined : directory.data?.items.filter(item => personId ? item.id === personId : item.name === name);
   const match = matches?.length === 1 ? matches[0] : undefined;
   const profile = person ? {...person, profile: match?.profile || person.profile} : match;
   const personal = liveProfile(profile?.profile, directory.now);
   const status = displayedPresence(profile, directory.now);
   const statusLabel = status === 'offline' ? 'Offline' : presenceLabels[status];
-  const own = !!profile && directory.data?.current_user_id === profile.id;
+  const own = !externalAirport && !!(profile?.id || personId) &&
+    (directory.account?.userId || directory.data?.current_user_id) === (profile?.id || personId);
   const [open, setOpen] = useState(false);
+  const [copyState,setCopyState] = useState<'idle'|'copied'|'failed'>('idle');
   const trigger = useRef<HTMLButtonElement>(null);
   const card = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -58,6 +61,12 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
     clearTimer();
     setOpen(true);
   }
+  async function copyEmail(){
+    if(!profile?.email)return;
+    try{await navigator.clipboard.writeText(profile.email);setCopyState('copied')}
+    catch{setCopyState('failed')}
+  }
+  useEffect(()=>{setCopyState('idle')},[open,profile?.email]);
   const close = useCallback((restoreFocus = false) => {
     clearTimeout(timer.current);
     setOpen(false);
@@ -144,8 +153,9 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
     <button
       ref={trigger}
       type="button"
-      className={`person-avatar-trigger ${className}`}
+      className={`person-avatar-trigger ${accountRole ? 'person-account-trigger' : ''} ${className}`}
       style={style}
+      disabled={disabled}
       aria-label={`Vezi profilul: ${name}`}
       aria-haspopup="dialog"
       aria-expanded={open}
@@ -166,8 +176,17 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         }
       }}
     >
-      <ProfileImage url={personal.photo_url} name={name}/>
-      {profile && <span className={`person-presence person-presence-${status}`} aria-hidden="true"/>}
+      {accountRole ? <>
+        <span className="avatar person-account-avatar" aria-hidden="true">
+          <ProfileImage url={personal.photo_url} name={name}/>
+          {profile && <span className={`person-presence person-presence-${status}`}/>}
+        </span>
+        <span className="person-account-label"><strong>{name}</strong><small>{accountRole}</small></span>
+        <ChevronDown size={15} aria-hidden="true"/>
+      </> : <>
+        <ProfileImage url={personal.photo_url} name={name}/>
+        {profile && !externalAirport && <span className={`person-presence person-presence-${status}`} aria-hidden="true"/>}
+      </>}
     </button>
     {open && createPortal(
       <div
@@ -199,28 +218,30 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
           <div>
             <h2>{profile?.name || name}</h2>
             {profile && <p>{roleLabel[profile.job_title] || profile.job_title || roleLabel[profile.role] || profile.role}</p>}
-            <span className={`person-profile-status person-profile-status-${status}`}><i aria-hidden="true"/>{statusLabel}</span>
+            {externalAirport ? <span>{externalAirport}</span> : <span className={`person-profile-status person-profile-status-${status}`}><i aria-hidden="true"/>{statusLabel}</span>}
           </div>
         </div>
-        {personal.status_message && <p className="person-profile-status-message">{personal.status_message}</p>}
+        {!externalAirport && personal.status_message && <p className="person-profile-status-message">{personal.status_message}</p>}
         {own && profile && <OwnProfileControls person={profile} onEditingChange={onEditingChange}/>}
         {profile ? <>
           <dl className="person-profile-details">
-            <div><dt><Mail size={16}/>Email</dt><dd>{profile.email ? <a href={`mailto:${profile.email}`}>{profile.email}</a> : 'Nespecificat'}</dd></div>
+            <div><dt><Mail size={16}/>Email</dt><dd className="person-email-copy">{profile.email ? <><a href={`mailto:${profile.email}`}>{profile.email}</a><button type="button" aria-label="Copiază emailul" title="Copiază emailul" onClick={()=>void copyEmail()}>{copyState==='copied'?<Check size={15}/>:<Copy size={15}/>}</button></> : 'Nespecificat'}</dd></div>
             <div><dt><Building2 size={16}/>Departament</dt><dd>{profile.department || 'Nespecificat'}</dd></div>
-            <div><dt><UserRound size={16}/>Manager</dt><dd>{profile.manager_name || 'Nespecificat'}</dd></div>
+            {!externalAirport && <div><dt><UserRound size={16}/>Manager</dt><dd>{profile.manager_name || 'Nespecificat'}</dd></div>}
           </dl>
+          {copyState!=='idle'&&<p className="person-copy-status" role="status">{copyState==='copied'?'Email copiat.':'Copierea nu este disponibilă. Selectează și copiază adresa afișată.'}</p>}
           {((!own && profile.email) || profile.availability === 'away') && <div className="person-profile-footer">
             {!own && profile.email && <a className="person-profile-email" href={`mailto:${profile.email}`}><Mail size={15}/>Trimite email</a>}
-            {profile.availability === 'away' && <small>În concediu la {date(referenceDate || directory.data?.reference_date)}</small>}
+            {!externalAirport && profile.availability === 'away' && <small>În concediu la {date(referenceDate || directory.data?.reference_date)}</small>}
           </div>}
         </> : <div className="person-profile-message" role="status">
           {directory.error ? <>Profilul nu a putut fi încărcat.<button type="button" onClick={directory.refresh}>Încearcă din nou</button></> : !directory.data ? 'Se încarcă profilul…' : 'Informațiile acestei persoane nu sunt disponibile în directorul echipei.'}
         </div>}
-        {onLogout && <div className="person-profile-footer person-profile-account">
-          <button type="button" className="logout-button" disabled={logoutDisabled} onClick={() => {close(true); onLogout();}}>
-            <LogOut size={16}/>Ieși din cont
+        {own && directory.account && <div className="person-profile-signout">
+          <button type="button" className="logout-button person-signout-button" disabled={directory.account.signingOut} aria-busy={directory.account.signingOut} onClick={() => {close(true); void directory.account?.signOut();}}>
+            <LogOut size={17}/>{directory.account.signingOut ? 'Se deconectează…' : 'Ieși din cont'}
           </button>
+          {directory.account.signOutError && <p className="own-profile-error">{directory.account.signOutError}</p>}
         </div>}
       </div>, document.body,
     )}

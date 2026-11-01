@@ -5,14 +5,12 @@ import {Loading,ErrorMessage,Empty,Modal,Status} from '@/components/ui';
 import {date} from '@/utils/format';
 import type {Share} from '@/types';
 import {ReceivedLibrary} from './ReceivedLibrary';
-import {Coordination,PartnerConnections} from './Coordination';
-import type {CoordinationInbox} from './coordination-types';
+import {Coordination} from './Coordination';
 import './sharing.css';
 
 export function SharingPage({revision,onOpen,notify}:{revision:number;onOpen:(id:string)=>void;notify:(s:string)=>void}){
   const [tab,setTab]=useState('requests'),[items,setItems]=useState<Share[]>(),[error,setError]=useState('');
   const [pending,setPending]=useState<string>(),[revoke,setRevoke]=useState<Share>(),[query,setQuery]=useState('');
-  const [network,setNetwork]=useState<CoordinationInbox>();
   const sharesEpoch=useRef(0);
   const invalidateShares=()=>{sharesEpoch.current++};
   const load=()=>{const epoch=++sharesEpoch.current;return api<{items:Share[]}>('/shares').then(v=>{if(epoch===sharesEpoch.current){setItems(v.items);setError('')}}).catch(e=>{if(epoch===sharesEpoch.current)setError(e.message)})};
@@ -26,16 +24,15 @@ export function SharingPage({revision,onOpen,notify}:{revision:number;onOpen:(id
   const shown=items?.filter(item=>`${item.document_title||item.title||item.document_id} ${item.recipient_airport}`.toLocaleLowerCase('ro').includes(query.trim().toLocaleLowerCase('ro')));
   return <div className="sharing-workspace">
     <div className="page-heading"><div><h1>Colaborare</h1><p>Întrebări, răspunsuri și documente între aeroporturi.</p></div>{tab!=='requests'&&<a className="button secondary" href="#documents">Alege un document<ArrowRight size={16}/></a>}</div>
-    {network&&<PartnerConnections data={network}/>}
     <div className="sharing-controls">
       <div className="sharing-tabs" role="group" aria-label="Spații de colaborare">
-        <button aria-pressed={tab==='requests'} onClick={()=>setTab('requests')}>Cereri</button>
+        <button aria-pressed={tab==='requests'} onClick={()=>setTab('requests')}>Mesagerie</button>
         <button aria-pressed={tab==='sent'} onClick={()=>setTab('sent')}>Documente trimise{items&&<span className="count-badge">{items.length}</span>}</button>
         <button aria-pressed={tab==='received'} onClick={()=>setTab('received')}>Documente primite</button>
       </div>
       <span className="sharing-access-note"><LockKeyhole size={14}/>Copii cu acces controlat</span>
     </div>
-    <div hidden={tab!=='requests'} inert={tab!=='requests'}><Coordination onConnections={setNetwork} showConnections={false} revision={revision} active={tab==='requests'} notify={notify} onOpen={onOpen}/></div>
+    <div hidden={tab!=='requests'} inert={tab!=='requests'}><Coordination revision={revision} active={tab==='requests'} notify={notify} onOpen={onOpen}/></div>
     {tab==='received'?<ReceivedLibrary revision={revision}/>:tab==='sent'&&<>
       {error&&<ErrorMessage message={error}/>}
       {!!items?.length&&<label className="search-input sharing-search"><Search size={17}/><input aria-label="Caută documente partajate" placeholder="Document sau aeroport…" value={query} onChange={event=>setQuery(event.target.value)}/></label>}

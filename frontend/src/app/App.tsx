@@ -1,5 +1,5 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
-import {House,FolderOpen,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
+import {House,FolderOpen,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
 import {api,setIdentity,clearIdentity,onSessionExpired,isSessionExpired} from '@/services/api-client';
@@ -19,7 +19,7 @@ import {ReportsPage} from '@/features/reports';
 import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
 import {rememberNfcLink,pendingNfcCard,nfcHash} from '@/features/operations/nfc-links';
-import {initials,roleLabel} from '@/utils/format';
+import {roleLabel} from '@/utils/format';
 import type {Page,Session} from '@/types';
 const OperationsPage = lazy(()=>import('@/features/operations').then(module=>({default:module.OperationsPage})));
 function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:string)=>void}) {
@@ -37,7 +37,6 @@ export function App() {
     [filter,setFilter]=useState(''), [upload,setUpload]=useState(false),
     [assistant,setAssistant]=useState(false), [revision,setRevision]=useState(0),
     [toast,setToast]=useState(''), [mobileOpen,setMobileOpen]=useState(false),
-    [userMenu,setUserMenu]=useState(false), [switching,setSwitching]=useState(false),
     [loggingOut,setLoggingOut]=useState(false), [logoutError,setLogoutError]=useState(''),
     [confirmingLogout,setConfirmingLogout]=useState(false);
   const logoutPending = useRef(false);
@@ -71,8 +70,8 @@ export function App() {
     sessionEpoch.current++;
     returnFocus.current=undefined;
     setError('');setToast('');setUpload(false);setAssistant(false);
-    setUserMenu(false);setMobileOpen(false);setLogoutError('');setConfirmingLogout(false);
-    setSession(current=>current?{...current,current_user:null,users:current.auth?.mode==='oidc'?[]:current.users}:current);
+    setMobileOpen(false);setLogoutError('');setConfirmingLogout(false);
+    setSession(current=>current?{...current,current_user:null,users:[]}:current);
   }),[]);
   useEffect(()=>{rememberNfcLink();window.addEventListener('hashchange',rememberNfcLink);return()=>window.removeEventListener('hashchange',rememberNfcLink)},[]);
   useEffect(()=>{
@@ -83,7 +82,6 @@ export function App() {
   useEffect(()=>{refresh()},[]);
   useEffect(()=>{
     setMobileOpen(false);
-    setUserMenu(false);
     setUpload(false);
     setAssistant(false);
   },[page,doc]);
@@ -94,29 +92,17 @@ export function App() {
   },[toast]);
   const notify=useCallback((s:string)=>{if(!isSessionExpired())setToast(s)},[]);
   const closeUpload=useCallback(()=>setUpload(false),[]),closeAssistant=useCallback(()=>setAssistant(false),[]);
-  const navigate=(p:Page,f='')=>{setFilter(f);goToPage(p);setMobileOpen(false);setUserMenu(false);setUpload(false);setAssistant(false)};
+  const navigate=(p:Page,f='')=>{setFilter(f);goToPage(p);setMobileOpen(false);setUpload(false);setAssistant(false)};
   const openDoc=(id:string)=>{
     const element=document.activeElement;
     if(!doc){
       returnFocus.current=userId&&element instanceof HTMLElement&&mainRef.current?.contains(element)
         ? {element,page,userId} : undefined;
     }
-    openDocument(id);setMobileOpen(false);setUserMenu(false);setUpload(false);setAssistant(false);
+    openDocument(id);setMobileOpen(false);setUpload(false);setAssistant(false);
   };
-  async function changeUser(id:string){
-    if(logoutPending.current)return;
-    setSwitching(true);
-    try{
-      await api('/auth/login',{method:'POST',body:JSON.stringify({user_id:id,password:'FlyLeaf2026!'})});
-      setIdentity(id);
-      await refresh();
-      setRevision(v=>v+1);
-      navigate('home');
-      notify('Contul a fost schimbat.');
-    }catch(e){notify((e as Error).message)}finally{setSwitching(false)}
-  }
   async function logout(){
-    if(logoutPending.current||switching)return;
+    if(logoutPending.current)return;
     logoutPending.current=true;
     setLoggingOut(true);
     setLogoutError('');
@@ -130,7 +116,7 @@ export function App() {
       setToast('');
       setConfirmingLogout(false);
       navigate('home');
-      setSession(current=>current?{...current,current_user:null,users:current.auth?.mode==='oidc'?[]:current.users}:current);
+      setSession(current=>current?{...current,current_user:null,users:[]}:current);
       if(result.redirect_url)location.assign(result.redirect_url);
     }catch(e){setLogoutError((e as Error).message)}finally{
       logoutPending.current=false;
@@ -138,8 +124,7 @@ export function App() {
     }
   }
   function requestLogout(){
-    if(logoutPending.current||switching)return;
-    setUserMenu(false);
+    if(logoutPending.current)return;
     setLogoutError('');
     setConfirmingLogout(true);
   }
@@ -153,7 +138,7 @@ export function App() {
   if(!session)return <Loading/>;
   if(!session.current_user)return <LoginPage session={session} onLogin={s=>{setSession(s);setRevision(v=>v+1)}}/>;
   const user=session.current_user,airport=typeof session.airport==='string'?session.airport:session.airport?.name||'Aeroportul Craiova';
-  return <PersonDirectoryProvider key={`${user.airport_id || ''}:${user.id}`} revision={revision}><div className="app-shell">
+  return <PersonDirectoryProvider key={`${user.airport_id || ''}:${user.id}`} revision={revision} account={{userId:user.id,signOut:requestLogout,signingOut:loggingOut,signOutError:logoutError}}><div className="app-shell">
     {mobileOpen&&<div className="sidebar-overlay" onClick={()=>setMobileOpen(false)}/>}
     <aside className={`sidebar ${mobileOpen?'open':''}`}>
       <a href="#home" className="brand" onClick={event=>{
@@ -178,13 +163,9 @@ export function App() {
       </nav>
       <div className="sidebar-bottom">
         <div className="user-switcher">
-          <div className="user-profile-controls"><PersonAvatar userId={user.id} name={user.name}/><button className="user-button user-menu-trigger" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button></div>
-          {userMenu&&<div className="user-menu">
-            <div className="user-menu-heading">{session.auth?.mode==='oidc'?'Contul tău':'Schimbă contul'}</div>
-            {session.auth?.mode!=='oidc'&&session.users.filter(u=>!u.roles.includes('employee')).map(u=><button disabled={switching||loggingOut} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
-          </div>}
+          <PersonAvatar userId={user.id} name={user.name} accountRole={roleLabel[user.role]||user.role} className="user-button user-menu-trigger" disabled={loggingOut} openOnFocus={false}/>
         </div>
-        <button className="logout-button sidebar-logout" disabled={loggingOut||switching} onClick={requestLogout} aria-busy={loggingOut}>
+        <button className="logout-button sidebar-logout" disabled={loggingOut} onClick={requestLogout} aria-busy={loggingOut}>
           <LogOut size={16}/>{loggingOut?'Se deconectează…':'Ieși din cont'}
         </button>
       </div>
@@ -198,7 +179,7 @@ export function App() {
         </div>
         <div className="topbar-actions">
           <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
-          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button><PersonAvatar userId={user.id} name={user.name} className="avatar top-avatar" onLogout={requestLogout} logoutDisabled={loggingOut||switching} openOnFocus={false}/>
+          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button><PersonAvatar userId={user.id} name={user.name} className="avatar top-avatar" openOnFocus={false}/>
         </div>
       </header>
       <main className="main-content" key={user.id} ref={mainRef} tabIndex={-1}>
@@ -232,7 +213,7 @@ export function App() {
         {logoutError&&<ErrorMessage message={logoutError}/>}
         <div className="modal-footer">
           <button type="button" className="button secondary" ref={cancelLogoutRef} disabled={loggingOut} onClick={cancelLogout}>Rămâi conectat</button>
-          <button type="button" className="button primary" disabled={loggingOut||switching} onClick={()=>void logout()} aria-busy={loggingOut}><LogOut size={16}/>{loggingOut?'Se deconectează…':'Ieși din cont'}</button>
+          <button type="button" className="button primary" disabled={loggingOut} onClick={()=>void logout()} aria-busy={loggingOut}><LogOut size={16}/>{loggingOut?'Se deconectează…':'Ieși din cont'}</button>
         </div>
       </div>
     </Modal>}

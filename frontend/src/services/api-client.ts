@@ -68,10 +68,12 @@ export async function download(path: string, filename: string) {
     credentials: "include",
   });
   checkSession(res, generation);
-  if (!res.ok)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
     throw new Error(
-      "Fișierul nu poate fi descărcat. Verifică drepturile de acces.",
+      typeof body.detail === 'string' ? body.detail : "Fișierul nu poate fi descărcat. Verifică drepturile de acces.",
     );
+  }
   const url = URL.createObjectURL(await res.blob());
   const a = document.createElement("a");
   a.href = url;

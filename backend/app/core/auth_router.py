@@ -9,19 +9,20 @@ from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.config import settings
 from app.identity.service import provider_logout_url
+from app.core.login_names import normalize_login
 from app.identity.origins import request_origin
 
 router = APIRouter(prefix='/api', tags=['Identity'])
 class Login(BaseModel):
-    user_id: str = Field(max_length=100)
+    user_id: str = Field(min_length=1,max_length=200)
     password: str = Field(min_length=1,max_length=200)
 
 def session_payload(db, user):
-    # OIDC has no account switcher: only return the signed-in user's capabilities.
-    users = db.scalars(select(User).where(User.airport_id == settings.airport_id, User.active == True)).all() if settings.auth_mode == 'demo' else ([user] if user else [])
+    # The sign-in page never publishes an account directory.
+    users = [user] if user else []
     login_url = '/api/auth/oidc/login' if settings.auth_mode == 'oidc' else None
     return {'current_user':user_dict(user) if user else None,
-        'users':[user_dict(u) for u in users] if user or settings.auth_mode == 'demo' else [],
+        'users':[user_dict(u) for u in users],
         'airport':{'id':settings.airport_id,'name':settings.airport_name},
         'reference_date':str(settings.reference_date),'demo':settings.auth_mode == 'demo',
         'auth_mode':settings.auth_mode, 'login_url':login_url, 'logout_url':'/api/auth/logout',
@@ -35,7 +36,10 @@ def session(db: DbSession = Depends(get_db), user=Depends(optional_user)):
 def login(body: Login, response: Response, request: Request, db: DbSession = Depends(get_db)):
     if settings.auth_mode != 'demo':
         raise DomainError('Autentificarea locală este dezactivată. Folosește identitatea aeroportului.',403)
-    user = db.get(User,body.user_id)
+    identifier = normalize_login(body.user_id)
+    candidates = [u for u in db.scalars(select(User).where(User.airport_id == settings.airport_id, User.active == True))
+        if identifier and identifier in {normalize_login(u.id), normalize_login(u.name), normalize_login(u.email or '')}]
+    user = candidates[0] if len(candidates) == 1 else None
     if not user or not user.active or user.airport_id != settings.airport_id or not check_password(body.password,user.password_hash):
         raise DomainError('Contul sau parola nu este corectă.',401)
     issue_session(db,user,response,request)

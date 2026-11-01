@@ -12,8 +12,9 @@ from app.documents.models import Document
 from app.documents.service import file_hash
 from app.sharing.models import Share, SharePreview
 from app.sharing.service import serialize
+from app.exchange.registry import AIRPORTS, peer_url, peer_urls, trusted_peer_ids
 
-PEERS = {'craiova': 'Aeroportul Craiova', 'sibiu': 'Aeroportul Sibiu'}
+PEERS = AIRPORTS
 
 
 def gateway_token():
@@ -27,7 +28,7 @@ def authenticated_peer(authorization, airport, requester, roles, department=''):
     token = gateway_token()
     if not hmac.compare_digest(authorization or '', f'Bearer {token}'):
         raise DomainError('Gateway neautorizat.', 401)
-    if airport not in PEERS or airport == settings.airport_id:
+    if airport not in trusted_peer_ids() or airport == settings.airport_id:
         raise DomainError('Aeroportul nu este un partener autorizat.', 403)
     if not requester or len(requester) > 100 or not {'director', 'reviewer', 'department_head'} & set((roles or '').split(',')):
         raise DomainError('Destinatarul nu are acces la biblioteca partajată.', 403)
@@ -78,16 +79,37 @@ def incoming_file(db, peer, share_id):
     return preview
 
 
-def fetch_peer(db, user, suffix=''):
+def received_libraries(db, user, airport_id=None):
+    require_page(user, 'sharing')
+    peers = [airport_id] if airport_id else list(peer_urls())
+    if not peers:
+        raise DomainError('Legătura cu aeroportul partener nu este configurată.', 503)
+    items, errors = [], []
+    for identifier in peers:
+        try:
+            data = fetch_peer(db, user, airport_id=identifier).json()
+            for item in data.get('items', []):
+                item['source_airport_id'] = identifier
+                item['source_airport'] = PEERS[identifier]
+                item['file_url'] = f'/api/received/{item["id"]}/file?airport_id={identifier}'
+                items.append(item)
+        except DomainError as exc:
+            errors.append({'airport_id':identifier,'message':exc.message})
+    if len(errors) == len(peers):
+        raise DomainError('Bibliotecile partenerilor nu sunt disponibile momentan.', 503)
+    return {'items':items,'total':len(items),'connected':True,'unavailable':errors}
+
+
+def fetch_peer(db, user, suffix='', airport_id=None):
     require_page(user, 'sharing')
     if not is_department_head(user):
         require_role(user, 'director', 'reviewer')
-    if not settings.exchange_url:
+    if not peer_urls():
         raise DomainError('Legătura cu aeroportul partener nu este configurată. Documentele locale rămân disponibile.', 503)
     headers = {'Authorization': f'Bearer {gateway_token()}', 'X-Requester-Id': user.id,
         'X-Requester-Roles': ','.join(({r for r in user.roles if r in ('director', 'reviewer')} | ({'department_head'} if is_department_head(user) else set()))), 'X-Requester-Department':quote(user.department,safe='')}
     try:
-        result = httpx.get(settings.exchange_url.rstrip('/') + '/outgoing/shares' + suffix,
+        result = httpx.get(peer_url(airport_id) + '/outgoing/shares' + suffix,
             headers=headers, timeout=8.0, follow_redirects=False)
     except httpx.HTTPError:
         raise DomainError('Aeroportul partener nu este disponibil. Documentele locale rămân accesibile.', 503)
