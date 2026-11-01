@@ -12,7 +12,7 @@
 .document-expiry--expired{background:#8d1b32;color:#fff;border-color:#8d1b32}
 .document-expiry--neutral{background:#eef2f6;color:#526575;border-color:#d7dfe6}
 .library-navigation{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #d7dfe6}
-.library-navigation .library-view-switch{margin:0;background:#edf1f5;padding:4px;border-color:#d7dfe6;flex-shrink:0}
+.library-navigation .library-view-switch{margin:0;background:#edf1f5;padding:4px;border-color:#d7dfe6;flex-shrink:0;max-width:100%;flex-wrap:wrap}
 .library-navigation .library-tabs{margin:0;padding:0;border:0;min-height:0}
 .library-navigation .library-tabs button{padding:12px 10px}
 .library-panel .table-footer{padding:12px 18px;color:#526575}
@@ -21,9 +21,9 @@
 .library-pagination nav{display:flex;align-items:center;gap:12px}
 .library-pagination nav>span{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .library-pagination .button{min-height:36px}
-.detail-page .detail-heading{margin-bottom:14px}
+.detail-page .detail-heading{margin-bottom:6px}
 .detail-page .detail-kicker{color:#526575;font-size:12px}
-.detail-page .detail-toolbar{padding:12px 0;margin-bottom:18px}
+.detail-page .detail-toolbar{padding:4px 0;margin:6px 0 12px}
 .detail-page .document-side{display:flex;flex-direction:column;gap:14px}
 .detail-page .document-actions{margin:0;padding:18px;border-color:#b6d3d3;background:#f0f8f7}
 .detail-page .document-actions h2{font-size:16px;color:#142432;margin-bottom:7px}

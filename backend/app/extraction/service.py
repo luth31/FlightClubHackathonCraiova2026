@@ -52,6 +52,10 @@ def apply_result(doc, item):
         for field, value in suggested_values(evidence).items():
             if field not in extra.get('edited_fields', []) and getattr(doc, field) is None:
                 setattr(doc, field, value)
+        from app.extraction.procurement import apply
+        doc.extra=extra
+        extracted=apply(doc,result['pages'])
+        extra={**doc.extra,'extraction_evidence':evidence+extracted}
     doc.extra = extra
 
 

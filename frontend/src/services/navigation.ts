@@ -7,7 +7,7 @@ export const pageLabels: Record<Page, string> = {
   operations: 'Operațiuni la sol', reports: 'Rapoarte', equipment: 'Echipamente', assistant: 'Întreabă FlyLeaf',
 };
 const currentPage = (page: Page): Page => page === 'contracts' || page === 'approvals' ? 'documents' : page;
-export type DocumentView = 'list' | 'contracts' | 'approvals' | 'renewals' | 'flow';
+export type DocumentView = 'list' | 'contracts' | 'approvals' | 'renewals' | 'flow' | 'procurement';
 type Route = {page: Page; doc?: string; documentView?: DocumentView; query?: string; filter?: string; renewalId?: string; equipmentId?: string; assistantDocumentId?: string};
 type NavigationState = {userId?: string; origin: Page; originHash?: string; documentDepth: number; scroll?: [number, number]};
 const isPage = (value: string): value is Page => Object.hasOwn(pageLabels, value);
@@ -17,7 +17,7 @@ export function parseRoute(hash: string): Route {
   const params = new URLSearchParams(query);
   if (path === 'contracts' || path === 'approvals' || path.startsWith('documents/') || path === 'documents' && query) {
     const view = path === 'contracts' || path === 'approvals' ? path : path.split('/')[1] || params.get('view');
-    return {page: 'documents', documentView: ['contracts','approvals','renewals','flow'].includes(view || '') ? view as DocumentView : 'list', query: params.get('q') || '', filter: params.get('filter') || '', renewalId: params.get('renewal') || undefined};
+    return {page: 'documents', documentView: ['contracts','approvals','renewals','flow','procurement'].includes(view || '') ? view as DocumentView : 'list', query: params.get('q') || '', filter: params.get('filter') || '', renewalId: params.get('renewal') || undefined};
   }
   if (path.startsWith('equipment/')) {
     try { return {page:'equipment', equipmentId:decodeURIComponent(path.slice(10))}; }

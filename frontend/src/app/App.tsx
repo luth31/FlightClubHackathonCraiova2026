@@ -197,7 +197,7 @@ export function App() {
         <div className="workspace-view" hidden={!!doc} inert={!!doc}>
           <ViewActiveContext value={!doc}>
           {page==='home'&&<DashboardPage name={user.name} onOpen={openDoc} onNavigate={navigate} onUpload={()=>setUpload(true)} revision={revision}/>}
-          {page==='documents'&&<DocumentWorkspace workspaceHash={workspaceHash} view={documentView || 'list'} initialQuery={query || ''} initialFilter={filter || ''} renewalId={renewalId} onView={view=>goToPage('documents','/'+view)} onOpen={openDoc} onUpload={()=>setUpload(true)} notify={notify} revision={revision} user={user}/>}
+          {page==='documents'&&<DocumentWorkspace workspaceHash={workspaceHash} view={documentView || 'list'} initialQuery={query || ''} initialFilter={filter || ''} renewalId={renewalId} onView={view=>goToPage('documents','/'+view)} onOpen={openDoc} onUpload={()=>setUpload(true)} notify={notify} revision={revision} user={user} onChanged={changed}/>}
           {page==='equipment'&&<EquipmentPage assetId={equipmentId} workspaceHash={workspaceHash} onOpen={openDoc} notify={notify} onChanged={changed}/>}
           {page==='assistant'&&<AssistantPage key={assistantDocumentId || 'all'} documentId={assistantDocumentId} onOpen={openDoc}/>}
 
