@@ -16,6 +16,8 @@ import './compact.css';
 
 type View='shift'|'ledger'|'strategies';
 function viewFromHash():View {const view=new URLSearchParams(window.location.hash.split('?')[1]||'').get('view');return view==='ledger'||view==='strategies'?view:'shift'}
+function evidenceFromHash():LedgerEvidenceTarget|undefined {const params=new URLSearchParams(location.hash.split('?')[1]||'');const eventId=params.get('event'),groupId=params.get('group');return location.hash.startsWith('#operations')&&eventId&&groupId?{eventId,groupId}:undefined}
+function returnFromHash(){const value=new URLSearchParams(location.hash.split('?')[1]||'').get('returnTo');return value?.startsWith('#reports?')?value:undefined}
 const presets=[{id:'normal',name:'Tură normală',description:'Echipa este pregătită. Ambele plecări sunt la timp.'},{id:'delayed',name:'Poartă deschisă târziu',description:'FL101 pleacă cu 18 minute întârziere.'},{id:'recovery',name:'Înlocuire rapidă',description:'Intervenția rezervei limitează întârzierea la 3 minute.'}];
 
 export function OperationsPage({notify}:{notify:(message:string)=>void}) {
@@ -25,8 +27,9 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   const [mode,setMode]=useState<'simulation'|'live'>('simulation');
   const [mapMode,setMapMode]=useState<'model'|'photorealistic'>('model'),[mapConfig,setMapConfig]=useState<MapConfig>();
   const [traffic,setTraffic]=useState<LiveTraffic>(),[trafficError,setTrafficError]=useState('');
-  const [selected,setSelected]=useState<string|null>('flight-101'),[focusLedger,setFocusLedger]=useState<string|null>(null);
-  const [evidence,setEvidence]=useState<LedgerEvidenceTarget>();
+  const [selected,setSelected]=useState<string|null>('flight-101'),[focusLedger,setFocusLedger]=useState<string|null>(()=>evidenceFromHash()?.groupId||null);
+  const [evidence,setEvidence]=useState<LedgerEvidenceTarget|undefined>(evidenceFromHash);
+  const [reportReturn,setReportReturn]=useState(returnFromHash);
   const [alert,setAlert]=useState<{runId:string;id:string;text:string}>();
   const announced=useRef(new Set<string>()),dataRef=useRef<OperationsData|undefined>(undefined),pending=useRef(false);
   const active=viewActive&&visible;
@@ -34,7 +37,7 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   const previewing=timeline.previewing&&mode==='simulation';
   const data=previewing&&timeline.frame?timeline.frame:liveData;
   const accept=useCallback((value:OperationsData)=>{if(dataRef.current&&value.simulation.revision<dataRef.current.simulation.revision)return;dataRef.current=value;setData(value);setError('')},[]);
-  useEffect(()=>{const change=()=>setVisible(!document.hidden);const route=()=>{if(window.location.hash.startsWith('#operations'))setView(viewFromHash())};document.addEventListener('visibilitychange',change);window.addEventListener('hashchange',route);return()=>{document.removeEventListener('visibilitychange',change);window.removeEventListener('hashchange',route)}},[]);
+  useEffect(()=>{const change=()=>setVisible(!document.hidden);const route=()=>{if(window.location.hash.startsWith('#operations')){setView(viewFromHash());const target=evidenceFromHash();setEvidence(target);setFocusLedger(target?.groupId||null);setReportReturn(returnFromHash())}};document.addEventListener('visibilitychange',change);window.addEventListener('hashchange',route);return()=>{document.removeEventListener('visibilitychange',change);window.removeEventListener('hashchange',route)}},[]);
   useEffect(()=>{let disposed=false;const controller=new AbortController();let timer:ReturnType<typeof setTimeout>;
     async function poll(){try{const value=await api<OperationsData>('/operations',{signal:controller.signal});if(!disposed)accept(value)}catch(e){if(!disposed)setError((e as Error).message)}if(!disposed)timer=setTimeout(poll,dataRef.current?.simulation.running?1000:2500)}
     if(active)void poll();return()=>{disposed=true;controller.abort();clearTimeout(timer)};
@@ -66,7 +69,7 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   }
   async function chooseScenario(id:string){if(await control('reset',{scenario_mode:id,expected_revision:liveData?.simulation.revision})){setMode('simulation');setSelected('flight-101');setFocusLedger(null);setEvidence(undefined);setAlert(undefined)}}
   function investigate(id:string){setEvidence(undefined);setFocusLedger(id);navigate('ledger')}
-  function openEvidence(target:LedgerEvidenceTarget){setEvidence(target);setFocusLedger(target.groupId);navigate('ledger')}
+  function openEvidence(target:LedgerEvidenceTarget){setReportReturn(undefined);setEvidence(target);setFocusLedger(target.groupId);navigate('ledger')}
   function seek(seconds:number){timeline.seek(seconds);if(dataRef.current?.simulation.running&&!pending.current&&dataRef.current.permissions.can_control)void control('pause')}
   function togglePlayback(){if(timeline.previewing||!liveData?.permissions.can_control||liveData.simulation.elapsed_seconds>=liveData.simulation.duration_seconds)timeline.togglePlayback();else void control(liveData.simulation.running?'pause':'start',{speed:liveData.simulation.speed||30})}
   async function applyTime(){if(await control('advance_to',{target_seconds:timeline.seconds,expected_revision:liveData?.simulation.revision}))timeline.reset()}
@@ -85,9 +88,9 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
     <nav className="ops-tabs" aria-label="Vizualizări operaționale">{([{id:'shift',label:'Tura curentă',icon:Map},{id:'ledger',label:'Registru',icon:ClipboardList},{id:'strategies',label:'Proceduri SOP',icon:BookOpen}] as const).map(tab=><button key={tab.id} className={view===tab.id?'active':''} aria-current={view===tab.id?'page':undefined} onClick={()=>{setFocusLedger(null);setEvidence(undefined);navigate(tab.id)}}><tab.icon size={16}/>{tab.label}</button>)}</nav>
     {error&&<div className="ops-inline-error" role="alert">{error}</div>}
     {alert&&alert.runId===data.simulation.run_id&&<div className="ops-critical-alert" role="alert"><AlertTriangle size={20}/><p>{alert.text}</p><button onClick={()=>investigate(alert.id)}>Vezi registrul<ArrowRight size={15}/></button><button aria-label="Închide alerta" onClick={()=>setAlert(undefined)}><X size={17}/></button></div>}
-    {view==='ledger'&&evidence&&<button className="ops-evidence-return" onClick={()=>navigate('strategies')}><ArrowLeft size={16}/>Înapoi la dovezile din registru</button>}
+    {view==='ledger'&&evidence&&<button className="ops-evidence-return" onClick={()=>{if(reportReturn)location.hash=reportReturn;else navigate('strategies')}}><ArrowLeft size={16}/>{reportReturn?'Înapoi la raportul operațional':'Înapoi la dovezile din registru'}</button>}
     {view==='ledger'&&<OperationsLedger key={evidence?`${evidence.groupId}:${evidence.eventId}`:data.simulation.run_id} evidence={evidence} revision={data.simulation.revision} runId={data.simulation.run_id} atSeconds={previewing?timeline.seconds:undefined} scenarioName={scenario?.name} focusFlight={focusLedger} onInvestigate={id=>{setSelected(id);navigate('shift')}}/>}
-    {(view==='strategies'||evidence)&&<div hidden={view!=='strategies'} inert={view!=='strategies'}><Strategies revision={data.simulation.revision} active={active&&view==='strategies'} onEvidence={openEvidence} notify={notify}/></div>}
+    {(view==='strategies'||(evidence&&!reportReturn))&&<div hidden={view!=='strategies'} inert={view!=='strategies'}><Strategies revision={data.simulation.revision} active={active&&view==='strategies'} onEvidence={openEvidence} notify={notify}/></div>}
     <div hidden={view!=='shift'} inert={view!=='shift'}>
       <div className="ops-metric-strip"><span>Plecări la timp <strong>{data.kpis.on_time_percent==null?'—':`${data.kpis.on_time_percent}%`}</strong></span><span>Întârziere înregistrată <strong className={delay>=15?'ops-tone-red':''}>{delay} min</strong></span><span>Abateri majore <strong className={severe?'ops-tone-red':''}>{severe}</strong></span></div>
       {mode==='simulation'&&<section className="ops-shift-control" aria-label="Controlul scenariului"><div className="ops-control-actions">

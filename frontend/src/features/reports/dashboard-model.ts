@@ -38,14 +38,14 @@ export function dailySeries(rows:ReportRow[],today:string,filters:DashboardFilte
   if(start>end)start=end;
   if((Date.parse(end)-Date.parse(start))/dayMs>90){
     const cursor=new Date(start.slice(0,7)+'-01T00:00:00Z');
-    const points:{date:string;total:number;approved:number;review:number}[]=[];
-    while(cursor.toISOString().slice(0,10)<=end){points.push({date:cursor.toISOString().slice(0,10),total:0,approved:0,review:0});cursor.setUTCMonth(cursor.getUTCMonth()+1);}
+    const points:{date:string;endDate:string;total:number;approved:number;review:number}[]=[];
+    while(cursor.toISOString().slice(0,10)<=end){const date=cursor.toISOString().slice(0,10);cursor.setUTCMonth(cursor.getUTCMonth()+1);points.push({date,endDate:[shifted(cursor.toISOString().slice(0,10),-1),end].sort()[0],total:0,approved:0,review:0});}
     for(const row of rows){const day=calendarDay(row.created_at);if(!day||day<start||day>end)continue;const bucket=points.find(p=>p.date.slice(0,7)===day.slice(0,7));if(!bucket)continue;bucket.total++;if(['approved','signed','completed'].includes(row.status))bucket.approved++;if(['draft','in_review','pending'].includes(row.status))bucket.review++;}
     return {start,end,points};
   }
   const days=Math.max(1,Math.round((Date.parse(end)-Date.parse(start))/dayMs)+1), size=days<=14?days:Math.min(16,Math.ceil(days/3));
-  const result=Array.from({length:size},(_,i)=>({date:shifted(start,Math.floor(i*days/size)),total:0,approved:0,review:0}));
-  for(const row of rows){const day=calendarDay(row.created_at);if(!day||day<start||day>end)continue;const bucket=Math.min(size-1,Math.floor((Date.parse(day)-Date.parse(start))/dayMs*size/days));result[bucket].total++;if(['approved','signed','completed'].includes(row.status))result[bucket].approved++;if(['draft','in_review','pending'].includes(row.status))result[bucket].review++;}
+  const result=Array.from({length:size},(_,i)=>({date:shifted(start,Math.floor(i*days/size)),endDate:shifted(start,Math.floor((i+1)*days/size)-1),total:0,approved:0,review:0}));
+  for(const row of rows){const day=calendarDay(row.created_at);if(!day||day<start||day>end)continue;const bucket=result.findIndex(p=>p.date<=day&&day<=p.endDate);if(bucket<0)continue;result[bucket].total++;if(['approved','signed','completed'].includes(row.status))result[bucket].approved++;if(['draft','in_review','pending'].includes(row.status))result[bucket].review++;}
   return {start,end,points:result};
 }
 

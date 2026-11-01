@@ -41,3 +41,10 @@ test('long time ranges use calendar months and preserve counts across years',()=
  assert.equal(series.points.find(p=>p.date==='2026-03-01').review,1);
  assert.equal(series.points.reduce((n,p)=>n+p.total,0),2);
 });
+test('multi-day buckets place every row inside its labelled inclusive boundaries',()=>{
+ const rows=Array.from({length:31},(_,i)=>({created_at:`2026-10-${String(i+1).padStart(2,'0')}`,status:'approved'}));
+ const series=dailySeries(rows,'2026-10-31',emptyDashboardFilters);
+ for(const p of series.points)assert.equal(p.total,rows.filter(r=>r.created_at>=p.date&&r.created_at<=p.endDate).length);
+ for(let i=1;i<series.points.length;i++)assert.equal(Date.parse(series.points[i].date)-Date.parse(series.points[i-1].endDate),86400000);
+ assert.equal(series.points.reduce((n,p)=>n+p.total,0),31);
+});
