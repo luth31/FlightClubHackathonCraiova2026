@@ -10,7 +10,9 @@
 .flow-case-filter select { border: 0; background: transparent; color: var(--ink); padding: 10px 4px; max-width: 270px; font: inherit; font-size: 12px; }
 .flow-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 14px; color: var(--muted); font-size: 11px; }
 .flow-legend > span { display: inline-flex; align-items: center; gap: 7px; }
-.flow-legend i { width: 22px; border-top: 2px dashed #6e8195; }
+.flow-legend-arrow { width: 32px; height: 20px; flex: none; color: #648378; }
+.flow-legend-arrow-reference { color: #6e8195; }
+.flow-legend-arrow-correction { color: #b64b5b; }
 .flow-legend .text-button { margin-left: auto; }
 .flow-scroll-hint { display: none !important; }
 .flow-chart-scroll { overflow: auto; max-height: 660px; border: 1px solid var(--border); border-radius: 10px; scrollbar-width: thin; }
@@ -30,7 +32,6 @@
 .flow-connector-related, .flow-connector-reference { stroke: #6e8195; stroke-dasharray: 4 4; }
 .flow-connector-correction { stroke: #b64b5b; stroke-dasharray: 6 3; stroke-width: 2; }
 .flow-edge-label { fill: #9c3545; font-size: 10px; font-weight: 650; paint-order: stroke; stroke: white; stroke-width: 5px; stroke-linejoin: round; }
-.flow-legend .flow-correction-key { border-color: #b64b5b; }
 .flow-has-focus .flow-connector { opacity: .2; }
 .flow-has-focus .flow-connector-active { opacity: 1; stroke: #125f66; stroke-width: 2.5; }
 
