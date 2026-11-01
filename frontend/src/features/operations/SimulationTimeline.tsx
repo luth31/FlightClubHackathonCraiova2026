@@ -11,14 +11,36 @@ export interface TimelinePreview extends OperationsData {
 }
 
 export function useSimulationTimeline(live:OperationsData|undefined,active:boolean) {
-  const [cursor,setCursor]=useState<{runId:string;seconds:number}|null>(null);
+  const [cursor,setCursor]=useState<{runId:string;seconds:number;mode:'review'|'live';playing:boolean;speed:number}|null>(null);
+  const [openedRun,setOpenedRun]=useState<{id:string;completed:boolean}|null>(null);
   const [result,setResult]=useState<{key:string;value?:TimelinePreview;error?:string}>();
   const runId=live?.simulation.run_id;
-  const previewing=!!cursor&&cursor.runId===runId;
-  const seconds=previewing?cursor.seconds:Math.floor(live?.simulation.elapsed_seconds||0);
-  const key=`${runId}:${live?.simulation.revision}:${seconds}`;
-  const desired=useRef({seconds,key});
-  useEffect(()=>{desired.current={seconds,key}},[seconds,key]);
+  const current=cursor?.runId===runId?cursor:null;
+  const duration=live?.simulation.duration_seconds||3600;
+  const completed=!!live&&live.simulation.elapsed_seconds>=duration;
+  if(live&&openedRun?.id!==runId)setOpenedRun({id:live.simulation.run_id,completed});
+  const startAtBeginning=openedRun&&openedRun.id===runId?openedRun.completed:completed;
+  const previewing=!!live&&(current?current.mode==='review':startAtBeginning);
+  const seconds=previewing?(current?.seconds||0):Math.floor(live?.simulation.elapsed_seconds||0);
+  const speed=current?.speed||(completed?30:live?.simulation.speed)||1;
+  const playing=previewing&&!!current?.playing&&seconds<duration;
+  useEffect(()=>{
+    if(!active||!playing)return;
+    let previous=performance.now();
+    const timer=setInterval(()=>{
+      const now=performance.now(),delta=(now-previous)*speed/1000;previous=now;
+      setCursor(value=>{
+        if(!value||value.runId!==runId||!value.playing)return value;
+        const next=Math.min(duration,value.seconds+delta);
+        return {...value,seconds:next,playing:next<duration};
+      });
+    },80);
+    return()=>clearInterval(timer);
+  },[active,playing,runId,speed,duration]);
+  const requestSeconds=Math.floor(seconds);
+  const key=`${runId}:${live?.simulation.revision}:${requestSeconds}`;
+  const desired=useRef({seconds:requestSeconds,key});
+  useEffect(()=>{desired.current={seconds:requestSeconds,key}},[requestSeconds,key]);
   useEffect(()=>{
     if(!active||!runId)return;
     const controller=new AbortController();let disposed=false,lastKey='';
@@ -30,7 +52,7 @@ export function useSimulationTimeline(live:OperationsData|undefined,active:boole
         try{
           const value=await api<TimelinePreview>(`/operations/timeline?run_id=${encodeURIComponent(runId!)}&at_seconds=${request.seconds}`,{signal:controller.signal});
           if(!disposed)setResult({key:request.key,value});
-        }catch(error){if(!disposed)setResult({key:request.key,error:(error as Error).message})}
+        }catch(error){if(!disposed){setResult({key:request.key,error:(error as Error).message});setCursor(value=>value&&value.runId===runId?{...value,playing:false}:value)}}
       }
       if(!disposed)timer=setTimeout(update,90);
     }
@@ -38,9 +60,13 @@ export function useSimulationTimeline(live:OperationsData|undefined,active:boole
     return()=>{disposed=true;clearTimeout(timer);controller.abort()};
   },[active,runId]);
   const frame=result?.value?.simulation.run_id===runId?result?.value:undefined;
-  return {previewing,seconds,frame,loading:active&&result?.key!==key,error:result?.key===key?result.error:undefined,
-    seek:(value:number)=>{if(live)setCursor({runId:live.simulation.run_id,seconds:Math.max(0,Math.min(live.simulation.duration_seconds,Math.round(value)))})},
-    reset:()=>setCursor(null)};
+  const seek=(value:number)=>{if(live)setCursor({runId:live.simulation.run_id,seconds:Math.max(0,Math.min(duration,Math.round(value))),mode:'review',playing:false,speed})};
+  return {previewing,seconds:Math.floor(seconds),frame,playing,speed,loading:active&&result?.key!==key,error:result?.key===key?result.error:undefined,
+    seek,
+    togglePlayback:()=>{if(live)setCursor({runId:live.simulation.run_id,seconds:seconds>=duration?0:seconds,mode:'review',playing:!playing,speed})},
+    setSpeed:(value:number)=>{if(live)setCursor({runId:live.simulation.run_id,seconds,mode:'review',playing,speed:value})},
+    step:()=>seek(frame?.timeline?.events.filter(event=>event.elapsed_seconds>seconds).sort((a,b)=>a.elapsed_seconds-b.elapsed_seconds)[0]?.elapsed_seconds??duration),
+    reset:()=>{if(live)setCursor({runId:live.simulation.run_id,seconds:live.simulation.elapsed_seconds,mode:'live',playing:false,speed:live.simulation.speed})}};
 }
 
 const important=(event:TimelineEvent)=>!['boarding_started','scenario_superseded','scenario_summary','departure_due'].includes(event.kind);

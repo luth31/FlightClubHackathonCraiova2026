@@ -124,3 +124,64 @@ test('flight timeline includes NFC attendance of the substitute who opens its ga
   assert.ok(markers.some(label=>label.includes('08:21:00 · Pontaj Alexandru')));
   assert.ok(markers.some(label=>label.includes('08:22:00 · G1 deschisă de rezervă')));
 });
+
+
+test('dragging keeps playback usable and Play advances from the selected time',async t=>{
+  const {calls,state}=await setup(t,{elapsed:1800});
+  await scrub(240);await waitTimeline();
+  const play=document.querySelector('.ops-control-actions > button');
+  assert.equal(play.disabled,false,'scrubbing must not disable Play');
+  assert.equal(document.querySelector('.ops-control-actions > button:nth-child(2)').disabled,false,'event stepping remains usable');
+  assert.equal(document.querySelector('[aria-label="Viteza simulării"]').disabled,false,'playback speed remains usable');
+  await act(async()=>play.click());await waitTimeline(400);
+  assert.ok(Number(document.querySelector('[type=range]').value)>240,'Play must advance from the dragged cursor');
+  assert.equal(state.simulation.elapsed_seconds,1800,'reviewing a run must preserve recorded time');
+  assert.equal(calls.length,0,'historical playback must not write simulation events');
+  await act(async()=>play.click());
+  const paused=document.querySelector('[type=range]').value;
+  await waitTimeline(180);assert.equal(document.querySelector('[type=range]').value,paused);
+});
+
+test('a completed run opens at the beginning and can play and replay without a reset',async t=>{
+  const {calls,state}=await setup(t,{elapsed:3600});await waitTimeline();
+  assert.equal(document.querySelector('[type=range]').value,'0','an ended run must be ready to watch from the start');
+  assert.equal(document.querySelector('.ops-clock strong').textContent,'08:00:00');
+  const play=document.querySelector('.ops-control-actions > button');
+  assert.equal(play.disabled,false);
+  await act(async()=>play.click());await waitTimeline(350);
+  assert.ok(Number(document.querySelector('[type=range]').value)>0);
+  await scrub(3600);await waitTimeline();
+  assert.match(play.textContent,/Reia redarea/);
+  await act(async()=>play.click());await waitTimeline(200);
+  assert.ok(Number(document.querySelector('[type=range]').value)<100);
+  assert.equal(state.simulation.elapsed_seconds,3600);assert.equal(calls.length,0);
+});
+
+
+test('a shift that finishes while open keeps its final metrics and offers replay',async t=>{
+  const {state}=await setup(t);
+  state.simulation.elapsed_seconds=3600;state.simulation.clock_time='2026-10-30T09:00:00';state.kpis.on_time_percent=33;
+  await click('Următorul eveniment');await waitTimeline();
+  assert.equal(document.querySelector('[type=range]').value,'3600');
+  assert.equal(document.querySelector('.ops-clock strong').textContent,'09:00:00');
+  assert.match(document.querySelector('.ops-shift-metrics').textContent,/33%/);
+  const play=document.querySelector('.ops-control-actions > button');
+  assert.equal(play.disabled,false);assert.match(play.textContent,/Reia redarea/);
+});
+
+
+test('review playback supports next event, speed changes and returning to live NFC actions',async t=>{
+  const {calls}=await setup(t,{elapsed:1800});
+  await scrub(240);await waitTimeline();
+  await click('Următorul eveniment');await waitTimeline();
+  assert.equal(document.querySelector('[type=range]').value,'1200');
+  const speed=document.querySelector('[aria-label="Viteza simulării"]');
+  await act(async()=>{speed.value='60';speed.dispatchEvent(new window.Event('change',{bubbles:true}))});
+  await act(async()=>document.querySelector('.ops-control-actions > button').click());await waitTimeline(220);
+  assert.equal(speed.value,'60');
+  assert.ok(Number(document.querySelector('[type=range]').value)>1200);
+  await click('Pontaj NFC');
+  assert.equal(document.querySelector('.ops-clock strong').textContent,'08:30:00');
+  assert.match(document.querySelector('[role=dialog]').textContent,/Pontaj NFC/);
+  assert.equal(calls.length,0);
+});
