@@ -109,13 +109,17 @@ export function AirportScene(props:AirportSceneProps){
         let item=flights.get(flight.id);const [x,y,z]=flightCoordinates(flight,reference,mapMode);
         if(item&&item.flight.status!==flight.status){removeFlight(flight.id,item);item=undefined;}
         if(!item){
-          const mesh=createAircraft(flight.status);mesh.userData.flightId=flight.id;mesh.position.set(x,y,z);mesh.rotation.y=-(flight.heading||0)*Math.PI/180;
+          const mesh=createAircraft(flight.status,flight.display_scale);mesh.userData.flightId=flight.id;mesh.position.set(x,y,z);mesh.rotation.y=-(flight.heading||0)*Math.PI/180;
           const projection=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineDashedMaterial({color:'#ffffff',transparent:true,opacity:.85,dashSize:100,gapSize:70,depthTest:false}));
           const footprint=new THREE.Mesh(new THREE.RingGeometry(28,38,32),new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));footprint.rotation.x=-Math.PI/2;
           aircraftGroup.add(mesh,projection,footprint);item={mesh,target:mesh.position.clone(),heading:mesh.rotation.y,flight,ground:0,base:new THREE.Vector3(),projection,footprint};flights.set(flight.id,item);
         }
         item.base.fromArray(flightCoordinates({...flight,altitude_m:0,reported_altitude_m:reference.elevation+REFERENCE_GEOID_OFFSET_M,altitude_reference:'geometric_ellipsoid'},reference,mapMode));
         item.flight=flight;item.target.set(x,y+(flight.source==='live'&&!flight.ground?0:item.ground),z);item.heading=-(flight.heading||0)*Math.PI/180;
+        item.mesh.scale.setScalar(flight.display_scale??1);
+        // A timeline seek is a new instant, not a straight taxi route between
+        // distant snapshots. Never sweep through terrain or occupied stands.
+        if(flight.source==='simulation'&&latest.current.animateFlights===false){item.mesh.position.copy(item.target);item.mesh.rotation.y=item.heading;}
         const ring=item.mesh.getObjectByName('selection-ring');if(ring)ring.visible=latest.current.selectedFlightId===flight.id;
       }
       const trafficMode=Boolean(latest.current.trafficMode);

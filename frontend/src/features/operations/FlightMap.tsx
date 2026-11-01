@@ -14,9 +14,9 @@ function SceneSlot(props:AirportSceneProps){
     {(visited||props.active)&&<AirportScene {...props}/>}
   </div>;
 }
-export function FlightMap({data,mode,onMode,mapConfig,mapMode,onMapMode,traffic,trafficError,selected,onSelect,active,busy,onEvent,onInvestigate,notify}:{
+export function FlightMap({data,mode,onMode,mapConfig,mapMode,onMapMode,traffic,trafficError,selected,onSelect,active,animateFlights=true,busy,onEvent,onInvestigate,notify}:{
   data:OperationsData;mode:'simulation'|'live';onMode:(mode:'simulation'|'live')=>void;mapConfig?:MapConfig;mapMode:'model'|'photorealistic';onMapMode:(mode:'model'|'photorealistic')=>void;
-  traffic?:LiveTraffic;trafficError:string;selected:string|null;onSelect:(id:string)=>void;active:boolean;busy:boolean;onEvent:(kind:string,extra:Record<string,unknown>)=>void;onInvestigate:(id:string)=>void;notify:(message:string)=>void;
+  traffic?:LiveTraffic;trafficError:string;selected:string|null;onSelect:(id:string)=>void;active:boolean;animateFlights?:boolean;busy:boolean;onEvent:(kind:string,extra:Record<string,unknown>)=>void;onInvestigate:(id:string)=>void;notify:(message:string)=>void;
 }) {
   const [focusRequest,setFocusRequest]=useState(0),[operator,setOperator]=useState('');
   const sceneRef=useRef<HTMLDivElement>(null);
@@ -28,13 +28,13 @@ export function FlightMap({data,mode,onMode,mapConfig,mapMode,onMapMode,traffic,
   const staffId=present.some(person=>person.id===operator)?operator:present.find(person=>person.id===gate?.assigned_staff_id)?.id||present[0]?.id||'';
   const sceneFlights:SceneFlight[]=useMemo(()=>flights.filter(flight=>flight.position.altitude_m!=null).map(flight=>({id:flight.id,callsign:flight.callsign,...flight.position,
     altitude_m:Math.max(0,(flight.position.altitude_m??data.airport.elevation_m)-data.airport.elevation_m),reported_altitude_m:flight.position.altitude_m??undefined,altitude_reference:flight.altitude_reference,ground:flight.ground,
-    heading:flight.position.heading??0,status:flight.severity==='red'?'critical':flight.severity==='yellow'?'caution':'neutral',source:mode==='live'?'live':'simulation'})),[flights,data.airport.elevation_m,mode]);
+    display_scale:mode==='simulation'?data.model?.aircraft_display_scale??1:1,heading:flight.position.heading??0,status:flight.severity==='red'?'critical':flight.severity==='yellow'?'caution':'neutral',source:mode==='live'?'live':'simulation'})),[flights,data.airport.elevation_m,data.model?.aircraft_display_scale,mode]);
   const label=(flight:Flight)=>flight.emergency?'Alerte':flight.delay_minutes==null?mode==='live'?'Fără orar':'În așteptare':flight.delay_minutes>0?`+${Math.round(flight.delay_minutes)} min`:flight.actual_departure_seconds!=null?'La timp':'În grafic';
   const fullscreen=()=>{if(document.fullscreenElement)void document.exitFullscreen();else void sceneRef.current?.requestFullscreen().catch(()=>notify('Vizualizarea pe tot ecranul nu este disponibilă.'))};
   return <div className="ops-workspace">
     <div className="ops-map-area" ref={sceneRef}>
       <div className="ops-map-toolbar"><div className="ops-segment" aria-label="Sursa traficului"><button className={mode==='simulation'?'active':''} onClick={()=>onMode('simulation')}><Play size={13}/>Simulare</button><button className={mode==='live'?'active':''} onClick={()=>onMode('live')}><Radio size={13}/>Trafic ADS-B</button></div><div className="ops-map-style"><label><Layers3 size={15}/><select aria-label="Stil hartă" value={mapMode} onChange={event=>onMapMode(event.target.value as 'model'|'photorealistic')}><option value="model">Model 3D</option><option value="photorealistic" disabled={!mapConfig?.photorealistic_available}>Fotorealist</option></select></label><button title="Tot ecranul" aria-label="Tot ecranul" onClick={fullscreen}><Expand size={16}/></button></div></div>
-      {(['model','photorealistic'] as const).map(style=><SceneSlot key={`${data.airport.id}-${style}`} airportId={data.airport.id} flights={sceneFlights} selectedFlightId={chosen?.id||null} onSelectFlight={id=>{if(id)onSelect(id)}} active={active&&mapMode===style} focusRequest={focusRequest} trafficMode={mode==='live'} googleApiKey={style==='photorealistic'?mapConfig?.google_api_key||undefined:undefined} mapMode={style} onMapModeChange={onMapMode}/>)}
+      {(['model','photorealistic'] as const).map(style=><SceneSlot key={`${data.airport.id}-${style}`} airportId={data.airport.id} flights={sceneFlights} selectedFlightId={chosen?.id||null} onSelectFlight={id=>{if(id)onSelect(id)}} active={active&&mapMode===style} focusRequest={focusRequest} animateFlights={animateFlights} trafficMode={mode==='live'} googleApiKey={style==='photorealistic'?mapConfig?.google_api_key||undefined:undefined} mapMode={style} onMapModeChange={onMapMode}/>)}
       <div className="ops-scene-caption"><span>{data.airport.name}</span><small>{mode==='live'?'Poziții recepționate · altitudinea raportată de aeronavă':'Tură demonstrativă'}</small></div><div className="ops-legend"><span><i/>Fără alertă</span>{mode==='simulation'&&<span><i className="yellow"/>1–14 min</span>}<span><i className="red"/>{mode==='simulation'?'≥15 min / incident':'Alertă raportată'}</span></div>
     </div>
     <aside className="ops-flight-panel"><div className="ops-panel-heading"><div><h2>{mode==='live'?'Trafic în raza aeroportului':'Zborurile turei'}</h2><span>{flights.length} aeronave · {mode==='live'?'25 mile nautice':'plecări și sosiri'}</span></div><Plane size={18}/></div>

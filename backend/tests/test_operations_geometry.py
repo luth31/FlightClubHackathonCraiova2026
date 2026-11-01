@@ -7,7 +7,31 @@ Chrome on 1 November 2026. It is a demo placement constraint, not a stand chart.
 """
 from math import cos, radians, sin
 
-from app.operations.scenario import AIRPORTS, FLIGHTS, gates, position
+from app.operations.scenario import AIRPORTS, AIRCRAFT_DISPLAY_SCALE, FLIGHTS, gates, position
+
+
+def test_craiova_parks_nose_in_toward_the_terminal():
+    airport = AIRPORTS['craiova']
+    for gate, flight in zip(gates(airport), FLIGHTS):
+        elapsed = 0 if flight['direction'] == 'departure' else flight['scheduled_arrival_seconds'] + 180
+        point, _ = position(airport, gate, flight, elapsed)
+        assert point['heading'] == 180
+
+
+def test_craiova_aircraft_clear_the_plane_baked_into_google_tiles():
+    # Screen raycasts against Google's mesh pinned this occupied area. Include
+    # a margin around its wings/nose/tail; it cannot be removed from the tiles.
+    airport = AIRPORTS['craiova']
+    west, south, east, north = 23.87860, 44.31328, 23.87906, 44.31364
+    for gate, flight in zip(gates(airport), FLIGHTS):
+        start = 0 if flight['direction'] == 'departure' else flight['scheduled_arrival_seconds']
+        for second in range(start, start+226):
+            point, _ = position(airport, gate, flight, second, departed_at=0)
+            dx = max(west-point['lon'], 0, point['lon']-east)*111320*cos(radians(airport['lat']))
+            dy = max(south-point['lat'], 0, point['lat']-north)*111320
+            # 14 m encloses the reduced model at any heading, with extra room
+            # for its heading interpolation and local projection approximation.
+            assert dx*dx+dy*dy > 14**2, (flight['callsign'], second, point)
 
 
 def test_craiova_parked_aircraft_fit_the_established_apron():
@@ -21,11 +45,23 @@ def test_craiova_parked_aircraft_fit_the_established_apron():
         point, _ = position(airport, gate, flight, elapsed)
         heading = radians(-point['heading'])
         for x, z in outline:
+            x, z = x*AIRCRAFT_DISPLAY_SCALE, z*AIRCRAFT_DISPLAY_SCALE
             east, south = x*cos(heading)+z*sin(heading), -x*sin(heading)+z*cos(heading)
             lon = point['lon'] + east/(111320*cos(radians(airport['lat'])))
             lat = point['lat'] - south/111320
-            assert 23.87746 < lon < 23.87910, (flight['callsign'], lon, lat)
+            assert 23.87768 < lon < 23.87910, (flight['callsign'], lon, lat)
             assert 44.31311 < lat < 44.313755, (flight['callsign'], lon, lat)
+
+
+def test_craiova_pushback_keeps_the_nose_toward_the_terminal():
+    airport = AIRPORTS['craiova']
+    for gate, flight in zip(gates(airport), FLIGHTS[:3]):
+        parked, _ = position(airport, gate, flight, 0)
+        for second in (0, 5, 10, 19):
+            point, _ = position(airport, gate, flight, second, departed_at=0)
+            assert point['heading'] == 180
+            assert point['lat'] >= parked['lat']
+            assert point['lon'] == parked['lon']
 
 
 def test_craiova_ground_routes_stay_on_the_apron_taxiway_and_runway():

@@ -11,7 +11,7 @@ install(initial.window);
 const {createRoot}=await import('react-dom/client');
 const bundled=await build({entryPoints:[fileURLToPath(new URL('../src/features/operations/index.tsx',import.meta.url))],bundle:true,write:false,platform:'node',format:'cjs',packages:'external',jsx:'automatic',loader:{'.css':'empty'},plugins:[{name:'scene',setup(builder){builder.onResolve({filter:/^react$/},()=>({path:'react',external:true}));builder.onResolve({filter:/^\.\/AirportScene$/},()=>({path:'scene',namespace:'scene'}));builder.onLoad({filter:/.*/,namespace:'scene'},()=>({contents:"const React=require('react');exports.AirportScene=function(props){globalThis.sceneProps=props;React.useEffect(()=>{globalThis.sceneMounts++;return()=>{globalThis.sceneUnmounts++}},[]);return React.createElement('div',{'data-scene':props.mapMode,'data-active':String(props.active)});}"}));}}]});
 const module={exports:{}};new Function('require','module','exports',bundled.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports);const {OperationsPage}=module.exports;initial.window.close();
-const fixture=()=>({airport:{id:'craiova',icao:'LRCV',name:'Aeroportul Craiova',lat:44.318,lon:23.888,elevation_m:191},simulation:{run_id:'run',revision:1,running:false,speed:30,elapsed_seconds:0,duration_seconds:3600,clock_time:'2026-10-30T08:00:00',scenario_mode:'interactive'},flights:[{id:'flight-101',callsign:'FL101',aircraft_type:'A320',origin:'Craiova',destination:'Londra',direction:'departure',gate_id:'G1',scheduled_departure_seconds:1200,actual_departure_seconds:null,delay_minutes:0,severity:'neutral',emergency:false,phase:'at_gate',position:{lat:44.318,lon:23.888,altitude_m:191,heading:270}}],gates:[{id:'G1',open:false,assigned_staff_id:'worker',opened_by:'relief',planned_open_seconds:240}],staff:[{id:'worker',name:'Mara Stoica',title:'Agent poartă',present:false,card_label:'DEMO-NFC-101',expected_seconds:0},{id:'relief',name:'Alex Marin',title:'Agent rezervă',present:true,card_label:'DEMO-NFC-104',expected_seconds:1200}],events:[],kpis:{},thresholds:{major_delay_minutes:15,minor_delay_minutes:1},permissions:{can_control:true}});
+const fixture=()=>({model:{aircraft_display_scale:.62},airport:{id:'craiova',icao:'LRCV',name:'Aeroportul Craiova',lat:44.318,lon:23.888,elevation_m:191},simulation:{run_id:'run',revision:1,running:false,speed:30,elapsed_seconds:0,duration_seconds:3600,clock_time:'2026-10-30T08:00:00',scenario_mode:'interactive'},flights:[{id:'flight-101',callsign:'FL101',aircraft_type:'A320',origin:'Craiova',destination:'Londra',direction:'departure',gate_id:'G1',scheduled_departure_seconds:1200,actual_departure_seconds:null,delay_minutes:0,severity:'neutral',emergency:false,phase:'at_gate',position:{lat:44.318,lon:23.888,altitude_m:191,heading:270}}],gates:[{id:'G1',open:false,assigned_staff_id:'worker',opened_by:'relief',planned_open_seconds:240}],staff:[{id:'worker',name:'Mara Stoica',title:'Agent poartă',present:false,card_label:'DEMO-NFC-101',expected_seconds:0},{id:'relief',name:'Alex Marin',title:'Agent rezervă',present:true,card_label:'DEMO-NFC-104',expected_seconds:1200}],events:[],kpis:{},thresholds:{major_delay_minutes:15,minor_delay_minutes:1},permissions:{can_control:true}});
 const metrics={completed_departures:12,on_time_percent:75,delay_minutes:60,late_gate_openings:3,staff_late:2,open_risks:1};
 const ledger=()=>({reference_date:'2026-10-30',metrics,filtered_metrics:metrics,days:[{date:'2026-10-30',severity:'yellow',flights:[{id:'flight-101',callsign:'FL101',source:'interactive',category:'flight',route:'Craiova → Londra',gate_id:'G1',scheduled_at:'2026-10-30T08:20:00',actual_at:null,status:'blocked',severity:'yellow',delay_minutes:0,events:[{id:'e1',kind:'nfc_check_in',title:'Card de rezervă',actor:'Alex Marin',detail:'Prezent',planned_at:'2026-10-30T08:20:00',actual_at:'2026-10-30T08:22:00',delay_minutes:2,severity:'yellow'},{id:'e2',kind:'staff_absent',title:'Agentul alocat lipsește',actor:'Coordonator',planned_at:'2026-10-30T08:04:00',actual_at:'2026-10-30T08:04:00',delay_minutes:0,severity:'yellow'}]}]}]});
 const strategies=()=>({can_draft:true,items:[{id:'reserve',title:'Agent de rezervă',sop_code:'SOP-01',problem:'Porți întârziate',evidence_count:1,evidence:[{group_id:'flight-101',callsign:'FL101',date:'2026-10-30',delay_minutes:18}],current_rule:'Verificare la deschidere',proposed_rule:'Verificare înainte de deschidere',changes:['Confirmare rezervă'],baseline:{delay_minutes:60},estimate:{delay_minutes:42,minutes_saved:18},assumptions:['Rezerva disponibilă'],document_id:null}]});
@@ -184,4 +184,20 @@ test('review playback supports next event, speed changes and returning to live N
   assert.equal(document.querySelector('.ops-clock strong').textContent,'08:30:00');
   assert.match(document.querySelector('[role=dialog]').textContent,/Pontaj NFC/);
   assert.equal(calls.length,0);
+});
+
+
+test('simulation uses the scenario display scale while ADS-B retains full size',async t=>{
+  await setup(t,{live:[{id:'live-1',callsign:'LIVE1',position:{lat:44.318,lon:23.888,altitude_m:1191,heading:0},severity:'neutral',delay_minutes:null}]});
+  assert.equal(globalThis.sceneProps.flights[0].display_scale,.62);
+  await click('Trafic ADS-B');
+  assert.equal(globalThis.sceneProps.flights[0].display_scale,1);
+});
+
+test('timeline seeks snap aircraft instead of sweeping across occupied apron space',async t=>{
+  await setup(t,{elapsed:1800});
+  await scrub(240);await waitTimeline();
+  assert.equal(globalThis.sceneProps.animateFlights,false);
+  await click('Redă de aici');await waitTimeline();
+  assert.equal(globalThis.sceneProps.animateFlights,true);
 });

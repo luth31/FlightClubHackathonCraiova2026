@@ -12,6 +12,7 @@ export interface SceneFlight {
   reported_altitude_m?: number;
   altitude_reference?: string;
   ground?: boolean;
+  display_scale?: number;
 }
 export interface AirportSceneProps {
   airportId: 'craiova' | 'sibiu';
@@ -22,6 +23,7 @@ export interface AirportSceneProps {
   focusRequest?: number;
   overviewRequest?: number;
   trafficMode?: boolean;
+  animateFlights?: boolean;
   googleApiKey?: string;
   mapMode?: AirportMapMode;
   onMapStatus?: (status: 'loading' | 'ready' | 'error', message?: string) => void;
