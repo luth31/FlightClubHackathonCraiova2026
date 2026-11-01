@@ -112,3 +112,16 @@ def analyze_strategy(user=Depends(current_user), db: Session=Depends(get_db)):
 def draft_recommendation(analysis_id: str, recommendation_id: str, user=Depends(current_user), db: Session=Depends(get_db)):
     from app.operations.procedures import engine
     return engine.draft(db, user, analysis_id, recommendation_id)
+
+
+@router.get('/entities/{entity_id}')
+def operational_entity(entity_id: str, offset: int=Query(default=0,ge=0), limit: int=Query(default=50,ge=1,le=200),
+                       user=Depends(current_user), db: Session=Depends(get_db)):
+    from app.operations.atomic_ledger import entity_detail
+    return entity_detail(db,user,entity_id,offset,limit)
+
+
+@router.get('/facts/{event_id}')
+def operational_fact(event_id: str, user=Depends(current_user), db: Session=Depends(get_db)):
+    from app.operations.atomic_ledger import fact_detail
+    return fact_detail(db,user,event_id)

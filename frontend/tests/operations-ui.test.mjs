@@ -323,3 +323,17 @@ test('preset shifts keep the three simple scenarios and no manual gate controls'
   assert.deepEqual(choices.map(option=>option.value),['normal','delayed','recovery']);
   assert.equal(document.querySelector('.ops-manual-actions'),null);
 });
+
+test('report deep link resolves exact evidence and returns with report filters intact',async t=>{
+  const historical=ledger();historical.days[0].date='2026-10-27';
+  const group=historical.days[0].flights[0];group.id='historic-report';group.scheduled_at='2026-10-27T08:20:00';
+  const returnTo='#reports?view=operations&opsDays=30&opsDate=2026-10-27&opsFilter=major';
+  const params=new URLSearchParams({view:'ledger',group:group.id,event:'e1',returnTo});
+  const {reads,calls}=await setup(t,{hash:'#operations?'+params,evidenceLedger:historical,mapConfig:googleConfig});
+  assert.ok(reads.some(url=>url.includes('/ledger/entries/e1')&&url.includes('group_id=historic-report')));
+  assert.equal(document.querySelector('[data-event-id="e1"]')?.getAttribute('aria-current'),'true');
+  assert.equal(globalThis.sceneMounts,0,'Evidence navigation must not load Google tiles');
+  assert.equal(calls.length,0);
+  await click('Înapoi la raportul operațional');await settle();
+  assert.equal(location.hash,returnTo);
+});

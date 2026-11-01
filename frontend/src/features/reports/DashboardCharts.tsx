@@ -1,32 +1,26 @@
-import {useId, useState, type ReactNode} from 'react';
-import {ArrowUpRight, ChartNoAxesCombined, CircleHelp} from 'lucide-react';
+import {useState, type ReactNode} from 'react';
+import {ArrowUpRight, ChartNoAxesCombined} from 'lucide-react';
 import type {ReportRow} from './types';
 import {label, number, amount, shortDate} from './labels';
 import {readableText} from '@/utils/text';
 import {ageDays, groups} from './analysis';
 import type {dailySeries, departmentComparison} from './dashboard-model';
 
-export const BLUE='#62abe3', RED='#d57d86', TEAL='#46a59a', NAVY='#123f6b', GOLD='#d8aa54';
+export const BLUE='#4e8fc2', RED='#dc2938', TEAL='#248a7e', NAVY='#123f6b', GOLD='#bb7918';
 export function DashboardPanel({title,subtitle,children,action,className=''}:{title:string;subtitle?:string;children:ReactNode;action?:()=>void;className?:string}){
-  return <section className={`px-panel ${className}`}><header><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>{action?<button onClick={action} title="Vezi datele sursă" aria-label={`Date sursă: ${title}`}><ArrowUpRight size={15}/></button>:<CircleHelp size={13} aria-hidden="true"/>}</header>{children}</section>;
+  return <section className={`px-panel ${className}`}><header><div><h2>{title}</h2>{subtitle&&<p>{subtitle}</p>}</div>{action?<button onClick={action} title="Vezi datele sursă" aria-label={`Date sursă: ${title}`}><ArrowUpRight size={15}/></button>:null}</header>{children}</section>;
 }
 function EmptyChart(){return <div className="px-chart-empty"><ChartNoAxesCombined size={28}/><strong>Nicio înregistrare în această selecție</strong><span>Ajustează filtrele pentru a continua analiza.</span></div>;}
 export function TrendChart({series,tasks=false}:{series:ReturnType<typeof dailySeries>;tasks?:boolean}){
-  const [active,setActive]=useState<number|null>(null), id=useId().replace(/:/g,'');
-  const points=series.points, maximum=Math.max(4,Math.ceil(Math.max(...points.map(p=>p.total))/4)*4);
-  const x=(i:number)=>48+i*644/Math.max(1,points.length-1),y=(n:number)=>173-n/maximum*137;
-  const lines=[{key:'total' as const,name:tasks?'Total sarcini':'Documente înregistrate',color:BLUE},{key:'approved' as const,name:tasks?'Finalizate':'Aprobate / semnate',color:TEAL},{key:'review' as const,name:tasks?'În așteptare':'În pregătire / analiză',color:RED}];
+  const [active,setActive]=useState<number|null>(null);
+  const points=series.points, max=Math.max(1,...points.map(p=>p.total));
   if(!points.some(p=>p.total))return <EmptyChart/>;
-  const activePoint=active===null?undefined:points[active];
-  return <div className="px-trend"><div className="px-chart-legend">{lines.map(l=><span key={l.key}><i style={{background:l.color}}/>{l.name}</span>)}<b>{activePoint?`${shortDate(activePoint.date)} · ${activePoint.total} înregistrări`: `${shortDate(series.start)} — ${shortDate(series.end)}`}</b></div>
-    <svg viewBox="0 0 735 218" role="img" aria-label="Evoluția înregistrărilor după data creării și starea curentă">
-      <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop stopColor={BLUE} stopOpacity=".13"/><stop offset="1" stopColor={BLUE} stopOpacity="0"/></linearGradient></defs>
-      {[0,1,2,3,4].map(i=><g key={i}><line x1="47" x2="704" y1={36+i*34.25} y2={36+i*34.25} stroke="var(--px-chart-grid, #dbe4ec)" strokeDasharray="2 4"/><text x="37" y={40+i*34.25} textAnchor="end">{number(maximum*(1-i/4))}</text></g>)}
-      <path d={`${points.map((p,i)=>`${i?'L':'M'}${x(i)},${y(p.total)}`).join(' ')}L${x(points.length-1)},173L48,173Z`} fill={`url(#${id})`}/>
-      {lines.map(l=><g key={l.key}><path d={points.map((p,i)=>`${i?'L':'M'}${x(i)},${y(p[l.key])}`).join(' ')} fill="none" stroke={l.color} strokeWidth={l.key==='total'?2.8:2.2} strokeLinejoin="round"/>{points.map((p,i)=><circle key={p.date} cx={x(i)} cy={y(p[l.key])} r={active===i?4:2.3} fill={l.color}/>)}{l.key==='total'&&points.map((p,i)=><text key={p.date} x={x(i)} y={y(p.total)-10} textAnchor="middle" className="px-point-label">{p.total||''}</text>)}</g>)}
-      {points.map((p,i)=><g key={p.date}>{(points.length<=8||i%2===0||i===points.length-1)&&<text x={x(i)} y="198" textAnchor="middle">{new Intl.DateTimeFormat('ro-RO',{day:'numeric',month:'short'}).format(new Date(p.date+'T12:00:00'))}</text>}<rect x={x(i)-17} y="20" width="34" height="155" fill="transparent" tabIndex={0} role="img" aria-label={`${shortDate(p.date)}: ${p.total} total, ${p.approved} ${lines[1].name}, ${p.review} ${lines[2].name}`} onMouseEnter={()=>setActive(i)} onMouseLeave={()=>setActive(null)} onFocus={()=>setActive(i)} onBlur={()=>setActive(null)}><title>{`${shortDate(p.date)} · ${p.total} total · ${p.approved} ${lines[1].name} · ${p.review} ${lines[2].name}`}</title></rect></g>)}
-      {active!==null&&<line x1={x(active)} x2={x(active)} y1="25" y2="175" stroke="#8099b1" strokeDasharray="3 4" pointerEvents="none"/>}
-    </svg><footer>Data creării · starea curentă a înregistrărilor, nu istoricul aprobărilor</footer>
+  const names=[tasks?'Finalizate':'Aprobate / semnate',tasks?'În așteptare':'În pregătire / analiză','Alte stări'];
+  const range=(p:typeof points[number])=>p.date===p.endDate?shortDate(p.date):`${shortDate(p.date)} – ${shortDate(p.endDate)}`;
+  return <div className="px-volume-chart"><div className="px-chart-legend">{[TEAL,BLUE,'#92a1b0'].map((color,i)=><span key={color}><i style={{background:color}}/>{names[i]}</span>)}</div>
+    <div className="px-volume-bars">{points.map((p,i)=><button key={p.date} onMouseEnter={()=>setActive(i)} onMouseLeave={()=>setActive(null)} onFocus={()=>setActive(i)} onBlur={()=>setActive(null)} aria-label={`${range(p)}: ${p.total} înregistrări, ${p.approved} ${names[0]}, ${p.review} ${names[1]}, ${p.total-p.approved-p.review} ${names[2]}`}>
+      <b>{p.total||'·'}</b><div className="px-volume-track"><div style={{height:`${p.total/max*100}%`}}>{[p.approved,p.review,p.total-p.approved-p.review].map((n,j)=>n>0&&<span key={j} style={{flex:n,background:[TEAL,BLUE,'#92a1b0'][j]}}/>)}</div></div><span>{new Intl.DateTimeFormat('ro-RO',{day:'numeric',month:'short'}).format(new Date(p.date+'T12:00:00'))}</span><small>{p.date===p.endDate?'':`– ${new Intl.DateTimeFormat('ro-RO',{day:'numeric',month:'short'}).format(new Date(p.endDate+'T12:00:00'))}`}</small>
+    </button>)}</div><footer role="status">{active!==null&&points[active]?`${range(points[active])} · ${points[active].total} înregistrări · ${points[active].approved} ${names[0].toLowerCase()} · ${points[active].review} ${names[1].toLowerCase()}`:'Grupate după data creării · starea curentă, nu data aprobării'}</footer>
   </div>;
 }
 
@@ -73,7 +67,7 @@ export function CategoryMatrix({rows,onPick}:{rows:ReportRow[];onPick:(departmen
 }
 
 export function StatusChart({rows,onPick}:{rows:ReportRow[];onPick:(value:string)=>void}){
-  const items=groups(rows,'status'),colors=[BLUE,RED,TEAL,GOLD,'#97a8ba'];let offset=0;
+  const items=groups(rows,'status'),colors=items.map(item=>({approved:TEAL,signed:'#216c62',in_review:BLUE,draft:GOLD,archived:'#92a1b0',rejected:RED,cancelled:'#92a1b0',completed:TEAL,pending:GOLD}[item.name]||BLUE));let offset=0;
   if(!rows.length)return <EmptyChart/>;
   const segments=items.map((s,i)=>{const start=offset;offset+=s.value/rows.length*100;return `${colors[i%colors.length]} ${start}% ${offset}%`;});
   return <div className="px-status-chart"><div className="px-status-ring" role="img" aria-label={items.map(s=>`${label(s.name)} ${s.value}`).join(', ')} style={{background:`conic-gradient(${segments.join(',')})`}}><div><strong>{rows.length}</strong><span>înregistrări</span></div></div><div className="px-status-legend">{items.map((item,i)=><button key={item.name} onClick={()=>onPick(item.name)}><i style={{background:colors[i%colors.length]}}/><span>{label(item.name)}</span><strong>{item.value}</strong><small>{Math.round(item.value/rows.length*100)}%</small></button>)}</div></div>;
