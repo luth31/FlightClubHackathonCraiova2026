@@ -51,6 +51,8 @@ Contract totals include accessible contracts across statuses and group each curr
 
 Valid activity periods are 30, 90 and 365 days. Invalid report identifiers return 404; denied report access returns 403; unauthenticated requests return 401. Responses are uncached. CSV output uses UTF-8 with a BOM and the existing formula-safe cell encoding.
 
+The briefing reads and serializes its authorized document set once per request, sharing those rows across its report summaries. Read-only report rows omit the document editor's action-permission calculation; record visibility, department normalization, and sensitive-field filtering still apply. No document snapshot is reused between requests or accounts. The query-growth regression is covered by `backend/tests/test_report_performance.py`.
+
 Report favorites are stored per account in the browser. The library supports category filters, favorites and Romanian search with or without diacritics. Refresh preserves the current library search, report view and visual selections. Tables support search, status and chart filters, sorting and pagination. Monetary cells retain their original currency; sorting groups currencies separately. Each document-backed row links to its source document. Catalog charts and displayed report values come from the API.
 
 The report workspace opens with the analytical canvas and a concise observation computed from its current selection. **Privire de ansamblu**, **Date sursă** and **Despre raport** switch views. The collapsible filter pane moves above the canvas on narrow screens. The reference date, demonstration-data label and refresh timestamp remain visible.

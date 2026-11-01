@@ -39,7 +39,7 @@ def get_document(db, document_id, user, edit=False):
 def visible_documents(db,user):
     return [d for d in db.scalars(select(Document).where(Document.airport_id==user.airport_id).order_by(desc(Document.updated_at))).all() if can_read(user,d)]
 
-def serialize(document, db=None, details=False, user=None):
+def serialize(document, db=None, details=False, user=None, *, include_permissions=True):
     fields=('id','title','number','category','department','status','created_at','updated_at','expires_at','supplier','value','currency','owner','created_by','confidentiality','summary','version','validated')
     data={k:getattr(document,k) for k in fields}
     data.update(document.extra or {})
@@ -77,7 +77,7 @@ def serialize(document, db=None, details=False, user=None):
         steps=[('Încărcare','done'),('Validare metadate','done' if document.validated else 'current'),('Avizare','done' if document.status in ('approved','signed','archived') else 'current' if document.status=='in_review' else 'pending'),('Semnare','done' if document.status=='signed' else 'pending')]
         data['workflow']={'steps':[{'label':a,'status':b} for a,b in steps],'current_step':document.status}
         data['related_documents']=[serialize(d,user=user) for d in [db.get(Document,i) for i in data['related_ids']] if d and (user is None or can_read(user,d))]
-    if user:
+    if user and include_permissions:
         from app.people.service import can_review_department
         data['permissions']={'can_edit':can_edit(user,document),'can_review':can_review_department(db,user,document.department) if db else (has_role(user,'director') or (has_role(user,'reviewer','hr') and user.department==document.department)),'can_sign':has_role(user,'signer'),'can_share':can_share_documents(user) and document.department!='Resurse umane'}
         if db:
@@ -95,7 +95,7 @@ def serialize(document, db=None, details=False, user=None):
         state = document.extra['metadata']['request_status']
         data['managed_workflow'] = {'type':'leave', 'label':'Cerere de concediu', 'url':'#people?tab=leave',
                                     'status':state, 'message':'Decizia se înregistrează în Echipă → Concedii.'}
-        if user:
+        if user and include_permissions:
             data['permissions'] = {key:False for key in ('can_edit','can_review','can_sign','can_share','can_validate','can_submit')}
         if details:
             data['workflow'] = {'steps':[{'label':'Cerere înregistrată','status':'done'},

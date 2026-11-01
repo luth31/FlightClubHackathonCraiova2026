@@ -15,8 +15,9 @@ local_day = service.calendar_day
 
 def build(db, user, department='', today=None):
     today = today or datetime.now(BUCHAREST).date()
-    catalog = service.catalog(db, user)
-    reports = {definition['id']: service.report(db, user, definition['id'], 90, department, reference_date=today)
+    documents = service.document_snapshot(db, user, today)
+    catalog = service.catalog(db, user, _documents=documents)
+    reports = {definition['id']: service.report(db, user, definition['id'], 90, department, reference_date=today, _documents=documents)
                for definition in catalog['items']}
     documents = reports['documents']['rows']
     tasks = reports['approvals']['rows']
