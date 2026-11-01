@@ -14,6 +14,8 @@ import {AuditPage} from '@/features/audit';
 import {SuppliersPage} from '@/features/suppliers';
 import {SupplierCatalogPage} from '@/features/suppliers/SupplierCatalogPage';
 import {PeoplePage} from '@/features/people';
+import {PersonAvatar} from '@/components/people/PersonAvatar';
+import {PersonDirectoryProvider} from '@/components/people/PersonDirectory';
 import {ReportsPage} from '@/features/reports';
 import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
@@ -125,7 +127,7 @@ export function App() {
   if(!session)return <Loading/>;
   if(!session.current_user)return <LoginPage session={session} onLogin={s=>{setSession(s);setRevision(v=>v+1)}}/>;
   const user=session.current_user,airport=typeof session.airport==='string'?session.airport:session.airport?.name||'Aeroportul Craiova';
-  return <div className="app-shell">
+  return <PersonDirectoryProvider key={`${user.airport_id || ''}:${user.id}`} revision={revision}><div className="app-shell">
     {mobileOpen&&<div className="sidebar-overlay" onClick={()=>setMobileOpen(false)}/>}
     <aside className={`sidebar ${mobileOpen?'open':''}`}>
       <a href="#home" className="brand" onClick={event=>{
@@ -150,7 +152,7 @@ export function App() {
       </nav>
       <div className="sidebar-bottom">
         <div className="user-switcher">
-          <button className="user-button" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span className="avatar">{initials(user.name)}</span><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button>
+          <div className="user-profile-controls"><PersonAvatar userId={user.id} name={user.name}/><button className="user-button user-menu-trigger" disabled={loggingOut||switching} onClick={()=>setUserMenu(!userMenu)} aria-expanded={userMenu}><span><strong>{user.name}</strong><small>{roleLabel[user.role]||user.role}</small></span><ChevronDown size={15}/></button></div>
           {userMenu&&<div className="user-menu">
             <div className="user-menu-heading">{session.auth?.mode==='oidc'?'Contul tău':'Schimbă contul'}</div>
             {session.auth?.mode!=='oidc'&&session.users.filter(u=>!u.roles.includes('employee')).map(u=><button disabled={switching||loggingOut} key={u.id} onClick={()=>changeUser(u.id)}><span className="avatar small">{initials(u.name)}</span><span>{u.name}<small>{roleLabel[u.role]||u.role}</small></span>{u.id===user.id&&<span className="active-dot"/>}</button>)}
@@ -170,7 +172,7 @@ export function App() {
         </div>
         <div className="topbar-actions">
           <button className="quick-search" onClick={()=>navigate('documents')} aria-label="Caută un document"><Search size={17}/><span>Caută un document</span></button><span className="topbar-divider"/>
-          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button>
+          <button className="assistant-trigger" onClick={()=>setAssistant(true)}><Sparkles size={16}/>Întreabă FlyLeaf</button><PersonAvatar userId={user.id} name={user.name} className="avatar top-avatar"/>
           <button className="logout-button topbar-logout" disabled={loggingOut||switching} onClick={()=>void logout()} aria-label="Ieși din cont" title="Ieși din cont" aria-busy={loggingOut}>
             <LogOut size={17}/><span>{loggingOut?'Se deconectează…':'Ieși din cont'}</span>
           </button>
@@ -203,5 +205,5 @@ export function App() {
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
     {assistant&&<AssistantDialog onClose={closeAssistant} onOpen={openDoc}/>}
     {toast&&<Toast message={toast}/>}
-  </div>;
+  </div></PersonDirectoryProvider>;
 }

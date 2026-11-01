@@ -4,7 +4,8 @@ from app.config import settings
 from app.core.audit import record
 from app.core.exceptions import DomainError
 from app.core.security import has_role, require_role, user_dict
-from app.people.models import User, Delegation, LeaveRequest, Session, HeadAppointment
+from app.people.models import User, Delegation, LeaveRequest, Session, HeadAppointment, UserProfile
+from app.people import profile as person_profiles
 
 
 def local_user(db, user_id, active=False):
@@ -57,6 +58,8 @@ def directory(db, user, reference_date=None):
     from app.people.management import employee_dict, department_records
     users = list(db.scalars(select(User).where(User.airport_id == user.airport_id).order_by(User.name)))
     user_ids = {person.id for person in users}
+    profiles = {profile.user_id: profile for profile in db.scalars(select(UserProfile).where(UserProfile.user_id.in_(user_ids)))}
+    presence_time = person_profiles.utc_now()
     all_leaves = list(db.scalars(select(LeaveRequest).where(LeaveRequest.user_id.in_(user_ids))))
     today = (reference_date or settings.reference_date).isoformat()
     open_appointments = {appointment.department_id: appointment for appointment in db.scalars(
@@ -70,6 +73,7 @@ def directory(db, user, reference_date=None):
     items = []
     for person in users:
         item = employee_dict(db, person)
+        item['profile'] = person_profiles.profile_dict(profiles.get(person.id), presence_time)
         appointment = open_appointments.get(person.department_id)
         item['can_propose_head'] = (can_propose_heads and person.active
             and person.department_id in current_department_ids

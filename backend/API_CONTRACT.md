@@ -87,6 +87,16 @@ HR/admin: POST `/people/appointments` `{department_id,user_id,effective_date,rea
 
 Director: POST `/people/{id}/signing-authority` `{enabled,reason}`. Self-modification is forbidden. Head appointments and signing grants remain independent. Replacement/revocation flags existing tasks for explicit reassignment.
 
+## Personal status and profile photo
+
+Authenticated employees can change only their own personal settings. GET `/people/me/profile` returns `{presence,presence_expires_at,status_message,message_expires_at,photo_url}`; GET `/people` includes the same object as each person's `profile`.
+
+* PATCH `/people/me/presence` accepts `{status,duration_minutes?}`. Status is `automatic|available|busy|do_not_disturb|be_right_back|away|offline`. Optional duration is an integer from 1 to 10080 minutes; null keeps the choice until changed. `automatic` clears the manual override.
+* PATCH `/people/me/status-message` accepts `{message,duration_minutes?}`. Messages are trimmed, limited to 280 characters and visible to colleagues; an empty message clears it.
+* POST `/people/me/photo` accepts multipart `file` (JPG, PNG or WebP, at most 2 MiB and 16 megapixels). The image is oriented, center-cropped, resized to 256×256, stripped of metadata, and stored as PNG. DELETE `/people/me/photo` restores initials. GET `/people/{user_id}/photo` requires an authenticated account at the same airport; it returns PNG bytes or 404.
+
+Mutations return the updated personal profile. Presence and message expiry use actual UTC, independently of the demonstration reference date, and expire independently. Expired values read as `automatic` / empty. Personal presence does not alter approved leave, account activation, roles, task assignment or notification delivery; `do_not_disturb` communicates availability. The existing `availability` field remains the HR leave/account state. Photo URLs change on replacement. The frontend refreshes directory profiles every minute while visible and on window focus, and applies expiry locally to already-open cards.
+
 ## Airport operations and live traffic
 
 Authenticated, tenant-scoped API. Director/reviewer/technician roles can mutate; other authenticated roles can read. Full scenario and provider policies: [OPERATIONS_API.md](../docs/OPERATIONS_API.md).
