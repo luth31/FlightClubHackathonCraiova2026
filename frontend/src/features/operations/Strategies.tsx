@@ -9,18 +9,22 @@ import type {AnalysisData,ProcedureLibrary,Recommendation,StrategyAnalysis} from
 import {ProcedureReader} from './ProcedureReader';
 import {LedgerMetricCards} from './Ledger';
 import {dayLabel,shortTime} from './format';
+import type {LedgerEvidenceTarget} from './types';
 
-export function Strategies({revision,onEvidence,notify}:{revision:number;onEvidence:(id:string)=>void;notify:(message:string)=>void}) {
+export function Strategies({revision,onEvidence,notify,active=true}:{revision:number;onEvidence:(target:LedgerEvidenceTarget)=>void;notify:(message:string)=>void;active?:boolean}) {
   const [library,setLibrary]=useState<ProcedureLibrary>(),[data,setData]=useState<AnalysisData>();
   const [tab,setTab]=useState<'library'|'analysis'>('library'),[query,setQuery]=useState(''),[area,setArea]=useState('');
   const [selected,setSelected]=useState<string|null>(null),[share,setShare]=useState<DocumentRecord>();
   const [error,setError]=useState(''),[busy,setBusy]=useState(''),[refresh,setRefresh]=useState(0);
   const pending=useRef(false);
+  const evidenceOrigin=useRef<HTMLButtonElement|null>(null);
+  useEffect(()=>{if(!active||!evidenceOrigin.current)return;const button=evidenceOrigin.current;const frame=window.requestAnimationFrame(()=>{button.scrollIntoView({block:'center'});button.focus({preventScroll:true});evidenceOrigin.current=null});return()=>window.cancelAnimationFrame(frame)},[active]);
   useEffect(()=>{const controller=new AbortController();let disposed=false;
+    if(!active)return;
     Promise.allSettled([api<ProcedureLibrary>('/operations/sops',{signal:controller.signal}),api<AnalysisData>('/operations/strategy-analysis',{signal:controller.signal})]).then(([catalog,analysis])=>{if(disposed)return;if(catalog.status==='fulfilled')setLibrary(catalog.value);if(analysis.status==='fulfilled')setData(analysis.value);if(catalog.status==='rejected')setError((catalog.reason as Error).message);else if(analysis.status==='rejected')setError((analysis.reason as Error).message)});
     return()=>{disposed=true;controller.abort()};
-  },[revision,refresh]);
-  useEffect(()=>{if(!data?.running||busy==='analysis')return;const timer=setTimeout(()=>setRefresh(value=>value+1),2500);return()=>clearTimeout(timer)},[data?.running,busy,refresh]);
+  },[revision,refresh,active]);
+  useEffect(()=>{if(!active||!data?.running||busy==='analysis')return;const timer=setTimeout(()=>setRefresh(value=>value+1),2500);return()=>clearTimeout(timer)},[data?.running,busy,refresh,active]);
   async function analyze(){if(pending.current)return;pending.current=true;setBusy('analysis');setError('');setTab('analysis');try{
     const result=await api<{analysis:StrategyAnalysis;cached:boolean}>('/operations/strategy-analysis',{method:'POST'});
     setData(current=>current?{...current,running:false,analysis:result.analysis}:current);setRefresh(value=>value+1);notify(result.cached?'Analiza salvată corespunde acestor date.':'Analiza Luna este gata de verificare.');
@@ -57,7 +61,7 @@ export function Strategies({revision,onEvidence,notify}:{revision:number;onEvide
           <div className="sop-proposed-rule"><span>Schimbarea propusă</span><p>{item.proposed_rule}</p></div>
           <details className="sop-support"><summary>De ce merită testată schimbarea?</summary><p className="sop-rationale">{item.rationale}</p><h4>Procedura de referință</h4><p>{item.current_rule}</p></details>
           <div className="sop-observed-impact"><strong>{item.impact.observed_delay_minutes} min</strong><span>întârziere observată pe {item.impact.completed_departures} plecări citate<br/><small>Beneficiul potențial se verifică în pilot.</small></span></div>
-          <details className="sop-support"><summary>{item.evidence.length} dovezi din registru</summary><div className="sop-evidence-list">{item.evidence.map(event=><button key={event.event_id} onClick={()=>onEvidence(event.group_id)}><span><strong>{event.callsign} · {event.title}</strong><small>{dayLabel(event.actual_at.slice(0,10))} · {shortTime(event.actual_at)}{event.delay_minutes>0&&` · +${event.delay_minutes} min`}</small></span><ArrowRight size={17}/></button>)}</div></details>
+          <details className="sop-support"><summary>{item.evidence.length} dovezi din registru</summary><div className="sop-evidence-list">{item.evidence.map(event=><button key={event.event_id} onClick={click=>{evidenceOrigin.current=click.currentTarget;onEvidence({eventId:event.event_id,groupId:event.group_id})}}><span><strong>{event.callsign} · {event.title}</strong><small>{dayLabel(event.actual_at.slice(0,10))} · {shortTime(event.actual_at)}{event.delay_minutes>0&&` · +${event.delay_minutes} min`}</small></span><ArrowRight size={17}/></button>)}</div></details>
           <details className="sop-support"><summary>Pașii propuși, ipoteze și riscuri</summary><ol className="sop-steps">{item.steps.map((step,index)=><li key={index}><span>{index+1}</span><div><header><strong>{step.when}</strong><span>{step.owner}</span></header><p>{step.action}</p><small>Dovadă: {step.record}</small></div></li>)}</ol><h4>Ipoteze de verificat</h4><ul>{item.assumptions.map(value=><li key={value}>{value}</li>)}</ul><h4>Riscuri și condiții</h4><ul>{item.risks.map(value=><li key={value}>{value}</li>)}</ul></details>
           <details className="sop-support"><summary>Planul de pilot · {item.owner}</summary><div className="sop-pilot"><h4>Propunere de pilot</h4><p>{item.pilot}</p><strong>Criteriu de succes</strong><p>{item.success_criteria}</p></div></details>
           <footer><span><ShieldCheck size={16}/>Necesită validare și avizare</span>{item.document_id?<a className="button primary" href={documentHref(item.document_id,'operations')}><FileText size={16}/>Deschide ciorna SOP<Status value={item.document_status||'draft'}/></a>:data.can_analyze&&<button className="button primary" disabled={!!busy} onClick={()=>void draft(item.sop_code,item)}>{busy===item.id?<LoaderCircle size={16} className="spin"/>:<FileText size={16}/>}Creează ciornă SOP</button>}</footer>

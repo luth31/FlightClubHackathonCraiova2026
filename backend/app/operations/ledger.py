@@ -6,12 +6,14 @@ completed off-block events; open risks and projections are separate counters.
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from math import floor
+from types import SimpleNamespace
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
-from app.operations.models import OperationLedgerGroup
+from app.operations.models import OperationEvent, OperationLedgerGroup
+from app.core.exceptions import DomainError
 from app.operations import service
 from app.operations.scenario import STAFF
 
@@ -226,3 +228,43 @@ def get_ledger(db,user,day=None,status='all',search='',scope='all',run_id=None,a
             'total_groups':len(groups),'filtered_groups':len(selected),'current_run_id':snapshot['simulation']['run_id'],
             'event_count':sum(g['event_count'] for g in selected),
             'notice':'Istoric demonstrativ persistent + acțiunile sesiunii curente. Jurnalul documentelor și al personalului păstrează separat drepturile de acces. ADS-B nu produce pontaje sau timpi de poartă.'}
+
+
+def evidence_entry(db, user, event_id, group_id):
+    """Resolve a citation by identity, independently of current-run/date filters.
+
+    Historical groups remain addressable outside the dashboard's rolling period.
+    For rehearsal events, reconstruct their recorded run without advancing it or
+    substituting a newer run that happens to contain the same flight ID.
+    """
+    service.airport_for(user)
+    row = db.scalar(select(OperationLedgerGroup).where(
+        OperationLedgerGroup.id == group_id, OperationLedgerGroup.airport_id == user.airport_id))
+    group = row.data if row else None
+    run_id = None
+    if group is None:
+        event = db.scalar(select(OperationEvent).where(
+            OperationEvent.id == event_id, OperationEvent.airport_id == user.airport_id))
+        if event:
+            run_id = event.run_id
+            events = list(db.scalars(select(OperationEvent).where(
+                OperationEvent.airport_id == user.airport_id, OperationEvent.run_id == run_id)
+                .order_by(OperationEvent.sequence)))
+            initial = next((item for item in events if item.kind == 'simulation_initialized'), events[0])
+            state = SimpleNamespace(airport_id=user.airport_id, run_id=run_id,
+                elapsed_seconds=max(item.elapsed_seconds for item in events), running=False,
+                speed=30, revision=0, scenario_mode=initial.payload.get('scenario_mode', 'interactive'),
+                created_at=initial.recorded_at, updated_at=events[-1].recorded_at)
+            groups = active_groups(service.snapshot(db, state, user, events))
+            group = next((item for item in groups if item['id'] == group_id), None)
+    if not group or not any(item['id'] == event_id for item in group['events']):
+        raise DomainError('Dovada citată nu mai este disponibilă în registrul acestui aeroport.', 404)
+    day = group['scheduled_at'][:10]
+    values = metrics([group])
+    return {'scope':'evidence', 'focus_event_id':event_id, 'evidence_run_id':run_id,
+        'days':[{'date':day, 'severity':group['severity'], 'flights':[group],
+                 'event_count':group['event_count'], 'metrics':values}],
+        'metrics':values, 'filtered_metrics':values, 'period':{'from':day, 'to':day},
+        'reference_date':day, 'seeded_events':group['event_count'] if row else 0,
+        'total_groups':1, 'filtered_groups':1, 'event_count':group['event_count'],
+        'current_run_id':None}

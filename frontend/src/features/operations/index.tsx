@@ -1,5 +1,5 @@
 import {useCallback,useContext,useEffect,useRef,useState} from 'react';
-import {AlertTriangle,ArrowRight,BookOpen,ClipboardList,Clock3,LoaderCircle,Map,Pause,Play,RotateCcw,SkipForward,X} from 'lucide-react';
+import {AlertTriangle,ArrowLeft,ArrowRight,BookOpen,ClipboardList,Clock3,LoaderCircle,Map,Pause,Play,RotateCcw,SkipForward,X} from 'lucide-react';
 import {api} from '@/services/api-client';
 import {ErrorMessage,Loading,ViewActiveContext} from '@/components/ui';
 import {FlightMap} from './FlightMap';
@@ -7,7 +7,7 @@ import {SimulationTimeline,useSimulationTimeline} from './SimulationTimeline';
 import {OperationsLedger} from './Ledger';
 import {Strategies} from './Strategies';
 import {eventTime} from './format';
-import type {LiveTraffic,MapConfig,OperationsData} from './types';
+import type {LedgerEvidenceTarget,LiveTraffic,MapConfig,OperationsData} from './types';
 import './operations.css';
 import './workspace.css';
 import './ledger.css';
@@ -26,6 +26,7 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   const [mapMode,setMapMode]=useState<'model'|'photorealistic'>('model'),[mapConfig,setMapConfig]=useState<MapConfig>();
   const [traffic,setTraffic]=useState<LiveTraffic>(),[trafficError,setTrafficError]=useState('');
   const [selected,setSelected]=useState<string|null>('flight-101'),[focusLedger,setFocusLedger]=useState<string|null>(null);
+  const [evidence,setEvidence]=useState<LedgerEvidenceTarget>();
   const [alert,setAlert]=useState<{runId:string;id:string;text:string}>();
   const announced=useRef(new Set<string>()),dataRef=useRef<OperationsData|undefined>(undefined),pending=useRef(false);
   const active=viewActive&&visible;
@@ -57,8 +58,9 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
     if(pending.current)return false;pending.current=true;setBusy(true);
     try{const next=await api<OperationsData>('/operations/control',{method:'POST',body:JSON.stringify({action,...extra})});accept(next);return true}catch(e){notify((e as Error).message);return false}finally{pending.current=false;setBusy(false)}
   }
-  async function chooseScenario(id:string){if(await control('reset',{scenario_mode:id,expected_revision:liveData?.simulation.revision})){setMode('simulation');setSelected('flight-101');setFocusLedger(null);setAlert(undefined)}}
-  function investigate(id:string){setFocusLedger(id);navigate('ledger')}
+  async function chooseScenario(id:string){if(await control('reset',{scenario_mode:id,expected_revision:liveData?.simulation.revision})){setMode('simulation');setSelected('flight-101');setFocusLedger(null);setEvidence(undefined);setAlert(undefined)}}
+  function investigate(id:string){setEvidence(undefined);setFocusLedger(id);navigate('ledger')}
+  function openEvidence(target:LedgerEvidenceTarget){setEvidence(target);setFocusLedger(target.groupId);navigate('ledger')}
   function seek(seconds:number){timeline.seek(seconds);if(dataRef.current?.simulation.running&&!pending.current&&dataRef.current.permissions.can_control)void control('pause')}
   function togglePlayback(){if(timeline.previewing||!liveData?.permissions.can_control||liveData.simulation.elapsed_seconds>=liveData.simulation.duration_seconds)timeline.togglePlayback();else void control(liveData.simulation.running?'pause':'start',{speed:liveData.simulation.speed||30})}
   async function applyTime(){if(await control('advance_to',{target_seconds:timeline.seconds,expected_revision:liveData?.simulation.revision}))timeline.reset()}
@@ -72,11 +74,12 @@ export function OperationsPage({notify}:{notify:(message:string)=>void}) {
   return <section className="operations-page ops-compact">
     <header className="ops-heading"><h1>Operațiuni de sol</h1><div className="ops-clock"><Clock3 size={17}/><strong>{eventTime(data.simulation.clock_time)}</strong><span>Demo</span></div></header>
     <div className="ops-scenario-bar"><label>Scenariu<select aria-label="Scenariu operațional" value={scenario?.id||''} disabled={busy||!liveData.permissions.can_control} onChange={event=>void chooseScenario(event.target.value)}><option value="" disabled>Alege un scenariu</option>{scenarios.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label><p>{scenario?.description||'Alege unul dintre cele trei scenarii automate.'}</p></div>
-    <nav className="ops-tabs" aria-label="Vizualizări operaționale">{([{id:'shift',label:'Simulare',icon:Map},{id:'ledger',label:'Registru',icon:ClipboardList},{id:'strategies',label:'Proceduri SOP',icon:BookOpen}] as const).map(tab=><button key={tab.id} className={view===tab.id?'active':''} aria-current={view===tab.id?'page':undefined} onClick={()=>{setFocusLedger(null);navigate(tab.id)}}><tab.icon size={16}/>{tab.label}</button>)}</nav>
+    <nav className="ops-tabs" aria-label="Vizualizări operaționale">{([{id:'shift',label:'Simulare',icon:Map},{id:'ledger',label:'Registru',icon:ClipboardList},{id:'strategies',label:'Proceduri SOP',icon:BookOpen}] as const).map(tab=><button key={tab.id} className={view===tab.id?'active':''} aria-current={view===tab.id?'page':undefined} onClick={()=>{setFocusLedger(null);setEvidence(undefined);navigate(tab.id)}}><tab.icon size={16}/>{tab.label}</button>)}</nav>
     {error&&<div className="ops-inline-error" role="alert">{error}</div>}
     {alert&&alert.runId===data.simulation.run_id&&<div className="ops-critical-alert" role="alert"><AlertTriangle size={20}/><p>{alert.text}</p><button onClick={()=>investigate(alert.id)}>Vezi registrul<ArrowRight size={15}/></button><button aria-label="Închide alerta" onClick={()=>setAlert(undefined)}><X size={17}/></button></div>}
-    {view==='ledger'&&<OperationsLedger key={data.simulation.run_id} revision={data.simulation.revision} runId={data.simulation.run_id} atSeconds={previewing?timeline.seconds:undefined} scenarioName={scenario?.name} focusFlight={focusLedger} onInvestigate={id=>{setSelected(id);navigate('shift')}}/>}
-    {view==='strategies'&&<Strategies revision={data.simulation.revision} onEvidence={investigate} notify={notify}/>}
+    {view==='ledger'&&evidence&&<button className="ops-evidence-return" onClick={()=>navigate('strategies')}><ArrowLeft size={16}/>Înapoi la dovezile din registru</button>}
+    {view==='ledger'&&<OperationsLedger key={evidence?`${evidence.groupId}:${evidence.eventId}`:data.simulation.run_id} evidence={evidence} revision={data.simulation.revision} runId={data.simulation.run_id} atSeconds={previewing?timeline.seconds:undefined} scenarioName={scenario?.name} focusFlight={focusLedger} onInvestigate={id=>{setSelected(id);navigate('shift')}}/>}
+    {(view==='strategies'||evidence)&&<div hidden={view!=='strategies'} inert={view!=='strategies'}><Strategies revision={data.simulation.revision} active={active&&view==='strategies'} onEvidence={openEvidence} notify={notify}/></div>}
     <div hidden={view!=='shift'} inert={view!=='shift'}>
       <div className="ops-metric-strip"><span>Plecări la timp <strong>{data.kpis.on_time_percent==null?'—':`${data.kpis.on_time_percent}%`}</strong></span><span>Întârziere înregistrată <strong className={delay>=15?'ops-tone-red':''}>{delay} min</strong></span><span>Abateri majore <strong className={severe?'ops-tone-red':''}>{severe}</strong></span></div>
       {mode==='simulation'&&<section className="ops-shift-control" aria-label="Controlul scenariului"><div className="ops-control-actions">

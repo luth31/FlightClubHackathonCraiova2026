@@ -46,6 +46,7 @@ export interface LedgerEvent {
   id:string;kind:string;title:string;planned_at:string|null;actual_at:string|null;
   actor:string;detail:string;severity:Severity;delay_minutes:number|null;source:string;
 }
+export interface LedgerEvidenceTarget {eventId:string;groupId:string}
 export interface LedgerFlight {
   id:string;callsign:string;route:string;gate_id:string|null;scheduled_at:string;
   actual_at:string|null;status:string;severity:Severity;delay_minutes:number|null;

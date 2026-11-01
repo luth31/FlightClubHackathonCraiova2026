@@ -56,6 +56,12 @@ def operational_ledger(date: Date | None=Query(default=None), status: Literal['a
     return ledger.get_ledger(db,user,date,status,search,scope,run_id,at_seconds)
 
 
+@router.get('/ledger/entries/{event_id}')
+def ledger_evidence_entry(event_id: str, group_id: str=Query(min_length=1,max_length=200),
+                          user=Depends(current_user), db: Session=Depends(get_db)):
+    return ledger.evidence_entry(db,user,event_id,group_id)
+
+
 @router.get('/strategies')
 def operational_strategies(user=Depends(current_user), db: Session=Depends(get_db)):
     return strategies.proposals(db,user)
