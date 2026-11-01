@@ -10,6 +10,11 @@
 .person-avatar-trigger:hover { box-shadow: 0 0 0 3px #dce7dd; }
 .person-avatar-trigger:focus-visible,
 .person-profile :is(button, a):focus-visible { outline: 2px solid #286348; outline-offset: 4px; }
+.person-avatar-trigger.person-name { display:inline; width:auto; height:auto; min-height:0; padding:0; border:0; border-radius:3px; background:transparent; color:inherit; font:inherit; letter-spacing:inherit; text-transform:inherit; text-align:inherit; white-space:inherit; box-shadow:none; vertical-align:baseline; }
+.person-avatar-trigger.person-name:hover { color:inherit; text-decoration:underline dotted; text-underline-offset:3px; box-shadow:none; }
+.person-profile-manager,.person-profile-back{font:inherit;color:inherit;border:0;background:transparent;padding:0;cursor:pointer;text-align:left}
+.person-profile-manager:hover{text-decoration:underline dotted;text-underline-offset:3px}
+.person-profile-back{display:flex;gap:6px;align-items:center;font-size:11px;margin:0 22px 12px 0;color:#4d6859}
 .person-presence {
   position: absolute;
   right: -1px;

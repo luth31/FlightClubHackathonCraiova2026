@@ -50,6 +50,17 @@ button.ops-entity-chip:hover{background:#eaf4f1;border-color:#6a9b92}
 .ops-ledger-event .ops-event-title{border:0;padding:0;background:none;color:#183c50;font-weight:650;font-size:14px;line-height:1.5;text-align:left;text-decoration:underline;text-decoration-color:#afc9c6;text-underline-offset:3px}
 .ops-ledger-event .ops-event-title:disabled{text-decoration:none;color:#526575;opacity:1;cursor:default}
 .ops-ledger-event .ops-event-title:hover:not(:disabled){color:#087b6f}
+/* Severity survives the link/disabled styles, including overdue unrecorded milestones. */
+.ops-ledger-event.severity-red,.ops-entity-history>.severity-red,.ops-fact-transition.severity-red{--operation-ink:#b91c1c;--operation-fill:#fff1f2;--operation-edge:#dc2626}
+.ops-ledger-event.severity-yellow,.ops-entity-history>.severity-yellow,.ops-fact-transition.severity-yellow{--operation-ink:#92400e;--operation-fill:#fffbeb;--operation-edge:#d97706}
+.ops-ledger-event:is(.severity-red,.severity-yellow){background:var(--operation-fill);box-shadow:inset 3px 0 var(--operation-edge);padding-inline:12px;margin-inline:-12px}
+.ops-ledger-event:is(.severity-red,.severity-yellow) .ops-event-title,
+.ops-ledger-event:is(.severity-red,.severity-yellow) .ops-event-title:hover,
+.ops-ledger-event:is(.severity-red,.severity-yellow) .ops-event-title:disabled{color:var(--operation-ink);text-decoration-color:currentColor}
+.ops-ledger-event:is(.severity-red,.severity-yellow) .ops-event-delta{color:var(--operation-ink)}
+.ops-entity-history>:is(.severity-red,.severity-yellow),.ops-entity-history>:is(.severity-red,.severity-yellow):hover,.ops-fact-transition:is(.severity-red,.severity-yellow){background:var(--operation-fill);color:var(--operation-ink)}
+.ops-entity-chip.person-avatar-trigger{width:auto;height:auto;min-height:28px;white-space:normal}
+.ops-entity-overview>.ops-entity-chip{justify-self:start;font-size:18px}
 .ops-event-transition{display:block;margin:3px 0 7px;color:#657887;font-size:12px!important}
 .ops-ledger-event>div>div{min-width:0}
 .ops-inspector{max-width:840px}

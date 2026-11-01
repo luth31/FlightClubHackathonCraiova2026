@@ -228,7 +228,7 @@ def matching_document_ids(db,query):
     expression=' AND '.join('"'+word.replace('"','""')+'"'+('' if '-' in word else '*') for word in words[:20])
     return set(db.execute(text('SELECT document_id FROM document_search WHERE document_search MATCH :query'),{'query':expression}).scalars())
 
-def create_document(db,user,content,filename,title,category,department,supplier=None,expires_at=None):
+def create_document(db,user,content,filename,title,category,department,supplier=None,expires_at=None,*,procurement_template='',procurement_fields=None,auto_extract=False,commit=True):
     if category not in CATEGORIES or canonical_department(department) not in DEPARTMENTS: raise DomainError('Tipul sau departamentul nu este valid.',422)
     if not has_role(user,'director') and canonical_department(department)!=canonical_department(user.department):
         raise DomainError('Poți încărca documente numai în propriul departament.',403)
@@ -243,12 +243,23 @@ def create_document(db,user,content,filename,title,category,department,supplier=
         except ValueError: raise DomainError('Data expirării nu este validă.',422)
     document_id='doc-'+uuid.uuid4().hex[:12]
     document=Document(id=document_id,title=(title or Path(filename).stem)[:300],number=f'AD-{settings.reference_date.year}-{uuid.uuid4().hex[:6].upper()}',category=category,department=department,status='draft',created_at=now(),updated_at=now(),expires_at=expires_at or None,supplier=supplier or None,value=None,currency='RON',owner=user.name,owner_id=user.id,created_by=user.id,searchable_text='',confidentiality='restricted' if department=='Resurse umane' else 'internal',summary='Document introdus în registru.',version=1,validated=False,airport_id=user.airport_id,extra={'filename':Path(filename).name,'tags':['Nou'],'metadata':{},'extraction_evidence':[],'page_count':page_count,'related_ids':[],'source_refs':[],'extraction_status':'queued','extraction_notice':'Textul se extrage local, în fundal.'})
+    if auto_extract:
+        document.extra={**document.extra,'auto_intake':True}
+    if procurement_template:
+        from app.procurement.catalog import apply_fields, get_template
+        fields = procurement_fields or {}
+        apply_fields(document, procurement_template, fields)
+        if auto_extract:
+            document.number=''
+        document.extra = {**document.extra, 'edited_fields': [spec['source'] for spec in get_template(procurement_template)['fields']
+            if spec.get('source') and spec['key'] in fields]}
     db.add(document); db.flush()
     store_version(db,document,content,filename,user,'Încărcare inițială',snapshot=serialize(document))
     from app.tasks.service import on_new_version
     on_new_version(db,document,user)
     record(db,user,'Document încărcat',document,f'Versiunea 1 · {len(content)} octeți')
-    db.commit()
+    if commit:
+        db.commit()
     return document
 
 def patch_document(db,user,document_id,changes):
@@ -258,6 +269,8 @@ def patch_document(db,user,document_id,changes):
     nullable={'supplier','expires_at','value'}
     changes={k:v for k,v in changes.items() if v is not None or k in nullable}
     if not changes: return document
+    from app.procurement.service import ensure_document_namespace
+    ensure_document_namespace(db,user,document,changes)
     for field in ('category','department','confidentiality'):
         if field in changes and changes[field]!=getattr(document,field):
             raise DomainError('Tipul, departamentul și nivelul de acces sunt fixe pentru toate versiunile. Pentru un public nou, pregătește o copie revizuită prin partajare.',403)
@@ -277,6 +290,8 @@ def patch_document(db,user,document_id,changes):
 def add_version(db,user,document_id,content,filename,comment):
     db.execute(text('BEGIN IMMEDIATE'))
     document=get_document(db,document_id,user,edit=True)
+    from app.procurement.service import ensure_document_namespace
+    ensure_document_namespace(db,user,document)
     page_count=validate_pdf(content)
     previous=current_version(db,document)
     previous.snapshot=serialize(document)
@@ -285,6 +300,12 @@ def add_version(db,user,document_id,content,filename,comment):
     document.extra={**document.extra,'filename':Path(filename).name,'extraction_evidence':[],'page_count':page_count,'extraction_status':'queued','extraction_notice':'Textul se extrage local, în fundal.'}
     document.extra.pop('text_excerpt',None)
     document.extra.pop('edited_fields',None)
+    if document.extra.get('auto_intake'):
+        metadata={**document.extra.get('metadata',{})}
+        if metadata.get('procurement'):
+            metadata['procurement']={**metadata['procurement'],'fields':{}}
+        document.extra={**document.extra,'metadata':metadata}
+        document.number=''
     document.supplier=None
     document.expires_at=None
     document.value=None

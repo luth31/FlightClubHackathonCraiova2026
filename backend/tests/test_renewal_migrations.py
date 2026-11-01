@@ -76,8 +76,10 @@ def preserved_rows(engine):
             for name in tables}
 
 
-def test_upgrade_preserves_populated_legacy_database_and_can_run_twice(legacy_database):
+@pytest.mark.parametrize('starting_revision', [LEGACY_REVISION, '20261101_atomic_operations', 'c8e715bf402a'])
+def test_upgrade_preserves_populated_legacy_database_and_can_run_twice(legacy_database, starting_revision):
     database, engine, pdf, signed_pdf = legacy_database
+    upgrade(engine, starting_revision)
     before = preserved_rows(engine)
     original_files = pdf.read_bytes(), signed_pdf.read_bytes()
     upgrade(engine, 'head')

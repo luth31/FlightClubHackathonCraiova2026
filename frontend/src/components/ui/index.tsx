@@ -85,6 +85,7 @@ export const ViewActiveContext = createContext(true);
 
 export function Modal({
   title,
+  titleContent,
   subtitle,
   onClose,
   children,
@@ -93,7 +94,8 @@ export function Modal({
   initialFocusRef,
 }: {
   title: string;
-  subtitle?: string;
+  titleContent?: ReactNode;
+  subtitle?: ReactNode;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
@@ -129,7 +131,7 @@ export function Modal({
       }
     };
     document.addEventListener("keydown", key);
-    (initialFocusRef?.current ?? ref.current?.querySelector<HTMLElement>("button,input"))?.focus();
+    (initialFocusRef?.current ?? ref.current?.querySelector<HTMLElement>(".modal-header > .icon-button") ?? ref.current?.querySelector<HTMLElement>("button,input"))?.focus();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -155,7 +157,7 @@ export function Modal({
       >
         <div className="modal-header">
           <div>
-            <h2>{title}</h2>
+            <h2>{titleContent ?? title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
           <button

@@ -8,6 +8,7 @@ export interface OrganizationNode {
   departmentId?:string;
   departmentLabel?:string;
   managerName?:string;
+  managerId?:string;
   managerUnavailable?:boolean;
   children:OrganizationNode[];
 }
@@ -25,7 +26,7 @@ export function organizationTree(directory:Directory):OrganizationNode {
   const personNodes=new Map<string,OrganizationNode>();
   for(const person of people.values()) {
     const node:OrganizationNode={id:`person:${person.id}`,personId:person.id,name:person.name,
-      jobTitle:person.job_title,managerName:person.manager_name||undefined,
+      jobTitle:person.job_title,managerName:person.manager_name||undefined,managerId:person.manager_id||undefined,
       managerUnavailable:!!person.manager_id&&(!people.has(person.manager_id)||person.manager_id===person.id),children:[]};
     nodes.set(node.id,node);personNodes.set(person.id,node);
   }

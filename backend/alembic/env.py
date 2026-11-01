@@ -12,6 +12,7 @@ from app.operations import models as operations_models
 from app.collaboration import models as collaboration_models
 from app.equipment import models as equipment_models
 from app.renewals import models as renewal_models
+from app.procurement import models as procurement_models
 config=context.config
 target_metadata=Base.metadata
 

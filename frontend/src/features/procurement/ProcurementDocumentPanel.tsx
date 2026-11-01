@@ -1,0 +1,37 @@
+import {useEffect,useRef,useState,type FormEvent} from 'react';
+import {ErrorMessage,Loading} from '@/components/ui';
+import {getCase,getCases,getDocumentTemplate,getTemplates,ProcurementError,procurementApi,saveDocumentTemplate} from './api';
+import {TemplateFields} from './TemplateFields';
+import type {CaseDetailData,CaseList,DocumentTemplateDetail,FieldValues,TemplateCatalog} from './types';
+import './procurement.css';
+
+export function ProcurementDocumentPanel({documentId,documentVersion,extractionStatus,onChanged,notify,reviewOnly=false,onDirtyChange}: {documentId:string;documentVersion:number;extractionStatus?:string;onChanged:()=>void;notify:(message:string)=>void;reviewOnly?:boolean;onDirtyChange?:(dirty:boolean)=>void}) {
+  const [metadata,setMetadata]=useState<DocumentTemplateDetail>(),[catalog,setCatalog]=useState<TemplateCatalog>(),[cases,setCases]=useState<CaseList>(),[templateId,setTemplateId]=useState(''),[fields,setFields]=useState<FieldValues>({}),[selected,setSelected]=useState(''),[selectedCase,setSelectedCase]=useState<CaseDetailData>(),[error,setError]=useState(''),[busy,setBusy]=useState(false),[refresh,setRefresh]=useState(0);
+  const dirty=useRef(false),sequence=useRef(0),selectionSequence=useRef(0);
+  useEffect(()=>{let active=true;const request=++sequence.current;Promise.all([getDocumentTemplate(documentId),getTemplates(),getCases()]).then(([detail,templates,list])=>{
+    if(!active||request!==sequence.current)return;setMetadata(detail);setCatalog(templates);setCases(list);if(!dirty.current){setTemplateId(detail.template_id||'');setFields(detail.fields)}if(detail.case_id)setSelected(detail.case_id);setError('');
+  }).catch(error=>{if(active&&request===sequence.current)setError(error.message)});return()=>{active=false}},[documentId,documentVersion,extractionStatus,refresh]);
+  useEffect(()=>{let active=true;const request=++selectionSequence.current;setSelectedCase(undefined);if(selected)getCase(selected).then(detail=>{if(active&&request===selectionSequence.current)setSelectedCase(detail)}).catch(error=>{if(active&&request===selectionSequence.current)setError(error.message)});return()=>{active=false}},[selected]);
+  const template=catalog?.templates.find(template=>template.id===templateId);
+  const extracting=['queued','processing'].includes(extractionStatus||'');
+  function chooseTemplate(id:string) {setTemplateId(id);const keys=catalog?.templates.find(template=>template.id===id)?.fields.map(field=>field.key)||[];setFields(values=>Object.fromEntries(Object.entries(values).filter(([key])=>keys.includes(key))));dirty.current=true}
+  async function save(event:FormEvent) {event.preventDefault();if(!metadata||!templateId||!metadata.can_edit||busy)return;setBusy(true);setError('');++sequence.current;try{const detail=await saveDocumentTemplate(documentId,{version:metadata.version,template_id:templateId,fields});setMetadata(detail);setFields(detail.fields);dirty.current=false;onChanged();notify('Câmpurile au fost salvate într-o versiune nouă. Documentul necesită o nouă aprobare.')}catch(error){if(error instanceof ProcurementError&&error.status===409){try{setMetadata(await getDocumentTemplate(documentId))}catch{ /* Keep the draft and original error if the refresh also fails. */ }}setError((error as Error).message)}finally{setBusy(false)}}
+  async function associate(event:FormEvent) {event.preventDefault();if(!metadata||!templateId||!selectedCase?.capabilities.can_manage||busy)return;setBusy(true);setError('');try{const detail=await procurementApi<CaseDetailData>(`/cases/${encodeURIComponent(selectedCase.id)}/documents`,{method:'POST',body:JSON.stringify({revision:selectedCase.revision,document_id:documentId,version:metadata.version,template_id:templateId})});setSelectedCase(detail);setMetadata({...metadata,case_id:detail.id,case_revision:detail.revision});onChanged();notify('Documentul a fost asociat explicit în dosar.')}catch(error){if(error instanceof ProcurementError&&error.status===409){try{setSelectedCase(await getCase(selectedCase.id))}catch{ /* A failed refresh must not erase the selected case. */ }}setError((error as Error).message)}finally{setBusy(false)}}
+  return <section className={`proc-document-panel ${reviewOnly?'proc-review-fields':''}`}><header><h3>{reviewOnly?'Verifică datele din PDF':'Câmpuri și dosar de achiziție'}</h3>{metadata&&<small>Versiunea documentului v{metadata.version}</small>}</header>{error&&<ErrorMessage message={error} retry={()=>setRefresh(value=>value+1)}/>}
+    {!metadata||!catalog||!cases?<Loading/>:<>
+      <form onSubmit={event=>void save(event)}>{reviewOnly?<p className="quiet-note">Tip recunoscut: {template?.label}. Compară valorile cu PDF-ul și completează doar informațiile care nu au fost găsite.</p>:<label className="field">Tip fix de document<select aria-label="Tip șablon achiziție" value={templateId} disabled={!metadata.can_edit||busy} onChange={e=>chooseTemplate(e.target.value)}><option value="">Document fără șablon de achiziție</option>{catalog.templates.map(template=><option value={template.id} key={template.id}>{template.label}</option>)}</select></label>}
+      {!templateId&&<p className="quiet-note">Alege un tip fix pentru a înscrie PDF-ul în fluxul achizițiilor.</p>}
+      {extracting&&<p className="quiet-note">Se extrag datele din PDF. Câmpurile vor fi disponibile pentru verificare după finalizare.</p>}
+      <TemplateFields template={template} values={fields} disabled={!metadata.can_edit||busy||extracting} onChange={values=>{setFields(values);dirty.current=true;onDirtyChange?.(true)}}/>
+      {metadata.errors.length>0&&<div className="proc-field-errors"><strong>De completat înainte de validare</strong><ul>{metadata.errors.map((error,index)=><li key={index}>{error}</li>)}</ul></div>}
+      {metadata.can_edit&&templateId&&dirty.current&&<><p className="quiet-note">Salvează corecturile înainte să confirmi datele.</p><button className="button secondary" disabled={busy}>Salvează corecturile</button></>}
+      </form>
+      {!reviewOnly&&<form className="proc-inline-form" onSubmit={event=>void associate(event)}><h4>Dosar asociat</h4>{metadata.case_id?<p>{selectedCase?.title||'Dosar asociat'} · versiunea PDF-ului v{selectedCase?.documents.find(doc=>doc.document_id===documentId)?.version??metadata.version}</p>:<p className="quiet-note">PDF-ul se asociază după încărcare și verificare; alegerea dosarului nu modifică documentul.</p>}
+      <label className="field">Dosar<select aria-label="Dosar pentru document" value={selected} disabled={busy||!!metadata.case_id} onChange={e=>{setSelected(e.target.value);setError('')}}><option value="">Alege un dosar accesibil</option>{cases.items.filter(item=>item.stage!=='cancelled'||item.id===metadata.case_id).map(item=><option value={item.id} key={item.id}>{item.number} · {item.title}</option>)}</select></label>
+      {selectedCase&&!selectedCase.capabilities.can_manage&&<p className="quiet-note">Asocierea este disponibilă coordonatorilor autorizați ai dosarului.</p>}
+      {selectedCase?.capabilities.can_manage&&<button className="button secondary" disabled={busy||!templateId||dirty.current} title={dirty.current?'Salvează mai întâi câmpurile documentului.':undefined}>{metadata.case_id?'Actualizează dovada din dosar':'Asociază în dosar'}</button>}
+      {dirty.current&&selectedCase?.capabilities.can_manage&&<p className="quiet-note">Salvează câmpurile înainte de asociere pentru a păstra versiunea și tipul corecte.</p>}
+      </form>}
+    </>}
+  </section>;
+}

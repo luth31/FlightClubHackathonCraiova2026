@@ -47,7 +47,8 @@ test('ordinary users can open a read-only organigram including active support st
   assert.match(organization.textContent,/Daniel Ilie Voicu/);
   assert.doesNotMatch(organization.textContent,/Coordonator:/);
   assert.doesNotMatch(organization.textContent,/Former Support/);
-  assert.equal(organization.querySelectorAll('button,input').length,0);
+  assert.equal(organization.querySelectorAll('input').length,0);
+  assert.ok([...organization.querySelectorAll('button')].every(button=>button.getAttribute('aria-haspopup')==='dialog'),'read-only profiles do not expose management controls');
   assert.equal(organization.textContent.split('Sorin Demo').length-1,1);
   assert.equal(organization.textContent.split('Daniel Ilie Voicu').length-1,1);
   assert.equal(organization.querySelectorAll('[data-department-id]').length,4);
@@ -100,6 +101,34 @@ test('ordinary employees can request leave but cannot manage accounts or authori
   assert.match(document.body.textContent,/Cerere de concediu/);
   assert.doesNotMatch(document.body.textContent,/Adaugă angajat|Propune șef|Autoritate de semnare/);
   assert.doesNotMatch(document.body.textContent,/Numire în aprobare/);
+});
+
+test('reporting managers can choose a replacement without exposing private roles',async t=>{
+  const replacement={...person,id:'replacement',name:'Delegate Demo',roles:undefined,can_delegate_approvals:true};
+  const {calls}=await setup(t,{current_user_id:'employee',can_manage_delegations:true,
+    items:[{...person,can_delegate_approvals:true},replacement]});
+  await click('Delegare');
+  assert.equal(document.querySelector('[name="from_user"]').value,'employee');
+  assert.ok(document.querySelector('[name="to_user"] option[value="replacement"]'));
+  await fill('to_user','replacement');
+  await submit();
+  assert.equal(calls[0].path,'/api/people/delegations');
+  assert.equal(calls[0].body.from_user,'employee');
+  assert.equal(calls[0].body.to_user,'replacement');
+});
+
+test('delegated leave shows the original approver and retains the dedicated decision flow',async t=>{
+  const leave={id:'leave-covered',user_id:'employee',name:'Mara Demo',department:'Tehnic',
+    starts_at:'2026-10-30',ends_at:'2026-11-03',reason:'Concediu de odihnă',status:'pending',can_decide:true,
+    reviewers:[{id:'replacement',name:'Delegate Demo',delegated_from_id:'manager',delegated_from_name:'Manager Demo',via:'delegation'}]};
+  const {calls}=await setup(t,{current_user_id:'replacement',leaves:[leave]});
+  await click('Concedii');
+  assert.match(document.querySelector('.leave-reviewer').textContent,/Delegate Demo \(delegat pentru Manager Demo\)/);
+  await click('Revizuiește');
+  assert.match(document.querySelector('[role="dialog"]').textContent,/delegat pentru Manager Demo/);
+  await click('Aprobă concediul');
+  assert.equal(calls[0].path,'/api/people/leave/leave-covered/decision');
+  assert.equal(calls[0].body.action,'approve');
 });
 
 test('leave requests expose their generated document with the people return origin',async t=>{

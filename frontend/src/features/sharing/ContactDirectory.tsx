@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {Mail, Search, ShieldCheck, Users} from 'lucide-react';
 import {PersonAvatar} from '@/components/people/PersonAvatar';
+import {PersonReference} from '@/components/people/PersonReference';
 import {Empty, ErrorMessage} from '@/components/ui';
 import {api} from '@/services/api-client';
 import type {CollaborationContact, CoordinationInbox, Participation} from './coordination-types';
@@ -9,6 +10,12 @@ export function ContactAvatar({contact,airport}:{contact:CollaborationContact;ai
   return <PersonAvatar name={contact.name} externalAirport={airport} person={{
     ...contact, roles:[contact.role], active:true, availability:'available',
   }}/>;
+}
+
+export function ContactReference({contact,airport,local=false,embedded=false}:{contact:CollaborationContact;airport:string;local?:boolean;embedded?:boolean}) {
+  return <PersonReference name={contact.name} userId={local?contact.id:undefined} embedded={embedded}
+    externalAirport={local?undefined:airport}
+    person={local?undefined:{...contact,roles:[contact.role],active:true,availability:'available'}}/>;
 }
 
 export function CollaborationParticipation({value,onChanged}:{value:Participation;onChanged:()=>void}) {
@@ -37,7 +44,7 @@ export function ContactDirectory({data,onCompose}:{data:CoordinationInbox;onComp
     <div className="collab-directory-heading"><div><h2>Oamenii potriviți, la un mesaj distanță.</h2><p>Contacte publicate de aeroporturile care au activat colaborarea.</p></div><Users size={27}/></div>
     <label className="search-input"><Search size={18}/><input aria-label="Caută contacte" placeholder="Nume, email, funcție sau aeroport…" value={query} onChange={e=>setQuery(e.target.value)}/></label>
     {!shown.length?<Empty title={needle?'Niciun contact găsit':'Niciun contact disponibil'} message={data.participation.enabled?'Contactele apar după activarea colaborării la partener și verificarea conexiunii.':'Activează colaborarea pentru a consulta contactele aeroporturilor partenere.'}/>:<div className="collab-contact-table"><table><thead><tr><th>Persoană</th><th>Funcție și departament</th><th>Email profesional</th><th><span className="sr-only">Acțiune</span></th></tr></thead><tbody>{shown.map(({airport,contact})=><tr key={`${airport.id}:${contact.id}`}>
-      <td><div className="collab-contact-person"><ContactAvatar contact={contact} airport={airport.name}/><div><strong>{contact.name}</strong><small>{airport.name}</small></div></div></td>
+      <td><div className="collab-contact-person"><ContactAvatar contact={contact} airport={airport.name}/><div><strong><ContactReference contact={contact} airport={airport.name}/></strong><small>{airport.name}</small></div></div></td>
       <td><strong>{contact.job_title}</strong><small>{contact.department}</small></td><td><a href={`mailto:${contact.email}`}>{contact.email}</a></td>
       <td><button className="button secondary" disabled={!data.can_create||!airport.sharing_enabled} onClick={()=>onCompose(airport.id,contact)} aria-label={`Scrie în FlyLeaf către ${contact.name}`}><Mail size={16}/>Scrie</button></td>
     </tr>)}</tbody></table></div>}

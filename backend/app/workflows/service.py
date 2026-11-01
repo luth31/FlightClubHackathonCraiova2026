@@ -22,6 +22,10 @@ def apply_action(db,user,document_id,action,comment='',expected_version=None):
         return document
     if file_hash(version.file_path)!=version.sha256:
         raise DomainError('Integritatea fișierului nu poate fi confirmată.',409)
+    if document.extra.get('auto_intake') and action in ('validate','submit','approve') and document.extra.get('extraction_status')!='ready':
+        raise DomainError('Așteaptă extragerea documentului, apoi verifică informațiile înainte de aprobare.',409)
+    from app.procurement.service import check_document_action
+    check_document_action(db,user,document,action)
     if action=='validate':
         if document.status not in ('draft','in_review'): raise DomainError('Metadatele se validează înainte de aprobare.',409)
         task=task_service.require_task(db,user,document,'validation')

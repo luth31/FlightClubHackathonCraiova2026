@@ -685,7 +685,7 @@ test('every sidebar section works and mobile navigation closes its drawer',async
 });
 
 for (const dismiss of ['cancel','navigate','back','account change'])
-  test(`a completed upload cannot redirect after ${dismiss}`,async t=>{
+  test(dismiss==='cancel'?'a pending upload keeps cancellation disabled until completion':`a completed upload cannot redirect after ${dismiss}`,async t=>{
     let complete;
     const response=new Promise(resolve=>{complete=resolve});
     await setup(t,'#home',{uploadResponse:()=>response});
@@ -694,9 +694,15 @@ for (const dismiss of ['cancel','navigate','back','account change'])
     const input=document.querySelector('[type="file"]');
     Object.defineProperty(input,'files',{value:[new window.File(['demo'],'demo.pdf',{type:'application/pdf'})]});
     await act(async()=>input.dispatchEvent(new window.Event('change',{bubbles:true})));
-    await click(find('[role="dialog"] button','Înregistrează documentul'));
+    await click(find('[role="dialog"] button','Încarcă și verifică'));
     assert.ok(find('button','Se încarcă'));
-    if(dismiss==='cancel')await click(find('[role="dialog"] button','Renunță'));
+    if(dismiss==='cancel'){
+      assert.equal(find('[role="dialog"] button','Renunță').disabled,true);
+      await act(async()=>complete(Response.json(documentRecord)));await settle(70);
+      assert.equal(location.hash,'#document/doc-contract?from=documents');
+      assert.equal(document.querySelector('[role="dialog"]'),null);
+      return;
+    }
     else if(dismiss==='navigate')await click(find('nav button','Acasă'));
     else if(dismiss==='back'){await act(async()=>window.history.back());await settle(70);}
     else {
@@ -715,7 +721,7 @@ test('a completed active upload opens its document and returns to its origin',as
   const input=document.querySelector('[type="file"]');
   Object.defineProperty(input,'files',{value:[new window.File(['demo'],'demo.pdf',{type:'application/pdf'})]});
   await act(async()=>input.dispatchEvent(new window.Event('change',{bubbles:true})));
-  await click(find('[role="dialog"] button','Înregistrează documentul'));
+  await click(find('[role="dialog"] button','Încarcă și verifică'));
   assert.equal(heading(),documentRecord.title);
   assert.equal(location.hash,'#document/doc-contract?from=documents');
   await click(document.querySelector('.back-button'));

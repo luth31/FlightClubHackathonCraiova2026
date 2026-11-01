@@ -7,6 +7,7 @@ import { readableText } from '@/utils/text';
 import { DocumentLibrary } from './DocumentLibrary';
 import { ApprovalsPage } from '@/features/approvals';
 import { ContractRenewals } from '@/features/contracts/ContractRenewals';
+import { ProcurementWorkspace } from '@/features/procurement/ProcurementWorkspace';
 import type { DocumentView } from '@/services/navigation';
 import type { DocumentRecord, User } from '@/types';
 import {DocumentExpiry, expiryPresentation} from './DocumentExpiry';
@@ -41,9 +42,10 @@ function offsetFromRoute(hash: string) {
   return Number.isSafeInteger(page) && page > 0 && page <= 100000 ? (page - 1) * 30 : 0;
 }
 
-export function DocumentWorkspace({ view, workspaceHash, initialFilter, initialQuery, renewalId, onView, onOpen, onUpload, notify, revision, user }: {
+export function DocumentWorkspace({ view, workspaceHash, initialFilter, initialQuery, renewalId, onView, onOpen, onUpload, notify, revision, user, onChanged }: {
   workspaceHash: string;
   user: User;
+  onChanged?: () => void;
   view: DocumentView; initialFilter: string; initialQuery: string; renewalId?: string;
   onView: (view: DocumentView) => void; onOpen: (id: string) => void; onUpload: () => void; notify: (text: string) => void; revision: number;
 }) {
@@ -83,13 +85,13 @@ export function DocumentWorkspace({ view, workspaceHash, initialFilter, initialQ
       notify('Registrul complet accesibil a fost exportat.');
     } catch (e) { notify((e as Error).message); }
   }
-  const tabs: Array<[DocumentView, string]> = [['list', 'Toate documentele'], ['contracts', 'Contracte'], ['approvals', 'Aprobări și sarcini'], ['renewals', 'Reînnoiri'], ['flow', 'Flux achiziții']];
+  const tabs: Array<[DocumentView, string]> = [['list', 'Toate documentele'], ['contracts', 'Contracte'], ['approvals', 'Aprobări și sarcini'], ['renewals', 'Reînnoiri'], ['procurement', 'Dosare achiziții']];
   const navigation = <nav className="workspace-tabs" aria-label="Secțiuni Documente">{tabs.map(([id, label]) => <button key={id} aria-current={view === id ? 'page' : undefined} onClick={() => onView(id)}>{label}{id === 'approvals' && data && <span>{data.my_actions}</span>}</button>)}</nav>;
-  if (view === 'flow') return <>{navigation}<DocumentLibrary onOpen={onOpen} onUpload={onUpload} notify={notify} revision={revision} preferredView="flow" onViewChange={next => { if (next === 'list') onView('list'); }}/></>;
+  if (view === 'flow') return <>{navigation}<DocumentLibrary user={user} onOpen={onOpen} onUpload={onUpload} notify={notify} revision={revision} preferredView="flow" onChanged={onChanged} onViewChange={next => { if (next === 'list' || next === 'procurement') onView(next); }}/></>;
   return <div className="document-workspace workspace-content">
     <div className="page-heading"><div><div className="eyebrow">EVIDENȚE, DECIZII ȘI TERMENE</div><h1>Documente</h1><p>Documentele și contractele tale, de la prima verificare la următoarea reînnoire.</p></div><div className="heading-actions">{['list', 'contracts'].includes(view) && <button className="button secondary" onClick={exportRegister}><Download size={16}/>Exportă registrul complet</button>}<button className="button primary" onClick={onUpload}><Plus size={17}/>Adaugă document</button></div></div>
     {navigation}
-    {view === 'approvals' ? <ApprovalsPage embedded initialFilter="mine" user={user} onOpen={onOpen} revision={revision} notify={notify}/> : view === 'renewals' ? <ContractRenewals key={renewalId || 'all'} initialId={renewalId} onOpen={onOpen} revision={revision} notify={notify}/> : <>
+    {view === 'procurement' ? <ProcurementWorkspace user={user} onOpen={onOpen} revision={revision} notify={notify} onChanged={()=>{setRetry(value=>value+1);onChanged?.()}}/> : view === 'approvals' ? <ApprovalsPage embedded initialFilter="mine" user={user} onOpen={onOpen} revision={revision} notify={notify}/> : view === 'renewals' ? <ContractRenewals key={renewalId || 'all'} initialId={renewalId} onOpen={onOpen} revision={revision} notify={notify}/> : <>
       <div className="workspace-kpis">{([['total', 'Documente', ''], ['expiring', 'Expiră în 30 zile', 'expiring'], ['expired', 'Expirate', 'expired'], ['unknown', 'Date de verificat', 'unknown']] as const).map(([key, label, value]) => <button key={key} aria-pressed={filters.validity_filter === value} onClick={() => filter('validity_filter', value)}><span>{label}</span><strong>{loading ? '—' : data?.counters[key] ?? '—'}</strong><small>{key === 'total' ? 'În căutarea și filtrele curente' : 'Valabilitate · fără documentele arhivate'}</small></button>)}</div>
       <div className="panel register-panel">
         <div className="workspace-filters"><label className="search-input"><Search size={17}/><input aria-label="Caută în documente" placeholder="Titlu, număr, furnizor…" maxLength={200} value={filters.q} onChange={e => filter('q', e.target.value)}/>{filters.q && <button aria-label="Șterge căutarea" onClick={() => filter('q', '')}><X size={16}/></button>}</label>
