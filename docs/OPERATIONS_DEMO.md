@@ -8,7 +8,7 @@ Use **Operațiuni la sol → Tura curentă**. The displayed clock is the demonst
 2. **Stage entrance:** the on-time staff scan their cards. Use the mobile confirmation to log the entry. The assigned G1 employee, Mara Stoica, has not arrived. The laptop receives the entries automatically.
 3. **Reveal the problem:** advance to 08:04. G1 should open, but the assigned worker is absent. Advance to 08:22. Scan Alexandru Marin's reserve card and confirm entry. Select FL101 and open G1 with Alexandru as the operator. For the other flights, scan their assigned workers and open their gates before their due times, or leave them blocked intentionally; the metrics reflect the actual actions in this rehearsal.
 4. **Show the consequence:** advance to 08:45. Boarding takes 16 modeled minutes from gate opening. FL101 leaves the stand at 08:38, 18 minutes after its 08:20 plan. Taxi follows departure from the stand; takeoff is a separate event. Closing the gate before boarding finishes pauses its progress.
-5. **Explain and improve:** select **Vezi firul evenimentelor**. The expanded ledger shows scheduling, assignment, attendance, operator identity, planned/actual milestones and delay. Open **Proceduri & îmbunătățiri** to inspect supporting cases, assumptions and the proposed reserve-staff procedure. **Creează draft SOP** creates a real document for review. After normal approval, use the existing controlled airport-sharing workflow.
+5. **Explain and improve:** select **Vezi firul evenimentelor**. The expanded ledger shows scheduling, assignment, attendance, operator identity, planned/actual milestones and delay. Open **Proceduri SOP → Strategii și optimizare** to inspect the saved Luna analysis, supporting events, proposed steps and pilot. **Creează ciornă SOP** creates a full procedure document for review. After normal approval, use the existing controlled airport-sharing workflow.
 
 Rehearse a second run with the assigned worker or a reserve present and G1 opened by 08:04. The departure can be on time. This is a causal demonstration, not a fixed animation.
 
@@ -40,8 +40,12 @@ Expand day → flight/airport activity → individual actions. Search people, ac
 
 The document/personnel audit remains separately permission-filtered in **Jurnal de activitate**; the operations ledger does not grant access to confidential leave records. Generated leave PDFs follow the leave workflow, retain previous versions and link back to **Echipă → Concedii**.
 
-SOP estimates are deterministic counterfactual calculations over the demonstrated evidence, with explicit assumptions. They are not validated operational forecasts or automatic procedure activation. Each draft preserves the evidence used to generate it.
+Luna proposals distinguish observed delay from hypothetical improvement. Observed delay is deduplicated by completed departure; pilot benefits remain unmeasured until tested. Each draft preserves the evidence and pilot plan used to generate it. The older deterministic `/strategies` endpoints remain for compatibility and are not the current UI.
 
 ## Deployment
 
 Default development and the Tailscale presentation deployment remain separate. No global development hosts, ports or authentication mode are changed by this feature. The shared optional Google key remains available in either environment. See [TAILSCALE.md](TAILSCALE.md) for the presentation setup.
+
+## SOP and optimization story
+
+Open **Proceduri SOP** to browse twelve complete working procedures. Use **Analizează cu Luna** before rehearsal to prepare a saved analysis; a fresh analysis may take about a minute. In **Strategii și optimizare**, follow a citation back to its exact flight group, review the proposed steps and pilot, then create the SOP draft. Validate and obtain approval in the document workflow. Return to the procedure's local documents and choose **Partajează** to review the copy and send it to the partner airport. That action is available to the director or Conformitate reviewer only. An ordinary employee can read approved internal SOPs but cannot distribute them.

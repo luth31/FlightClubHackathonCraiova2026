@@ -58,7 +58,7 @@ This is the modeled operational ledger, not a claim to integrate every airport s
 
 `GET /summary` returns only `{metrics,reference_date,period}` for dashboard KPIs, using the same calculations and authentication as the ledger.
 
-## SOP improvement proposals
+## Legacy rule-based SOP proposals (compatibility API)
 
 `GET /strategies` returns `items`, `can_draft`, `current_run_id`, `notice`. Each item has `id`, `title`, `sop_code`, `problem`, `current_rule`, `proposed_rule`, `changes`, `evidence_count`, `evidence[]` (`group_id`, `callsign`, `date`, `delay_minutes`), `baseline`, `estimate`, `assumptions`, nullable `document_id`.
 
@@ -73,3 +73,7 @@ The initial rules address reserve-staff confirmation and earlier equipment readi
 `GET /map-config` returns the optional browser Maps key and map availability. Restrict the key to the deployment's browser referrers and Map Tiles API. The bundled model works without a key. All Google tile attributions must remain visible.
 
 Milestone terminology is informed by [EUROCONTROL's A-CDM specification](https://www.eurocontrol.int/publication/eurocontrol-specification-airport-collaborative-decision-making-cdm), which distinguishes off-block from take-off. FlyLeaf's timing/resource model is deliberately simplified and is not an A-CDM or ATC integration.
+
+## SOP library and Luna strategy analysis
+
+See [SOP_OPTIMIZATION.md](SOP_OPTIMIZATION.md) for the catalog, analysis endpoints, evidence snapshot semantics, approval workflow and partner-sharing permissions. Analyses are explicit requests, persisted per airport, and reused for identical inputs. They never apply a procedure or alter measured KPIs automatically.

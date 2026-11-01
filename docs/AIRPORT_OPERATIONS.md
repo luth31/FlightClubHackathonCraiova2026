@@ -11,7 +11,7 @@ Start a new **interactive** run. The clock starts paused at 08:00 and 1×, so sc
 3. Advance to 08:22, scan Alexandru Marin's reserve card, then explicitly open G1 as the substitute. The ledger records who was assigned and who actually opened it.
 4. The model requires 16 minutes of boarding with an open gate. FL101 leaves the stand at 08:38: 18 minutes late. Only now does this flight affect measured punctuality and accumulated actual delay. Three modeled taxi minutes lead to a distinct take-off event.
 5. Open the flight's ledger tree to connect scheduling, assignment, missing attendance, substitute arrival, late opening and departure. Use attention filtering to find exceptions without scrolling a flat event table.
-6. Inspect the reserve-staff SOP proposal. It references affected rotations and shows a clearly labeled counterfactual. Generate a real procedure draft, then use document review and controlled sharing to continue the story across airports.
+6. Open the SOP library and saved Luna analysis. It references individual ledger events and proposes full procedure changes with a pilot and measurable success criteria. Generate a real procedure draft, then use document review and controlled sharing to continue the story across airports.
 7. Reset and check in/open G1 on time. That intervention prevents the delay. Closing the gate during unfinished boarding pauses progress, so the simulation responds to later decisions too.
 
 Opening G2 on time produces a completed punctual flight first; a later delayed FL101 then visibly lowers the actual punctuality percentage. A blocked flight affects risk/projection indicators without masquerading as a completed departure.
@@ -28,13 +28,9 @@ Actual punctuality and delay minutes use completed departing flights only. Open 
 
 Document changes and personnel/leave details remain in their existing permission-filtered audit flows; the operational ledger does not leak confidential HR records. ADS-B positions are a separate feed and cannot supply gates, staffing or airline punctuality.
 
-## SOP direction
+## SOP library and optimization
 
-The first two proposals address reserve staffing and equipment checks. Each includes the observed problem, reference rule, proposed rule, explicit changes, affected flights and assumptions. The impact is an estimate under those assumptions, not a promise or measured improvement. It is intentionally understandable arithmetic rather than an opaque optimizer.
-
-Creating a proposal generates a PDF in the normal document registry, at draft status, with validation/review tasks. It never activates a procedure automatically. Independent review, approval and reviewed sharing to an opted-in partner airport remain the next steps. Identical requests reuse the same evidence snapshot; changed evidence generates a new proposal.
-
-A future planning engine can add resource constraints, qualifications, shift/leave availability and alternative schedules to this same evidence/procedure loop. The current implementation does not claim to optimize ATC slots or dispatch aircraft.
+Twelve structured working templates cover the airport's core coordination processes. An on-demand Luna engine combines measured KPIs, observed ledger events and current SOP references. It generates amendments or new procedures with validated citations, explicit assumptions and a pilot. Drafts require normal validation and approval; only director/Conformitate authority can prepare and share approved copies with a partner. See [SOP_OPTIMIZATION.md](SOP_OPTIMIZATION.md) for sources, endpoints and limits.
 
 ## Geography and live traffic
 

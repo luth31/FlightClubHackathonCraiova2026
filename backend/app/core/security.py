@@ -144,6 +144,12 @@ def can_read(user, document, include_assignment=True):
         return has_role(user, 'hr') or is_department_head(user, 'Resurse umane') or document.owner_id == user.id or document.created_by == user.id
     if has_role(user, 'director'):
         return True
+    # Approved operational procedures are internal reading material for all staff.
+    # Drafts and restricted procedures keep their normal departmental scope.
+    if (document.category == 'Procedură' and document.department == 'Conformitate'
+            and document.status in ('approved', 'signed') and document.confidentiality not in RESTRICTED
+            and (document.extra or {}).get('metadata', {}).get('sop_code')):
+        return True
     head = is_department_head(user, document.department)
     if has_role(user, 'technician') and not head:
         return (canonical_department(document.department) == 'Tehnic' and document.category in TECHNICAL_CATEGORIES
