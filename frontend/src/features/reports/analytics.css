@@ -28,7 +28,7 @@
 .px-kpi strong { font-size: 34px; font-weight: 720; letter-spacing: -1px; line-height: 1.4; }
 .px-kpi p, .px-kpi small { font-size: 11px; line-height: 1.6; margin-top: 4px; }
 .px-kpi small { color: var(--muted); }
-.px-kpi-icon { width: 30px; height: 32px; flex-shrink: 0; border: 0; background: transparent; }
+.px-kpi .px-kpi-icon { width: 30px; height: 32px; flex-shrink: 0; border: 0; background: transparent; }
 .px-kpi>svg:last-child { position: absolute; right: 12px; top: 12px; color: var(--muted); }
 .px-panel { border-radius: 12px; min-width: 0; overflow: hidden; }
 .px-panel>header { padding: 18px 20px 10px; }
