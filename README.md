@@ -112,7 +112,9 @@ Python direct dependencies live in `backend/requirements.txt`; the cross-platfor
 
 Feature changes must follow the [navigation contract](docs/NAVIGATION.md): document visits retain their originating section and list state, and new entry points require interaction regression coverage.
 
-The current access model is browser-tested with isolated headless Playwright sessions on both airports, including a 390 px mobile viewport. Fonts are bundled locally. All displayed document totals respect the active user's permissions; the director sees fewer than 148 records because sensitive HR records remain restricted.
+The procurement flow includes three additional fictional dossiers (22 PDFs): split deliveries with a rejected receipt and return, two service reports consolidated into one receipt, and advance/final invoicing. Regenerate their files with `python scripts/generate_procurement_scenarios.py` using the backend environment. `data/procurement-scenarios.json` is seeded alongside the base corpus on startup; existing document IDs, edits and versions are preserved. The flow navigator opens one dossier at a time. Explicit `metadata.flow_links` record each input's `source_id`, `kind` (`flow`, `reference`, `related`, `correction`) and optional label; an empty list identifies a root. Documents without that field retain the legacy relationship inference. Only visible documents in the same dossier can be connected.
+
+The current access model is browser-tested with isolated headless Playwright sessions on both airports, including a 390 px mobile viewport. Fonts are bundled locally. All displayed document totals respect the active user's permissions; sensitive HR records remain restricted.
 
 ## Repository map
 

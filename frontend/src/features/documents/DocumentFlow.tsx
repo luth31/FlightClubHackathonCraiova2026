@@ -1,102 +1,107 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  FolderOpen,
-  PackageCheck,
-  ReceiptText,
-  ShoppingCart,
-  Truck,
-} from "lucide-react";
-import { FileIcon, Status } from "@/components/ui";
-import { buildFlowGraphs } from "./flow-graph";
-import { readableFlowLabel } from "./flow-label";
-import type { FlowGraphEdge, FlowGraphGroup, FlowGraphNode } from "./flow-graph";
-import type { DocumentFlowData, DocumentFlowStageId } from "@/types";
-import "./document-flow.css";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { ArrowRight, ArrowUpRight, CircleCheck, CircleDashed,
+  CircleX, Clock3, FolderOpen, PackageCheck, ReceiptText, ShoppingCart, Truck } from 'lucide-react';
+import { statusLabel } from '@/utils/format';
+import { buildFlowGraphs } from './flow-graph';
+import { readableFlowLabel } from './flow-label';
+import type { FlowGraphEdge, FlowGraphGroup, FlowGraphNode } from './flow-graph';
+import type { DocumentFlowData, DocumentFlowStageId } from '@/types';
+import './document-flow.css';
 
-const stageIcons = {
-  purchasing: ShoppingCart,
-  shipping: Truck,
-  inventory_management: PackageCheck,
-  invoice_verification: ReceiptText,
-} satisfies Record<DocumentFlowStageId, typeof ShoppingCart>;
+const stages = [
+  { id: 'purchasing', label: 'Achiziții', Icon: ShoppingCart },
+  { id: 'shipping', label: 'Livrare', Icon: Truck },
+  { id: 'inventory_management', label: 'Recepție', Icon: PackageCheck },
+  { id: 'invoice_verification', label: 'Facturare', Icon: ReceiptText },
+] satisfies { id: DocumentFlowStageId; label: string; Icon: typeof ShoppingCart }[];
 
-const STAGE_GAP = 64;
-const CARD_HEIGHT = 132;
-const ROW_GAP = 32;
-const CANVAS_PADDING = 18;
-const CARD_INSET = 12;
+// Shared with the grid through CSS variables so arrows always meet the card edges.
+const STAGE_GAP = 32;
+const CARD_HEIGHT = 112;
+const SUPPORT_HEIGHT = 68;
+const ROW_GAP = 20;
+const CANVAS_PADDING = 40;
+const CARD_INSET = 10;
+const geometry = {
+  '--flow-gap': `${STAGE_GAP}px`, '--flow-card-height': `${CARD_HEIGHT}px`,
+  '--flow-row-gap': `${ROW_GAP}px`, '--flow-padding': `${CANVAS_PADDING}px`,
+  '--flow-inset': `${CARD_INSET}px`,
+} as CSSProperties;
 
-function FlowCaseFolder({graph,onOpen,onSelectCase,initiallyOpen=false}:{
-  graph:FlowGraphGroup;onOpen:(id:string)=>void;onSelectCase:(id:string)=>void;initiallyOpen?:boolean;
-}){
-  const [open,setOpen]=useState(initiallyOpen);
-  return <details className="flow-case-folder" open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
-    <summary><FolderOpen size={17}/><strong>{graph.label}</strong><span>{graph.nodes.length} documente</span></summary>
-    {open&&<FlowCaseChart graph={graph} onOpen={onOpen} onSelectCase={onSelectCase}/>}
-  </details>;
+function statusAppearance(status: string) {
+  if (['approved', 'signed', 'active', 'completed'].includes(status)) return { tone: 'positive', Icon: CircleCheck };
+  if (['in_review', 'pending'].includes(status)) return { tone: 'waiting', Icon: Clock3 };
+  if (['rejected', 'expired', 'revoked'].includes(status)) return { tone: 'negative', Icon: CircleX };
+  return { tone: 'neutral', Icon: CircleDashed };
 }
 
-function connectorPath(edge: FlowGraphEdge, nodes: Map<string, FlowGraphNode>, width: number) {
+type PositionedNode = FlowGraphNode & { top: number; height: number; compact: boolean };
+
+function positionNodes(nodes: FlowGraphNode[]): PositionedNode[] {
+  const bottoms = [CANVAS_PADDING, CANVAS_PADDING, CANVAS_PADDING, CANVAS_PADDING];
+  const primary = nodes.find((node) => node.document.flow.document_type === 'Contract') || nodes[0];
+  const subject = readableFlowLabel(primary.document.title).replace(/^.+?\s[-–—]\s/, '');
+  return [...nodes].sort((first, second) => first.stageIndex - second.stageIndex || first.row - second.row).map((node) => {
+    const compact = !node.document.metadata.flow_caption
+      && readableFlowLabel(node.document.title).replace(/^.+?\s[-–—]\s/, '') === subject;
+    const height = compact ? SUPPORT_HEIGHT : CARD_HEIGHT;
+    const top = bottoms[node.stageIndex];
+    bottoms[node.stageIndex] += height + ROW_GAP;
+    return { ...node, compact, height, top };
+  });
+}
+
+function connectorPath(edge: FlowGraphEdge, nodes: Map<string, PositionedNode>, width: number) {
   const source = nodes.get(edge.source);
   const target = nodes.get(edge.target);
-  if (!source || !target) return "";
+  if (!source || !target) return '';
   const columnWidth = (width - STAGE_GAP * 3) / 4;
   const left = (node: FlowGraphNode) => node.stageIndex * (columnWidth + STAGE_GAP) + CARD_INSET;
-  const top = (node: FlowGraphNode) => CANVAS_PADDING + node.row * (CARD_HEIGHT + ROW_GAP);
-
   if (source.stageIndex === target.stageIndex) {
     const x = left(source) + (columnWidth - CARD_INSET * 2) / 2;
     const below = target.row > source.row;
-    const sourceY = top(source) + (below ? CARD_HEIGHT : 0);
-    const targetY = top(target) + (below ? 0 : CARD_HEIGHT);
-    if (Math.abs(target.row - source.row) === 1) {
-      return `M ${x} ${sourceY} V ${targetY}`;
-    }
-    const gutter = left(source) + columnWidth - CARD_INSET * 2 + CARD_INSET / 2;
+    const sourceY = source.top + (below ? source.height : 0);
+    const targetY = target.top + (below ? 0 : target.height);
+    if (Math.abs(target.row - source.row) === 1) return `M ${x} ${sourceY} V ${targetY}`;
+    const gutter = left(source) + columnWidth - CARD_INSET;
     const sourceExit = sourceY + (below ? ROW_GAP / 2 : -ROW_GAP / 2);
     const targetEntry = targetY + (below ? -ROW_GAP / 2 : ROW_GAP / 2);
     return `M ${x} ${sourceY} V ${sourceExit} H ${gutter} V ${targetEntry} H ${x} V ${targetY}`;
   }
-
-  const sourceX = left(source) + columnWidth - CARD_INSET * 2;
-  const sourceY = top(source) + CARD_HEIGHT / 2;
-  const targetX = left(target);
-  const targetY = top(target) + CARD_HEIGHT / 2;
-  const sourceGutter = sourceX + CARD_INSET + STAGE_GAP / 2;
+  const backwards = target.stageIndex < source.stageIndex;
+  const sourceX = left(source) + (backwards ? 0 : columnWidth - CARD_INSET * 2);
+  const referenceOffset = edge.kind === 'reference' ? -14 : edge.kind === 'correction' ? 14 : 0;
+  const sourceY = source.top + source.height / 2 + referenceOffset;
+  const targetX = left(target) + (backwards ? columnWidth - CARD_INSET * 2 : 0);
+  const targetY = target.top + target.height / 2 + referenceOffset;
+  const direction = backwards ? -1 : 1;
+  const laneOffset = edge.kind === 'reference' ? 12 : edge.kind === 'correction' ? -12 : (source.row % 3 - 1) * 6;
+  const sourceGutter = sourceX + direction * (CARD_INSET + STAGE_GAP / 2) + laneOffset;
   if (target.stageIndex - source.stageIndex === 1) {
     return `M ${sourceX} ${sourceY} H ${sourceGutter} V ${targetY} H ${targetX}`;
   }
-
-  // Stage skips follow the empty space above the cards
-  const targetGutter = targetX - CARD_INSET - STAGE_GAP / 2;
-  const routeY = Math.min(top(source), top(target)) - ROW_GAP / 2;
+  const targetGutter = targetX - direction * (CARD_INSET + STAGE_GAP / 2) + laneOffset;
+  const routeY = backwards ? 24 : 10 + (target.row % 3) * 5;
   return `M ${sourceX} ${sourceY} H ${sourceGutter} V ${routeY} H ${targetGutter} V ${targetY} H ${targetX}`;
 }
 
-function FlowCaseChart({
-  graph,
-  onOpen,
-  onSelectCase,
-}: {
-  graph: FlowGraphGroup;
-  onOpen: (id: string) => void;
-  onSelectCase: (id: string) => void;
-}) {
+function FlowCaseChart({ graph, onOpen }: { graph: FlowGraphGroup; onOpen: (id: string) => void }) {
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(1040);
-  const [focusedDocument, setFocusedDocument] = useState<string>();
-  const arrowId = `flow-arrow-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const nodeMap = useMemo(() => new Map(graph.nodes.map((node) => [node.id, node])), [graph.nodes]);
-  const related = new Set([focusedDocument]);
+  const [width, setWidth] = useState(940);
+  const [hovered, setHovered] = useState<string>();
+  const [focused, setFocused] = useState<string>();
+  const active = hovered ?? focused;
+  const arrowId = `flow-arrow-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const positioned = useMemo(() => positionNodes(graph.nodes), [graph.nodes]);
+  const nodeMap = useMemo(() => new Map(positioned.map((node) => [node.id, node])), [positioned]);
+  const related = new Set([active]);
   for (const edge of graph.edges) {
-    if (edge.source === focusedDocument) related.add(edge.target);
-    if (edge.target === focusedDocument) related.add(edge.source);
+    if (edge.source === active) related.add(edge.target);
+    if (edge.target === active) related.add(edge.source);
   }
-  const height = CANVAS_PADDING * 2 + graph.rowCount * CARD_HEIGHT + (graph.rowCount - 1) * ROW_GAP;
+  const height = Math.max(...positioned.map((node) => node.top + node.height)) + CANVAS_PADDING;
   const graphCaseId = graph.caseId || graph.id;
-
   useLayoutEffect(() => {
     const body = bodyRef.current;
     if (!body) return;
@@ -106,193 +111,125 @@ function FlowCaseChart({
     observer.observe(body);
     return () => observer.disconnect();
   }, []);
-
-  return (
-    <section className="flow-case-graph" aria-label={graph.label} data-graph-id={graph.id}>
-      <div className="flow-case-heading">
-        <div>
-          <FolderOpen size={15} />
-          {graph.caseId ? (
-            <button onClick={() => onSelectCase(graph.caseId!)}>{graph.label}</button>
-          ) : (
-            <strong>{graph.label}</strong>
-          )}
-          <span>{graph.nodes.length} documente</span>
-        </div>
-        <span>{graph.edges.length} conexiuni</span>
-      </div>
-      <div
-        className="flow-case-body"
-        ref={bodyRef}
-        style={{ gridTemplateRows: `repeat(${graph.rowCount}, ${CARD_HEIGHT}px)` }}
-      >
-        <div className="flow-lanes" aria-hidden="true">
-          {Object.keys(stageIcons).map((stage) => (
-            <div key={stage} className={`flow-lane flow-stage-${stage}`} />
-          ))}
-        </div>
-        <svg
-          className="flow-connectors"
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          aria-hidden="true"
-        >
-          <defs>
-            <marker id={arrowId} markerWidth="7" markerHeight="7" refX="7" refY="3.5" orient="auto">
-              <path d="M 0 0 L 7 3.5 L 0 7 z" fill="context-stroke" />
-            </marker>
-          </defs>
-          {graph.edges.map((edge) => (
-            <path
-              key={edge.id}
-              className={`flow-connector flow-connector-${edge.kind}${focusedDocument && (edge.source === focusedDocument || edge.target === focusedDocument) ? " flow-connector-active" : ""}`}
-              d={connectorPath(edge, nodeMap, width)}
-              markerEnd={`url(#${arrowId})`}
-              data-source-id={edge.source}
-              data-target-id={edge.target}
-              data-case-id={graphCaseId}
-            />
-          ))}
-        </svg>
-        {graph.nodes.map(({ document, stage, stageIndex, row }) => {
-          const title = readableFlowLabel(document.title);
-          return (
-            <article
-              key={document.id}
-              className={`flow-document flow-stage-${stage}${focusedDocument && related.has(document.id) ? " flow-document-related" : ""}`}
-              style={{ gridColumn: stageIndex + 1, gridRow: row + 1 }}
-              data-node-id={document.id}
-              data-case-id={graphCaseId}
-              onMouseEnter={() => setFocusedDocument(document.id)}
-              onMouseLeave={() => setFocusedDocument(undefined)}
-              onFocus={() => setFocusedDocument(document.id)}
-              onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) setFocusedDocument(undefined);
-              }}
-            >
-              <button
-                className="flow-document-open"
-                onClick={() => onOpen(document.id)}
-                aria-label={`Deschide ${title}`}
-                title={`${title}\n${document.number}${document.supplier ? `\n${readableFlowLabel(document.supplier)}` : ""}`}
-              >
-                <span className="flow-document-kind">
-                  <FileIcon category={document.category} />
-                  <span>{document.flow.document_type}</span>
-                  <ArrowUpRight size={14} />
-                </span>
-                <strong>{title}</strong>
-                <span className="flow-document-number">{document.number}</span>
-              </button>
-              <div className="flow-document-footer">
-                <Status value={document.status} />
-              </div>
-            </article>
-          );
-        })}
-      </div>
-      {graph.edges.length > 0 && (
-        <ul className="sr-only">
-          {graph.edges.map((edge) => (
-            <li key={edge.id}>
-              {readableFlowLabel(nodeMap.get(edge.source)?.document.title || "")} → {readableFlowLabel(nodeMap.get(edge.target)?.document.title || "")}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+  return <div className={`flow-case-body${active ? ' flow-has-focus' : ''}`} ref={bodyRef}
+    style={{ height }}>
+    <svg className="flow-connectors" width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      <defs><marker id={arrowId} markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+        <path d="M 0 0 L 6 3 L 0 6 z" fill="context-stroke" />
+      </marker></defs>
+      {graph.edges.map((edge) => <path key={edge.id}
+        className={`flow-connector flow-connector-${edge.kind}${edge.source === active || edge.target === active ? ' flow-connector-active' : ''}`}
+        d={connectorPath(edge, nodeMap, width)} markerEnd={`url(#${arrowId})`}
+        data-source-id={edge.source} data-target-id={edge.target} data-case-id={graphCaseId} />)}
+      {graph.edges.filter((edge) => edge.kind === 'correction' && nodeMap.get(edge.source)!.stageIndex > nodeMap.get(edge.target)!.stageIndex)
+        .map((edge) => <text className="flow-edge-label" key={`label-${edge.id}`} x={width / 3} y={18} textAnchor="middle">{edge.label || 'Retur'}</text>)}
+    </svg>
+    {positioned.map(({ document, stageIndex, top, height: cardHeight, compact }) => {
+      const title = readableFlowLabel(document.title);
+      const { tone, Icon } = statusAppearance(document.status);
+      const inputs = graph.edges.filter((edge) => edge.target === document.id);
+      const inputSummary = inputs.map((edge) => `${edge.label || 'Document legat'}: ${readableFlowLabel(nodeMap.get(edge.source)!.document.title)}`).join('\n');
+      return <article key={document.id}
+        className={`flow-document flow-tone-${tone}${compact ? ' flow-document-compact' : ''}${active && related.has(document.id) ? ' flow-document-related' : ''}`}
+        style={{ gridColumn: `${stageIndex + 1} / ${stageIndex + 2}`, top, height: cardHeight }} data-node-id={document.id} data-case-id={graphCaseId}
+        onMouseEnter={() => setHovered(document.id)} onMouseLeave={() => setHovered(undefined)}
+        onFocus={() => setFocused(document.id)} onBlur={() => setFocused(undefined)}>
+        <button className="flow-document-open" onClick={() => onOpen(document.id)}
+          aria-label={`Deschide ${title} · ${statusLabel[document.status] || document.status}`}
+          title={`${title}\n${document.number}${document.supplier ? `\n${readableFlowLabel(document.supplier)}` : ''}${inputSummary ? `\n${inputSummary}` : ''}`}>
+          <span className="flow-document-kind"><span>{document.flow.document_type}</span><ArrowUpRight size={14} /></span>
+          {!compact && <strong>{typeof document.metadata.flow_caption === 'string' ? document.metadata.flow_caption : title.replace(/^.+?\s[-–—]\s/, '')}</strong>}
+          <span className="flow-document-number">{document.number}</span>
+          <span className="flow-document-footer">
+            <span className="flow-document-status"><Icon size={14} />{statusLabel[document.status] || document.status}</span>
+            {inputs.length > 1 && <span className="flow-input-count" aria-label={`${inputs.length} documente legate`} title={inputSummary}>
+              <ArrowRight size={12} />{inputs.length}
+            </span>}
+          </span>
+        </button>
+      </article>;
+    })}
+    {graph.edges.length > 0 && <ul className="sr-only">{graph.edges.map((edge) => <li key={edge.id}>
+      {readableFlowLabel(nodeMap.get(edge.source)!.document.title)} → {readableFlowLabel(nodeMap.get(edge.target)!.document.title)}
+      {edge.label && ` · ${edge.label}`}
+    </li>)}</ul>}
+  </div>;
 }
 
-export function DocumentFlow({
-  data,
-  caseId,
-  onSelectCase,
-  onOpen,
-  onShowRegister,
-}: {
-  data: DocumentFlowData;
-  caseId: string;
-  onSelectCase: (id: string) => void;
-  onOpen: (id: string) => void;
-  onShowRegister: () => void;
+function caseInfo(graph: FlowGraphGroup) {
+  const primary = graph.nodes.find((node) => node.document.flow.document_type === 'Contract') || graph.nodes[0];
+  const metadata = primary.document.metadata;
+  return {
+    name: typeof metadata.flow_case_name === 'string' ? metadata.flow_case_name : readableFlowLabel(primary.document.title).replace(/^.+?\s[-–—]\s/, ''),
+    summary: typeof metadata.flow_case_summary === 'string' ? metadata.flow_case_summary : '',
+    demo: metadata.flow_demo === true,
+    attention: graph.nodes.filter(({document}) => ['rejected', 'in_review', 'pending', 'expired'].includes(document.status)).length,
+  };
+}
+
+export function DocumentFlow({ data, caseId, onSelectCase, onOpen, onShowRegister }: {
+  data: DocumentFlowData; caseId: string; onSelectCase: (id: string) => void;
+  onOpen: (id: string) => void; onShowRegister: () => void;
 }) {
   const graphs = useMemo(() => buildFlowGraphs(data.stages), [data.stages]);
-
-  return (
-    <section className="document-flow" aria-label="Fluxul documentelor de achiziție">
-      <div className="flow-toolbar">
-        <div>
-          <h2>Dosare de achiziție</h2>
-        </div>
-        <label className="flow-case-filter">
-          <span><FolderOpen size={15} /> Dosar de achiziție</span>
-          <select aria-label="Dosar de achiziție" value={caseId} onChange={(event) => onSelectCase(event.target.value)}>
-            <option value="">Toate dosarele</option>
-            {caseId && !data.cases.some((item) => item.id === caseId) && (
-              <option value={caseId}>{caseId} (0)</option>
-            )}
-            {data.cases.map((item) => (
-              <option key={item.id} value={item.id}>{item.label} ({item.count})</option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div className="flow-summary" role="status">
-        <span>
-          <strong>{graphs.length}</strong> dosare
-          <span className="meta-dot">·</span>{data.classified_total} documente
-        </span>
-        {caseId && <button className="text-button" onClick={() => onSelectCase("")}>Vezi toate dosarele</button>}
-      </div>
-      <div className="flow-legend">
-        <span><ArrowRight size={25} /> Flux între documente</span>
-        <span><i /> Document asociat</span>
-        <span className="flow-scroll-hint">Derulează diagrama pentru a vedea toate etapele</span>
-      </div>
-      <div
-        className="flow-chart-scroll"
-        role="region"
-        aria-label="Diagrama cu cele patru etape ale fluxului"
-        tabIndex={0}
-      >
-        <div className="flow-chart">
-          <div className="flow-stage-headings">
-            {data.stages.map((stage, index) => {
-              const Icon = stageIcons[stage.id];
-              return (
-                <section className={`flow-stage flow-stage-${stage.id}`} key={stage.id} aria-labelledby={`flow-heading-${stage.id}`}>
-                  <div className="flow-stage-header">
-                    <div className="flow-stage-step">
-                      <span className="flow-stage-icon"><Icon size={21} /></span>
-                      <span>ETAPA {index + 1}</span>
-                    </div>
-                    <div className="flow-stage-title">
-                      <h3 id={`flow-heading-${stage.id}`}>{stage.label}</h3>
-                      <span className="flow-stage-count" aria-label={`${stage.count} documente`}>{stage.count}</span>
-                    </div>
-                  </div>
-                </section>
-              );
-            })}
+  const [selected, setSelected] = useState('');
+  const active = graphs.find((graph) => graph.id === selected) || graphs[0];
+  const info = active ? caseInfo(active) : undefined;
+  const headingId = useId();
+  return <section className="document-flow" aria-label="Fluxul documentelor de achiziție" style={geometry}>
+    <div className="flow-toolbar">
+      <div><h2>Flux achiziții</h2><p role="status">{graphs.length} dosare <span className="meta-dot">·</span> {data.classified_total} documente</p></div>
+      <label className="flow-case-filter"><FolderOpen size={16} />
+        <select aria-label="Dosar de achiziție" value={caseId} onChange={(event) => onSelectCase(event.target.value)}>
+          <option value="">Toate dosarele</option>
+          {caseId && !data.cases.some((item) => item.id === caseId) && <option value={caseId}>{caseId} (0)</option>}
+          {data.cases.map((item) => <option key={item.id} value={item.id}>{readableFlowLabel(item.label)} ({item.count})</option>)}
+        </select>
+      </label>
+    </div>
+    <div className="flow-workspace">
+      <nav className="flow-case-nav" aria-label="Dosare de achiziție">
+        {graphs.map((graph) => {
+          const item = caseInfo(graph);
+          return <button key={graph.id} className="flow-case-choice" aria-pressed={active?.id === graph.id}
+            onClick={() => setSelected(graph.id)}>
+            <span className="flow-choice-id">{graph.label}</span><strong>{item.name}</strong>
+            <span className="flow-choice-meta">{graph.nodes.length} documente{item.attention > 0 && <span><Clock3 size={11} />{item.attention} de verificat</span>}</span>
+          </button>;
+        })}
+        {caseId && <button className="text-button" onClick={() => onSelectCase('')}>Toate dosarele</button>}
+      </nav>
+      <div className="flow-selected-case">
+        {active && info && <>
+          <div className="flow-case-intro"><div><h3>{info.name}</h3>{info.summary && <p>{info.summary}</p>}</div>
+            {info.demo && <span className="flow-demo-label">Demonstrație</span>}
           </div>
-          {graphs.map((graph,index) => (
-            graphs.length===1?<FlowCaseChart key={graph.id} graph={graph} onOpen={onOpen} onSelectCase={onSelectCase}/>:<FlowCaseFolder key={graph.id} graph={graph} onOpen={onOpen} onSelectCase={onSelectCase} initiallyOpen={index===0}/>
-          ))}
-          {!graphs.length && (
-            <div className="flow-empty-diagram">Niciun document în această selecție</div>
-          )}
+          <div className="flow-legend"><span><ArrowRight size={22} />Documente legate</span><span><i />Referință</span>
+            {active.edges.some((edge) => edge.kind === 'correction') && <span><i className="flow-correction-key" />Retur / corecție</span>}
+            <span className="flow-scroll-hint">Derulează pentru toate coloanele</span>
+          </div>
+          <div className="flow-chart-scroll" role="region" aria-label="Diagrama fluxului de achiziții" tabIndex={0}>
+            <div className="flow-chart">
+              <div className="flow-lanes" aria-hidden="true">{stages.map(({ id }) => <div key={id} className="flow-lane" />)}</div>
+              <div className="flow-stage-headings"><div className="flow-stage-columns">
+                {stages.map(({id, label, Icon}) => {
+                  const count = active.nodes.filter((node) => node.stage === id).length;
+                  return <section className="flow-stage" key={id} aria-labelledby={`${headingId}-${id}`}>
+                    <Icon size={18} /><h3 id={`${headingId}-${id}`}>{label}</h3><span className="flow-stage-count" aria-label={`${count} documente`}>{count}</span>
+                  </section>;
+                })}
+              </div></div>
+              <section className="flow-case-graph" aria-label={active.label} data-graph-id={active.id}>
+                <FlowCaseChart key={active.id} graph={active} onOpen={onOpen} />
+              </section>
+            </div>
+          </div>
+        </>}
+        {!active && <div className="flow-empty-diagram">Niciun document în această selecție</div>}
         </div>
-      </div>
-      <div className="flow-note">
-        {data.unclassified_total > 0 && (
-          <span className="flow-other-documents">
-            {data.unclassified_total} documente în afara fluxului
-            <button className="text-button" onClick={onShowRegister}>Vezi registrul <ArrowUpRight size={14} /></button>
-          </span>
-        )}
-      </div>
-    </section>
-  );
+    </div>
+    {data.unclassified_total > 0 && <div className="flow-note"><span>{data.unclassified_total} documente în afara fluxului</span>
+      <button className="text-button" onClick={onShowRegister}>Vezi registrul <ArrowUpRight size={14} /></button>
+    </div>}
+  </section>;
 }
