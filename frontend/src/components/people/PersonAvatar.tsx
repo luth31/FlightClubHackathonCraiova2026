@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent} from 'react';
+import {useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {Building2, Check, ChevronDown, Copy, LogOut, Mail, UserRound, X} from 'lucide-react';
 import {date, initials, roleLabel} from '@/utils/format';
@@ -21,7 +21,7 @@ export function PersonStatus({person}: {person: Person}) {
   return <span className={`availability availability-${status}`}><i aria-hidden="true"/>{status === 'offline' ? 'Offline' : presenceLabels[status]}</span>;
 }
 
-export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled, openOnFocus = true}: {
+export function PersonAvatar({userId, name, person, referenceDate, className = 'avatar', style, externalAirport, accountRole, disabled, openOnFocus = true, children, fallbackDetails, action}: {
   userId?: string;
   name: string;
   person?: Person;
@@ -32,6 +32,9 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
   accountRole?: string;
   disabled?: boolean;
   openOnFocus?: boolean;
+  children?: ReactNode;
+  fallbackDetails?: {title?: string; fields: {label: string; value: string}[]};
+  action?: {label: string; onSelect: () => void};
 }) {
   const directory = usePersonDirectory();
   // Audit entries can contain names rather than IDs. Ambiguous names stay unresolved.
@@ -156,7 +159,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
       className={`person-avatar-trigger ${accountRole ? 'person-account-trigger' : ''} ${className}`}
       style={style}
       disabled={disabled}
-      aria-label={`Vezi profilul: ${name}`}
+      aria-label={`${action?.label || 'Vezi profilul'}: ${name}`}
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-controls={open ? id : undefined}
@@ -168,7 +171,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
       onPointerLeave={scheduleClose}
       onFocus={() => { if (openOnFocus && !suppressFocus.current) show(); }}
       onBlur={blur}
-      onClick={event => { event.stopPropagation(); show(); }}
+      onClick={event => { event.preventDefault(); event.stopPropagation(); if (action) {close(); action.onSelect();} else show(); }}
       onKeyDown={event => {
         if (event.key === 'Tab' && open && !event.shiftKey) {
           const first = card.current?.querySelector<HTMLElement>(focusable);
@@ -176,7 +179,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
         }
       }}
     >
-      {accountRole ? <>
+      {children || (accountRole ? <>
         <span className="avatar person-account-avatar" aria-hidden="true">
           <ProfileImage url={personal.photo_url} name={name}/>
           {profile && <span className={`person-presence person-presence-${status}`}/>}
@@ -186,7 +189,7 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
       </> : <>
         <ProfileImage url={personal.photo_url} name={name}/>
         {profile && !externalAirport && <span className={`person-presence person-presence-${status}`} aria-hidden="true"/>}
-      </>}
+      </>)}
     </button>
     {open && createPortal(
       <div
@@ -217,8 +220,8 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
           <span className="person-profile-avatar" aria-hidden="true"><ProfileImage url={personal.photo_url} name={profile?.name || name}/></span>
           <div>
             <h2>{profile?.name || name}</h2>
-            {profile && <p>{roleLabel[profile.job_title] || profile.job_title || roleLabel[profile.role] || profile.role}</p>}
-            {externalAirport ? <span>{externalAirport}</span> : <span className={`person-profile-status person-profile-status-${status}`}><i aria-hidden="true"/>{statusLabel}</span>}
+            {profile ? <p>{roleLabel[profile.job_title] || profile.job_title || roleLabel[profile.role] || profile.role}</p> : fallbackDetails?.title && <p>{fallbackDetails.title}</p>}
+            {externalAirport ? <span>{externalAirport}</span> : profile && <span className={`person-profile-status person-profile-status-${status}`}><i aria-hidden="true"/>{statusLabel}</span>}
           </div>
         </div>
         {!externalAirport && personal.status_message && <p className="person-profile-status-message">{personal.status_message}</p>}
@@ -234,9 +237,12 @@ export function PersonAvatar({userId, name, person, referenceDate, className = '
             {!own && profile.email && <a className="person-profile-email" href={`mailto:${profile.email}`}><Mail size={15}/>Trimite email</a>}
             {!externalAirport && profile.availability === 'away' && <small>În concediu la {date(referenceDate || directory.data?.reference_date)}</small>}
           </div>}
-        </> : <div className="person-profile-message" role="status">
+        </> : fallbackDetails ? <dl className="person-profile-details">
+          {fallbackDetails.fields.map(field => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}
+        </dl> : <div className="person-profile-message" role="status">
           {directory.error ? <>Profilul nu a putut fi încărcat.<button type="button" onClick={directory.refresh}>Încearcă din nou</button></> : !directory.data ? 'Se încarcă profilul…' : 'Informațiile acestei persoane nu sunt disponibile în directorul echipei.'}
         </div>}
+        {action && <div className="person-profile-footer"><button type="button" className="person-profile-email" onClick={() => {close(); action.onSelect();}}>{action.label}</button></div>}
         {own && directory.account && <div className="person-profile-signout">
           <button type="button" className="logout-button person-signout-button" disabled={directory.account.signingOut} aria-busy={directory.account.signingOut} onClick={() => {close(true); void directory.account?.signOut();}}>
             <LogOut size={17}/>{directory.account.signingOut ? 'Se deconectează…' : 'Ieși din cont'}
