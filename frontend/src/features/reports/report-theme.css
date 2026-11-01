@@ -1,20 +1,22 @@
-/* One report palette for controls, charts and source data, in both color schemes. */
-.px-dashboard {
-  --px-canvas: #f1f4f8;
-  --px-surface: #ffffff;
-  --px-subtle: #e9f0f6;
-  --px-hover: #e1edf6;
-  --px-line: #c1d2df;
-  --px-ink: #233f56;
-  --px-muted: #526b7e;
-  --px-accent: #206d9f;
-  --px-teal: #187468;
-  --px-red: #a74659;
-  --px-gold: #88641e;
-  --px-chart-grid: #d5e0e9;
-  --px-chart-selection: #dfecf7;
-  --px-chart-danger: #f8eaed;
-  --px-chart-warning: #fbf4e4;
+/* Reports inherit the workspace theme; navigating here never changes the app palette. */
+.px-dashboard, .px-source-dialog {
+  --px-navy: var(--primary);
+  --px-matrix-ink: var(--text);
+  --px-canvas: var(--background);
+  --px-surface: var(--surface);
+  --px-subtle: var(--surface-subtle);
+  --px-hover: var(--surface-subtle);
+  --px-line: var(--border);
+  --px-ink: var(--ink);
+  --px-muted: var(--muted);
+  --px-accent: var(--primary);
+  --px-teal: var(--accent);
+  --px-red: var(--danger);
+  --px-gold: var(--warning);
+  --px-chart-grid: var(--border);
+  --px-chart-selection: var(--surface-subtle);
+  --px-chart-danger: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  --px-chart-warning: color-mix(in srgb, var(--warning) 10%, var(--surface));
   background: var(--px-canvas);
   border-color: var(--px-line);
   border-radius: 10px;
@@ -26,7 +28,7 @@
 .px-tabs>div:first-child>button { min-height: 40px; background: var(--px-surface); color: var(--px-muted); border-color: var(--px-line); font-size: 11px; }
 .px-tabs>div:first-child>button[aria-current=page] { background: var(--px-navy); color: #fff; border-color: var(--px-navy); }
 .px-tabs>div:first-child>button:hover { background: var(--px-hover); color: var(--px-ink); }
-.px-tabs>div:first-child>button[aria-current=page]:hover { background: #20577e; color: #fff; }
+.px-tabs>div:first-child>button[aria-current=page]:hover { background: var(--primary-hover); color: #fff; }
 .px-dashboard-actions>button { width: 44px; height: 44px; color: var(--px-muted); }
 .px-dashboard-actions>button:hover, .px-panel>header>button:hover { background: var(--px-hover); color: var(--px-accent); }
 .px-dashboard-actions>span { background: var(--px-line); }
@@ -77,79 +79,36 @@
 .px-library-toggle, .px-library-toggle>span:last-child { color: var(--px-ink); }
 .px-library-toggle small { color: var(--px-muted); }
 
-@media screen and (prefers-color-scheme: dark) {
-  html:has(.workspace-view:not([hidden]) .rp-page) {
-    color-scheme: only dark;
-    --ink: #e5edf5;
-    --text: #c6d5e3;
-    --muted: #a8bbcd;
-    --primary: #8dc8f1;
-    --primary-hover: #b8dffc;
-    --accent: #7ed4c7;
-    --surface: #182634;
-    --surface-subtle: #213344;
-    --background: #101b26;
-    --border: #3a5165;
-    --green-soft: #203e3c;
-  }
-  body:has(.workspace-view:not([hidden]) .rp-page), body:has(.workspace-view:not([hidden]) .rp-page) .app-main { background: var(--background); }
-  body:has(.workspace-view:not([hidden]) .rp-page) .sidebar, body:has(.workspace-view:not([hidden]) .rp-page) .topbar { background: var(--surface); border-color: var(--border); }
-  body:has(.workspace-view:not([hidden]) .rp-page) .sidebar nav button.active { background: #28465e; color: #e5edf5; }
-  body:has(.workspace-view:not([hidden]) .rp-page) .sidebar nav button.active svg { color: #8dc8f1; }
-  .rp-page { --rp-accent: #8dc8f1; --rp-soft: #213344; --rp-line: #3a5165; --rp-muted: #a8bbcd; }
-  .px-dashboard, .px-source-dialog {
-    --px-navy: #1c3c59;
-    --px-canvas: #101b26;
-    --px-surface: #182634;
-    --px-subtle: #213344;
-    --px-hover: #253e52;
-    --px-line: #3a5165;
-    --px-ink: #e5edf5;
-    --px-muted: #a8bbcd;
-    --px-accent: #8dc8f1;
-    --px-teal: #7ed4c7;
-    --px-red: #f2a2b0;
-    --px-gold: #ebca83;
-    --px-chart-grid: #3a5165;
-    --px-chart-selection: #253e52;
-    --px-chart-danger: #382b38;
-    --px-chart-warning: #343125;
-    --px-matrix-ink: #e5edf5;
-    color: var(--px-ink);
-  }
-  .px-masthead { background: var(--px-navy); border-top-color: #8dc8f1; }
-  .px-data-note { background: var(--px-canvas); }
-  .px-matrix td>button { color: var(--px-ink); }
-  .px-source-dialog { background: var(--px-surface); border-color: var(--px-line); }
-  .px-source-content>header { background: var(--px-navy); border-color: var(--px-line); }
-  .rp-page .bi-report { --bi-accent: #8dc8f1; --bi-grid: #3a5165; --bi-muted: #a8bbcd; --bi-background: #101b26; --forest: #8dc8f1; border-color: var(--bi-grid); }
-  .rp-page .bi-filter-pane, .bi-view-nav, .bi-report-footer, .bi-period button, .bi-filter-pane select { background: var(--surface); border-color: var(--border); color: var(--ink); }
-  .rp-page .bi-panel { border-color: var(--border); }
-  .bi-brief { background: #203e3c; border-color: #436963; color: #c9efe8; }
-  .bi-brief.attention { background: #343125; border-color: #756443; color: #ebca83; }
-  .bi-brief span, .bi-brief p, .bi-brief button { color: inherit; }
-  .rp-register, .rp-secondary-button, .rp-table-search, .rp-table-controls select { background: var(--surface); color: var(--ink); border-color: var(--border); }
-  .rp-register th, .rp-register tbody tr:hover { background: var(--surface-subtle); }
-  .rp-register td, .rp-register th, .rp-panel-title, .rp-table-controls { border-color: var(--border); }
-  .rp-row-title, .rp-panel-title h3 { color: var(--ink); }
-  .rp-register td, .rp-row-title small { color: var(--text); }
-  .rp-register th, .rp-register th button { color: var(--text); }
-  .rp-register td.rp-overdue { color: #f2a2b0; }
-  .rp-state { background: var(--surface-subtle); color: var(--text); }
-  .rp-state-approved, .rp-state-signed, .rp-state-active, .rp-state-completed { background: #203e3c; color: #7ed4c7; }
-  .rp-state-pending, .rp-state-in_review, .rp-state-needs_review { background: #343125; color: #ebca83; }
-  .rp-state-rejected, .rp-state-expired, .rp-state-revoked { background: #382b38; color: #f2a2b0; }
-  .px-library .db-library { --db-ink: #e5edf5; --db-muted: #a8bbcd; --db-line: #3a5165; }
-  .px-library .db-report-card, .db-library-tools label { background: var(--surface); border-color: var(--border); }
-  .px-library .db-mini-chart, .px-library .db-report-icon { background: var(--surface-subtle); }
-  .px-library .db-library h2, .px-library .db-card-main h3, .px-library .db-card-metric strong { color: var(--ink); }
-  .px-library .db-card-main p, .px-library .db-card-metric span, .px-library .db-eyebrow { color: var(--muted); }
-  .px-library .db-library-tools input, .px-library .db-category-tabs button, .px-library .db-category-tabs>span, .px-library .db-report-card>footer { color: var(--text); }
-  .px-library .db-favorites, .px-library .db-library-tools>label { background: var(--surface); color: var(--text); border-color: var(--border); }
-  .px-library .db-favorites[aria-pressed=true], .px-library .db-category-tabs button:hover { background: var(--surface-subtle); color: var(--ink); }
-  .px-library .db-category-tabs, .px-library .db-card-metric { border-color: var(--border); }
-  .px-library .db-report-card:hover { transform: none; border-color: var(--px-accent); }
-}
+.rp-page { --rp-accent: var(--primary); --rp-soft: var(--surface-subtle); --rp-line: var(--border); --rp-muted: var(--muted); }
+.px-masthead { border-top-color: var(--accent); }
+.px-source-dialog { color: var(--ink); }
+.px-source-content>header { background: var(--primary); border-color: var(--border); }
+.rp-page .bi-report { --bi-accent: var(--primary); --bi-grid: var(--border); --bi-muted: var(--muted); --bi-background: var(--background); --forest: var(--primary); border-color: var(--border); }
+.rp-page .bi-report-header { background: var(--primary); }
+.rp-page .bi-panel, .rp-page .bi-filter-pane { border-color: var(--border); }
+.rp-page .bi-filter-pane { background: var(--surface-subtle); }
+.rp-page .bi-toolbar button { background: var(--primary-hover); }
+.rp-page .bi-toolbar .bi-export-button { background: var(--surface); color: var(--primary); }
+.bi-view-nav, .bi-report-footer, .bi-filter-pane select { background: var(--surface); border-color: var(--border); }
+.rp-register, .rp-secondary-button, .rp-table-search, .rp-table-controls select { background: var(--surface); color: var(--ink); border-color: var(--border); }
+.rp-register th, .rp-register tbody tr:hover { background: var(--surface-subtle); }
+.rp-register td, .rp-register th, .rp-panel-title, .rp-table-controls { border-color: var(--border); }
+.rp-row-title, .rp-panel-title h3 { color: var(--ink); }
+.rp-register th, .rp-register th button, .rp-register td, .rp-row-title small { color: var(--text); }
+.rp-register td.rp-overdue { color: var(--danger); }
+.px-library .db-library { --db-ink: var(--ink); --db-muted: var(--muted); --db-line: var(--border); }
+.px-library .db-report-card, .px-library .db-library-tools>label, .px-library .db-favorites { background: var(--surface); border-color: var(--border); }
+.px-library .db-mini-chart, .px-library .db-report-icon { background: var(--surface-subtle); }
+.px-library .db-library h2, .px-library .db-card-main h3, .px-library .db-card-metric strong { color: var(--ink); }
+.px-library .db-card-main p, .px-library .db-card-metric span, .px-library .db-eyebrow { color: var(--muted); }
+.px-library .db-library-tools input, .px-library .db-category-tabs button, .px-library .db-category-tabs>span, .px-library .db-report-card>footer, .px-library .db-favorites { color: var(--text); }
+.px-library .db-category-tabs>button[aria-pressed=true] { background: var(--primary); color: var(--surface); }
+.px-library .db-favorites[aria-pressed=true], .px-library .db-category-tabs button:hover { background: var(--surface-subtle); color: var(--ink); }
+.px-library .db-category-tabs, .px-library .db-card-metric { border-color: var(--border); }
+.px-library .db-report-card:hover { transform: none; border-color: var(--primary); }
+.rp-skeleton>span { background: var(--border); }
+.rp-skeleton i { background-image: linear-gradient(90deg, var(--surface-subtle), var(--surface), var(--surface-subtle)); }
+
 @media (max-width: 600px) {
   .px-dashboard-actions>button { width: 40px; height: 44px; }
   .px-tabs>div:first-child>button { min-height: 44px; font-size: 10px; white-space: normal; }
