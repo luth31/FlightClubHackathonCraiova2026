@@ -94,8 +94,8 @@ def test_concurrent_leave_decisions_commit_once(client, monkeypatch, db):
 
     monkeypatch.setattr(people_service, 'can_review_leave', delayed_check)
     with TestClient(app) as first, TestClient(app) as second:
-        login(first, 'admin')
-        login(second, 'hr')
+        login(first, 'technical-head')
+        login(second, 'technical-head')
         start = Barrier(2)
 
         def decide(pair):

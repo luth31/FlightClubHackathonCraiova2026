@@ -11,6 +11,8 @@ def test_directory_does_not_expose_passwords_or_unrelated_leave(client):
     assert not result['can_manage_accounts']
     assert all('password_hash' not in p for p in result['items'])
     assert all(item['user_id'] == 'technician' for item in result['leaves'])
+    assert any(item['user_id'] == 'manager' for item in result['leave_calendar'])
+    assert all('reason' not in item and 'document_id' not in item for item in result['leave_calendar'])
 
 
 def test_leave_requires_independent_reviewer(client):
@@ -21,6 +23,8 @@ def test_leave_requires_independent_reviewer(client):
     leave_id = created.json()['id']
     assert client.post(f'/api/people/leave/{leave_id}/decision', json={'action': 'approve'}).status_code == 403
     login(client, 'hr')
+    assert client.post(f'/api/people/leave/{leave_id}/decision', json={'action': 'approve'}).status_code == 403
+    login(client, 'technical-head')
     assert client.post(f'/api/people/leave/{leave_id}/decision', json={'action': 'reject'}).status_code == 422
     assert client.post(f'/api/people/leave/{leave_id}/decision', json={'action': 'approve'}).status_code == 200
     assert client.post(f'/api/people/leave/{leave_id}/decision', json={'action': 'approve'}).status_code == 409
