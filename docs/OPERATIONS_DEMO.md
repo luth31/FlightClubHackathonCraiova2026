@@ -14,6 +14,8 @@ Rehearse a second run with the assigned worker or a reserve present and G1 opene
 
 **Replay automat** is a separate reset option for hands-free rehearsal. Never describe replay-generated scans as live card readings.
 
+The draggable time axis spans 08:00–09:00. Drag its handle or use arrow keys for one-second inspection; event markers and previous/next buttons jump to milestones for the selected flight, including the substitute's NFC check-in. The map, staffing, gate state and KPIs follow the inspected time. **Istoric** reviews recorded events and **Proiecție** previews existing scenario rules. **Revino la tură** restores the active shift; **Avansează tura aici** explicitly applies a future time. Scrubbing preserves recorded history and pauses a running shift for authorized operators. The axis is separate from live ADS-B traffic.
+
 ## iPhone cards with NFC Tools
 
 The station works in the browser; no native iOS application is claimed. iOS can open a supported NFC tag's URL. Safari does not expose the Android Web NFC scanning API. See [Apple background tag reading](https://developer.apple.com/documentation/corenfc/adding-support-for-background-tag-reading) and [NFC Tools URL-writing instructions](https://www.wakdev.com/en/knowledge-base/how-to-guides/how-to-write-a-link-url-on-an-nfc-chip.html).

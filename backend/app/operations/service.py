@@ -1,6 +1,7 @@
 """Persisted, replayable scenario events with a server-owned simulation clock."""
 from datetime import datetime, timedelta, timezone
 from math import ceil, floor
+from types import SimpleNamespace
 from uuid import uuid4
 
 from sqlalchemy import case, func, select
@@ -148,19 +149,10 @@ def pending_events(events, scenario_mode='interactive'):
     return sorted(result, key=lambda item: (item[0], item[1]))
 
 
-def synchronize(db, state, user, *, target=None):
-    current_time = utc_now()
-    elapsed = state.elapsed_seconds
-    if target is None:
-        if state.running:
-            wall_seconds = max(0, (current_time - datetime.fromisoformat(state.updated_at)).total_seconds())
-            elapsed += wall_seconds * state.speed
-    else:
-        elapsed = max(elapsed, target)
-    elapsed = min(DURATION_SECONDS, elapsed)
-    events = event_rows(db, state)
+def materialize_events(events, scenario_mode, user, elapsed, append):
+    """Use the same scenario rules for committed time and read-only previews."""
     while True:
-        pending = pending_events(events, state.scenario_mode)
+        pending = pending_events(events, scenario_mode)
         if not pending or pending[0][0] > elapsed:
             break
         seconds, key, kind, payload, title, detail = pending[0]
@@ -192,8 +184,24 @@ def synchronize(db, state, user, *, target=None):
             delayed = max(0, ready-1200)/60 if ready is not None else None
             detail = (f'FL101: {delayed:g} minute întârziere. Cauza și intervențiile sunt urmărite în jurnal; lecția poate informa o procedură.'
                       if delayed is not None else 'Poarta G1 nu a fost deschisă. Jurnalul păstrează evenimentele și intervențiile operatorului.')
-        event = append_event(db, state, user, kind, seconds, title, detail, key=key, payload=payload)
+        event = append(kind, seconds, title, detail, key=key, payload=payload)
         events.append(event)
+    return events
+
+
+def synchronize(db, state, user, *, target=None):
+    current_time = utc_now()
+    elapsed = state.elapsed_seconds
+    if target is None:
+        if state.running:
+            wall_seconds = max(0, (current_time - datetime.fromisoformat(state.updated_at)).total_seconds())
+            elapsed += wall_seconds * state.speed
+    else:
+        elapsed = max(elapsed, target)
+    elapsed = min(DURATION_SECONDS, elapsed)
+    events = event_rows(db, state)
+    materialize_events(events, state.scenario_mode, user, elapsed,
+        lambda *args, **kwargs: append_event(db, state, user, *args, **kwargs))
     if elapsed != state.elapsed_seconds or state.running:
         state.elapsed_seconds = elapsed
         state.updated_at = current_time.isoformat()
@@ -316,6 +324,37 @@ def get_snapshot(db, user):
             db.rollback()
             if attempt == 2:
                 raise DomainError('Simularea s-a actualizat simultan. Reîncarcă starea.', 409)
+
+
+def timeline_preview(db, user, at_seconds, run_id):
+    """Reconstruct the past or project known rules without writing clock/audit state."""
+    airport_for(user)
+    state = db.get(OperationSimulation, user.airport_id)
+    if state is None or state.run_id != run_id:
+        raise DomainError('Tura s-a schimbat. Reîncarcă axa temporală.', 409)
+    if not 0 <= at_seconds <= DURATION_SECONDS:
+        raise DomainError('Alege un moment între 08:00 și 09:00.', 422)
+    events = event_rows(db, state)
+    recorded_ids = {event.id for event in events}
+
+    def project(kind, seconds, title, detail, *, key, payload):
+        return SimpleNamespace(id='preview-'+key, run_id=state.run_id, sequence=len(events)+1,
+            elapsed_seconds=seconds, recorded_at=None, kind=kind, source='projection',
+            event_key=key, title=title, detail=detail, actor_id='simulation', actor='Proiecție',
+            flight_id=payload.get('flight_id'), gate_id=payload.get('gate_id'),
+            staff_id=payload.get('staff_id'), payload=payload)
+
+    materialize_events(events, state.scenario_mode, user, DURATION_SECONDS, project)
+    preview_state = SimpleNamespace(**{key:getattr(state,key) for key in
+        ('scenario_mode','run_id','revision','speed','created_at','updated_at')},
+        running=False, elapsed_seconds=at_seconds)
+    result = snapshot(db, preview_state, user, [event for event in events if event.elapsed_seconds <= at_seconds])
+    result['permissions']['can_control'] = False
+    result['timeline'] = {'current_seconds':state.elapsed_seconds, 'at_seconds':at_seconds,
+        'projected':at_seconds > state.elapsed_seconds,
+        'events':[{**serialize_event(event), 'projected':event.id not in recorded_ids}
+                  for event in events if not event.kind.startswith('simulation_')]}
+    return result
 
 
 def can_control(user):

@@ -261,3 +261,92 @@ def test_semantic_mutation_retry_is_bounded_and_domain_errors_are_not_retried(op
         with pytest.raises(DomainError) as error:
             service.input_event(db,user,EventInput(kind='nfc_check_in',staff_id='unknown'))
         assert error.value.status==422 and len(attempts)==1
+
+
+def test_timeline_projection_matches_replay_without_persisting_clock_or_events(ops):
+    factory, user = ops
+    with factory() as db:
+        initial = service.control(db, user, ControlInput(action='reset', scenario_mode='replay'))
+        before_audit = list(db.scalars(select(AuditEvent.id)))
+        preview = service.timeline_preview(db, user, 2400, initial['simulation']['run_id'])
+        assert preview['timeline']['projected']
+        assert preview['permissions']['can_control'] is False
+        assert flight(preview)['actual_departure_seconds'] == 2280
+        assert flight(preview)['phase'] == 'taxiing'
+        assert flight(preview)['delay_minutes'] == 18
+        assert all(event['projected'] for event in preview['timeline']['events'])
+        assert service.get_snapshot(db, user) == initial
+        assert list(db.scalars(select(AuditEvent.id))) == before_audit
+        advanced = service.control(db, user, ControlInput(action='advance_to', target_seconds=2400))
+        assert preview['kpis'] == advanced['kpis']
+        assert flight(preview)['position'] == flight(advanced)['position']
+        assert [{key:value for key,value in person.items() if key!='last_event_id'} for person in preview['staff']] == [{key:value for key,value in person.items() if key!='last_event_id'} for person in advanced['staff']]
+
+
+def test_timeline_rewinds_nfc_gates_and_departures_without_erasing_history(ops):
+    factory, user = ops
+    with factory() as db:
+        service.control(db, user, ControlInput(action='advance_to', target_seconds=1320))
+        service.input_event(db, user, EventInput(kind='nfc_check_in', staff_id='staff-relief'))
+        service.input_event(db, user, EventInput(kind='gate_open', staff_id='staff-relief', gate_id='G1'))
+        current = service.control(db, user, ControlInput(action='advance_to', target_seconds=2500))
+        run = current['simulation']['run_id']
+        before = service.timeline_preview(db, user, 1319, run)
+        assert not next(person for person in before['staff'] if person['id']=='staff-relief')['present']
+        assert not before['gates'][0]['open']
+        assert flight(before)['actual_departure_seconds'] is None
+        assert before['kpis']['departed_flights'] == 0
+        after = service.timeline_preview(db, user, 1320, run)
+        assert after['gates'][0]['open']
+        assert flight(after)['phase']=='boarding'
+        assert flight(after)['actual_departure_seconds'] is None
+        assert not after['timeline']['projected']
+        assert any(event['kind']=='gate_open' and not event['projected'] for event in after['timeline']['events'])
+        assert service.get_snapshot(db, user) == current
+
+
+def test_timeline_interactive_projection_never_fabricates_attendance_or_departures(ops):
+    factory, user = ops
+    with factory() as db:
+        current = service.get_snapshot(db, user)
+        preview = service.timeline_preview(db, user, 3600, current['simulation']['run_id'])
+        assert not any(person['present'] for person in preview['staff'])
+        assert not any(gate['open'] for gate in preview['gates'])
+        assert preview['kpis']['departed_flights'] == 0
+        assert all(event['kind'] not in ('nfc_check_in','gate_open','departure') for event in preview['events'])
+        assert flight(preview,'flight-404')['phase']=='at_gate'
+
+
+def test_timeline_readers_stale_runs_and_running_clock(ops, monkeypatch):
+    factory, user = ops
+    now = datetime(2026, 11, 1, tzinfo=timezone.utc)
+    monkeypatch.setattr(service,'utc_now',lambda:now)
+    with factory() as db:
+        current = service.control(db, user, ControlInput(action='start',speed=30))
+        user.roles=['hr']
+        now += timedelta(seconds=30)
+        preview = service.timeline_preview(db,user,600,current['simulation']['run_id'])
+        assert preview['permissions']['can_control'] is False
+        db.expire_all()
+        assert db.get(OperationSimulation,'craiova').elapsed_seconds == 0
+        assert db.get(OperationSimulation,'craiova').running is True
+        with pytest.raises(DomainError) as error:
+            service.timeline_preview(db,user,600,'previous-run')
+        assert error.value.status==409
+        foreign=SimpleNamespace(airport_id='sibiu',roles=['director'])
+        with pytest.raises(DomainError) as error:
+            service.timeline_preview(db,foreign,600,current['simulation']['run_id'])
+        assert error.value.status==403
+
+
+def test_timeline_http_authentication_and_bounds(client):
+    assert client.get('/api/operations/timeline?at_seconds=10&run_id=unknown').status_code==401
+    client.post('/api/auth/login',json={'user_id':'admin','password':'FlyLeaf2026!'})
+    current=client.get('/api/operations').json()
+    run=current['simulation']['run_id']
+    response=client.get(f'/api/operations/timeline?at_seconds=900&run_id={run}')
+    assert response.status_code==200,response.text
+    assert response.json()['simulation']['elapsed_seconds']==900
+    assert client.get(f'/api/operations/timeline?at_seconds=-1&run_id={run}').status_code==422
+    assert client.get(f'/api/operations/timeline?at_seconds=3601&run_id={run}').status_code==422
+    assert client.get('/api/operations/timeline?at_seconds=10&run_id=old').status_code==409

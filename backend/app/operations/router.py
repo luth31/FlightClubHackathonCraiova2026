@@ -17,6 +17,12 @@ def get_operations(user=Depends(current_user), db: Session=Depends(get_db)):
     return service.get_snapshot(db, user)
 
 
+@router.get('/timeline')
+def simulation_timeline(at_seconds: int=Query(ge=0, le=3600), run_id: str=Query(min_length=1, max_length=100),
+                        user=Depends(current_user), db: Session=Depends(get_db)):
+    return service.timeline_preview(db, user, at_seconds, run_id)
+
+
 @router.post('/control')
 def control_operations(body: ControlInput, user=Depends(current_user), db: Session=Depends(get_db)):
     return service.control(db, user, body)
