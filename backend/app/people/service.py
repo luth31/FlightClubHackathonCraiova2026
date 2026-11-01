@@ -6,6 +6,7 @@ from app.core.exceptions import DomainError
 from app.core.security import has_role, require_role, user_dict
 from app.people.models import User, Delegation, LeaveRequest, Session, HeadAppointment, UserProfile
 from app.people import profile as person_profiles
+from app.people.leave_routing import can_delegate_approvals, hierarchy_reviewers, leave_routes
 
 
 def local_user(db, user_id, active=False):
@@ -42,16 +43,25 @@ def delegation_dict(db, item):
     return {'id': item.id, 'from_user': item.from_user, 'to_user': item.to_user,
             'from_name': source.name if source else '', 'to_name': target.name if target else '',
             'starts_at': item.starts_at, 'ends_at': item.ends_at, 'reason': item.reason,
-            'active': item.active, 'status': state, 'scope': 'Aprobări în departamentul delegantului'}
+            'active': item.active, 'status': state, 'scope': 'Aprobări departamentale și concediile coordonate'}
+
+
+def leave_reviewers(db, subject):
+    return [route.reviewer for route in leave_routes(db, subject)]
 
 
 def can_review_leave(db, user, leave):
-    if leave.user_id == user.id:
-        return False
     subject = local_user(db, leave.user_id)
-    from app.people.management import is_head
-    return has_role(user, 'hr', 'director') or (is_head(db, user, subject.department) or
-        (has_role(user, 'reviewer', 'department_head') and getattr(subject, 'manager_id', None) == user.id))
+    return bool(user.active and user.airport_id == subject.airport_id
+                and any(person.id == user.id for person in leave_reviewers(db, subject)))
+
+
+def can_view_leave(db, user, leave):
+    subject = local_user(db, leave.user_id)
+    return bool(user.active and user.airport_id == subject.airport_id and (
+        leave.user_id == user.id or leave.approver_id == user.id or has_role(user, 'hr', 'director')
+        or any(person.id == user.id for person in hierarchy_reviewers(db, subject))
+        or can_review_leave(db, user, leave)))
 
 
 def directory(db, user, reference_date=None):
@@ -73,6 +83,7 @@ def directory(db, user, reference_date=None):
     items = []
     for person in users:
         item = employee_dict(db, person)
+        item['can_delegate_approvals'] = can_delegate_approvals(db, person)
         item['profile'] = person_profiles.profile_dict(profiles.get(person.id), presence_time)
         appointment = open_appointments.get(person.department_id)
         item['can_propose_head'] = (can_propose_heads and person.active
@@ -93,13 +104,18 @@ def directory(db, user, reference_date=None):
     delegations = [delegation_dict(db, d) for d in db.scalars(select(Delegation).where(Delegation.from_user.in_(user_ids)))
         if privileged_directory or d.from_user == user.id or d.to_user == user.id]
     leaves = []
+    leave_calendar = []
     for leave in all_leaves:
-        if leave.user_id != user.id and not can_review_leave(db, user, leave):
-            continue
         person = local_user(db, leave.user_id)
+        summary = {'id': leave.id, 'user_id': leave.user_id, 'name': person.name, 'department': person.department,
+            'starts_at': leave.starts_at, 'ends_at': leave.ends_at, 'status': leave.status}
+        if leave.status in ('pending', 'approved'):
+            leave_calendar.append(summary)
+        if not can_view_leave(db, user, leave):
+            continue
         from app.people.leave_documents import reference
-        leaves.append({'id': leave.id, 'user_id': leave.user_id, 'name': person.name, 'department': person.department,
-            'starts_at': leave.starts_at, 'ends_at': leave.ends_at, 'reason': leave.reason, 'status': leave.status,
+        leaves.append({**summary, 'reason': leave.reason,
+            'reviewers': [route.summary() for route in leave_routes(db, person)],
             'approver_id': leave.approver_id, 'can_decide': leave.status == 'pending' and can_review_leave(db, user, leave),
             **reference(db, leave)})
     from app.operations.service import can_control
@@ -107,7 +123,7 @@ def directory(db, user, reference_date=None):
         'can_record_attendance': can_control(user), 'departments': [d['name'] for d in records],
         'organization_leaders': [{'id': person.id, 'name': person.name, 'job_title': person.job_title}
             for person in users if person.active and has_role(person, 'director')],
-        'delegations': delegations, 'leaves': leaves, 'current_user_id': user.id,
+        'delegations': delegations, 'leaves': leaves, 'leave_calendar': leave_calendar, 'current_user_id': user.id,
         'can_manage_accounts': has_role(user, 'admin', 'hr'),
         'can_admin_delegations': has_role(user, 'admin'),
         'can_create_users': has_role(user, 'admin', 'hr'),
@@ -116,7 +132,7 @@ def directory(db, user, reference_date=None):
         'can_view_appointments': can_view_appointments,
         'department_records': records,
         'auth_mode': settings.auth_mode,
-        'can_manage_delegations': has_role(user, 'admin', 'director', 'reviewer', 'department_head'),
+        'can_manage_delegations': has_role(user, 'admin') or can_delegate_approvals(db, user),
         'reference_date': today}
 
 
@@ -124,14 +140,15 @@ def create_delegation(db, user, payload):
     # Serialize overlap checks with insertion: two requests must not create
     # competing delegations from the same authority for the same interval.
     db.execute(text('BEGIN IMMEDIATE'))
-    require_role(user, 'admin', 'director', 'reviewer', 'department_head')
+    if not has_role(user, 'admin') and not can_delegate_approvals(db, user):
+        raise DomainError('Nu ai autoritate de aprobare de delegat.', 403)
     source = local_user(db, payload.from_user, active=True)
     target = local_user(db, payload.to_user, active=True)
     if source.id != user.id and not has_role(user, 'admin'):
         raise DomainError('Poți delega numai propria autoritate.', 403)
     if source.id == target.id:
         raise DomainError('Alege o altă persoană pentru delegare.', 422)
-    if not has_role(source, 'reviewer', 'director', 'department_head') or not has_role(target, 'reviewer', 'director', 'department_head'):
+    if not can_delegate_approvals(db, source) or not can_delegate_approvals(db, target):
         raise DomainError('Delegarea necesită două persoane cu autoritate de aprobare.', 422)
     start, end = payload.starts_at.isoformat(), payload.ends_at.isoformat()
     if end < settings.reference_date.isoformat():
@@ -193,18 +210,20 @@ def decide_leave(db, user, leave_id, payload):
     if not item:
         raise DomainError('Cererea nu a fost găsită.', 404)
     if not can_review_leave(db, user, item):
-        raise DomainError('Cererea necesită aprobarea unei alte persoane autorizate.', 403)
+        raise DomainError('Cererea poate fi decisă de superiorul disponibil sau de înlocuitorul său autorizat. Reîncarcă lista pentru responsabilul curent.', 403)
     if item.status != 'pending':
         raise DomainError('Cererea are deja o decizie.', 409)
     if payload.action == 'reject' and not payload.comment.strip():
         raise DomainError('Explică motivul respingerii.', 422)
     from app.people import leave_documents
+    route = next(route for route in leave_routes(db, local_user(db, item.user_id)) if route.reviewer.id == user.id)
     created_files = []
     try:
         item.status = 'approved' if payload.action == 'approve' else 'rejected'
         item.approver_id = user.id
         document = leave_documents.write_decision(db, user, item, local_user(db, item.user_id), payload.comment.strip(), created_files)
-        record(db, user, 'leave_' + item.status, document, f'Cerere {item.id}; {payload.comment.strip()}')
+        coverage = f' Înlocuitor pentru {route.principal.name} ({route.principal.id}); rutare: {route.via}.' if route.via != 'direct' else ''
+        record(db, user, 'leave_' + item.status, document, f'Cerere {item.id}; {payload.comment.strip()}{coverage}')
         db.commit()
     except Exception:
         db.rollback()

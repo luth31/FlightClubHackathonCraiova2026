@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -80,7 +81,7 @@ export function DashboardPage({
       <div className="page-heading home-heading">
         <div>
           <h1>
-            Bine ai venit, {name.split(" ")[0]}
+            Bine ai venit, <PersonReference name={name}>{name.split(" ")[0]}</PersonReference>
             <span className="greeting-dot">.</span>
           </h1>
         </div>
@@ -180,7 +181,7 @@ export function DashboardPage({
                       </button>
                     )}
                     <small>
-                      {a.actor} <span className="meta-dot">·</span>{" "}
+                      <PersonReference name={a.actor}/> <span className="meta-dot">·</span>{" "}
                       {time(a.created_at)}
                     </small>
                   </div>

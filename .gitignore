@@ -12,6 +12,7 @@ frontend/dist/
 .env.*
 !.env.example
 .DS_Store
+~$*.pptx
 data/*.db*
 data/storage/
 data/qa/

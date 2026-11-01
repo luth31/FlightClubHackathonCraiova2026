@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import {useState, type FormEvent} from 'react';
 import {api} from '@/services/api-client';
 import {ErrorMessage, Modal} from '@/components/ui';
@@ -102,7 +103,7 @@ export function EmployeeDialog({directory, person, onClose, onChanged}: {
     (person?.is_department_head&&p.roles?.includes('director'))));
   const suggestedEmail=workEmail(firstName,lastName);
   const failed=result?.user.provisioning_status==='failed';
-  return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} subtitle="Datele angajatului și accesul său la FlyLeaf." onClose={onClose}>
+  return <Modal title={person?`Fișa lui ${person.name}`:'Un coleg nou în echipă'} titleContent={person?<>Fișa lui <PersonReference person={person}/></>:undefined} subtitle="Datele angajatului și accesul său la FlyLeaf." onClose={onClose}>
     <div className="modal-body">
       {result?<div className="employee-result" aria-live="polite">
         <h3>{failed?'Contul așteaptă activarea':'Angajatul a fost înregistrat'}</h3>

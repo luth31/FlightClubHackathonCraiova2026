@@ -151,8 +151,8 @@ def can_read(user, document, include_assignment=True):
         db = object_session(user) if isinstance(user, User) else None
         leave = linked_leave(db, document) if db else None
         if leave:
-            from app.people.service import can_review_leave
-            return leave.user_id == user.id or can_review_leave(db, user, leave)
+            from app.people.service import can_view_leave
+            return can_view_leave(db, user, leave)
         return has_role(user, 'hr') or is_department_head(user, 'Resurse umane') or document.owner_id == user.id or document.created_by == user.id
     if has_role(user, 'director'):
         return True

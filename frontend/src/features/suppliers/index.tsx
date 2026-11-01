@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowRight,
@@ -766,7 +767,7 @@ export function ReviewDetail({
               <strong>Verificare independentă înregistrată</strong>
               <p>{r.verification_note}</p>
               <small>
-                {r.actors?.verified_by?.name||(r.verified_by === user.id ? user.name : r.verified_by)} ·{" "}
+                <PersonReference name={r.actors?.verified_by?.name||(r.verified_by === user.id ? user.name : r.verified_by)} userId={r.verified_by}/> ·{" "}
                 {r.verified_at ? time(r.verified_at) : ""}
               </small>
             </div>
@@ -783,7 +784,7 @@ export function ReviewDetail({
               </strong>
               <p>{r.decision_note}</p>
               <small>
-                {r.actors?.approved_by?.name||(r.approved_by === user.id ? user.name : r.approved_by)} · {time(r.approved_at!)}
+                <PersonReference name={r.actors?.approved_by?.name||(r.approved_by === user.id ? user.name : r.approved_by)} userId={r.approved_by}/> · {time(r.approved_at!)}
               </small>
             </div>
           </div>

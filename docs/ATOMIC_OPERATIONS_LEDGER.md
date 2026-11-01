@@ -10,9 +10,93 @@ These are domain references, not a claim that all airports use one database sche
 
 ## One event, one operation
 
-`event_rules.py` is the controlled vocabulary. A state-changing event belongs to one activity stream and has allowed prior states, a resulting state, and prerequisite event kinds. Unknown new kinds are rejected. Observations (an unconfirmed staffing situation, a missed deadline) are distinct from physical actions. Control events remain in the run archive.
+[`event_rules.py`](../backend/app/operations/event_rules.py) is the controlled vocabulary. A state-changing event belongs to one activity stream and has allowed prior states, a resulting state, and prerequisite event kinds. Unknown new kinds are rejected. Observations (an unconfirmed staffing situation, a missed deadline) are distinct from physical actions. Control events remain in the run archive.
 
 A flight has independent planning, gate allocation, responsibility, reserve, aircraft, cleaning, fueling, baggage, gate, boarding, load-document and readiness streams. A staff member's attendance is a separate stream. Airport work orders use explicit inspection, lighting, maintenance, shift-handover and SOP-review kinds; there are no newly generated `airport_2_3` actions.
+
+## State machines
+
+The ledger records a **set of cooperating state machines**, rather than one global airport status. Each accepted event changes one subject's state in one activity stream. A flight may have cleaning completed, fueling active and boarding pending at the same time. Boxes below are states; arrow labels are the exact event kinds from the code. Brackets name required earlier events, not actions that run automatically.
+
+### Aircraft movement
+
+```mermaid
+stateDiagram-v2
+  direction TB
+  state "airborne (inbound)" as Inbound
+  state "landed" as Landed
+  state "onblock" as Onblock
+  state "offblock" as Offblock
+  state "airborne (outbound)" as Outbound
+
+  Inbound --> Landed: arrival [flight_scheduled]
+  Landed --> Onblock: aircraft_onblock [flight_scheduled]
+  Onblock --> Offblock: departure [aircraft_ready]
+  Offblock --> Outbound: takeoff [departure]
+```
+
+The two `airborne` boxes distinguish arrival and departure in the drawing; the stored state value is the same. This is a movement sequence, not an instruction to reuse one flight identity for unrelated flight legs. An outbound-only fixture can start its aircraft stream at `landed` before recording `aircraft_onblock`; it does not need an invented landing event. Reaching `onblock` does not start handling automatically, and becoming ready does not automatically record departure.
+
+### Parallel ground activities
+
+```mermaid
+stateDiagram-v2
+  state "Independent activity streams for one flight" as Handling {
+    state "Cleaning" as Cleaning {
+      state "pending" as CleaningPending
+      state "active" as CleaningActive
+      state "completed" as CleaningCompleted
+      [*] --> CleaningPending
+      CleaningPending --> CleaningActive: cleaning_started [aircraft_onblock]
+      CleaningActive --> CleaningCompleted: cleaning_complete [cleaning_started]
+    }
+    --
+    state "Fueling" as Fueling {
+      state "pending" as FuelPending
+      state "active" as FuelActive
+      state "completed" as FuelCompleted
+      [*] --> FuelPending
+      FuelPending --> FuelActive: fuel_started [aircraft_onblock]
+      FuelActive --> FuelCompleted: fuel_ready [fuel_started]
+    }
+    --
+    state "Baggage handling" as Baggage {
+      state "pending" as BaggagePending
+      state "active" as BaggageActive
+      state "completed" as BaggageCompleted
+      [*] --> BaggagePending
+      BaggagePending --> BaggageActive: baggage_loading_started [aircraft_onblock]
+      BaggageActive --> BaggageCompleted: baggage_loaded [baggage_loading_started]
+    }
+  }
+```
+
+The separated regions can progress independently. The initial markers mean each stream defaults to `pending` before its first event; they do not persist an operation. One stream completing does not complete the others. This diagram describes the implemented concurrency model, not permission to perform every combination of ground activities under a real airport's safety procedures.
+
+### Responsibility, access and departure guards
+
+These related machines supply the conditions for the movement and handling diagrams. `assigned → assigned` still records a meaningful atomic change: the responsible person changes, with the previous assignee retained in the audit.
+
+| Stream / subject | State transitions | Required evidence or guard |
+| --- | --- | --- |
+| Planning / flight | `unscheduled` → `scheduled` via `flight_scheduled` | Identified flight |
+| Gate allocation / flight | `unassigned` → `assigned` via `gate_assigned` | `flight_scheduled` |
+| Responsibility / flight | `unassigned` → `assigned` via `staff_assigned`; `assigned` → `assigned` via `staff_substitution` | Initial assignment requires `gate_assigned`; substitution requires `staff_assigned` and the replacement's current attendance |
+| Reserve / flight | `unassigned` → `assigned` via `reserve_assigned` | `gate_assigned` |
+| Attendance / person | `absent` → `present` via `nfc_check_in`; `present` → `absent` via `nfc_check_out` | Identified person; checked independently of any one flight |
+| Gate / flight | `closed` → `open` via `gate_open`; `open` → `closed` via `gate_close` | Opening requires `gate_assigned`; closing requires `gate_open`; both require the operator to be currently checked in |
+| Boarding / flight | `pending` → `active` via `boarding_started`; `active` → `completed` via `boarding_completed` | Start requires `gate_open` and `cleaning_complete`; completion requires `boarding_started` |
+| Load documents / flight | `pending` → `completed` via `loadsheet_confirmed` | `baggage_loaded` |
+| Readiness / flight | `not_ready` → `ready` via `aircraft_ready` | **All five:** `boarding_completed`, `cleaning_complete`, `fuel_ready`, `baggage_loaded`, `loadsheet_confirmed` |
+| Alert / flight | `clear` → `raised` via `emergency_declared`; `raised` → `clear` via `emergency_cleared` | Clearing requires `emergency_declared`; alert state is separate from aircraft movement |
+
+The live command service also checks permissions, run revisions, gate availability and replacement assignment. The table describes the transition vocabulary and its explicit guards, not an exhaustive airport clearance checklist. For example, `gate_close` is recorded but is **not currently an explicit prerequisite** of `aircraft_ready` in `RULES`; the diagram must not imply that it is. Work-order streams (inspection, maintenance, handover and SOP review) have their own ordered transitions in the same rule catalog.
+
+`staff_absent`, `gate_waiting` and similar observations record evidence without moving an aircraft or changing a person's attendance state. A red/yellow delay indicator is computed from timing; it is not a new physical state. Invalid new transitions fail before persistence. An accepted live event and its immutable fact projection are written in the same transaction; planned/projected rows do not become completed facts.
+
+## Dependencies between activities
+
+Unlike the state diagrams above, this graph connects **events**. Every incoming edge is required: aircraft readiness is an AND condition, not a choice between completed activities. Dependencies constrain order where needed without forcing all work into a single sequence.
 
 ```mermaid
 flowchart LR

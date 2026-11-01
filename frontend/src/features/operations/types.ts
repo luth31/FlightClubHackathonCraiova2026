@@ -20,7 +20,7 @@ export interface Gate {
 }
 export interface OperationEvent {
   id:string;sequence:number;simulated_at:string;kind:string;title:string;detail:string;
-  actor:string;staff_id:string|null;flight_id:string|null;gate_id:string|null;source:string;
+  actor:string;actor_id?:string|null;staff_id:string|null;flight_id:string|null;gate_id:string|null;source:string;
   elapsed_seconds?:number;
 }
 export interface OperationsData {

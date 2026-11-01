@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import {useEffect,useRef,useState} from 'react';
 import {AlertTriangle,CalendarDays,Check,ChevronRight,Clock3,Filter,Plane,Search,ClipboardList} from 'lucide-react';
 import {EntityChip,LedgerInspector,type Inspection} from './LedgerInspector';
@@ -29,7 +30,7 @@ function FlightGroup({flight,focus,focusEvent,onInvestigate,onInspect}:{flight:L
       {visible.map(event=><div className={`ops-ledger-event severity-${event.severity}${event.id===focusEvent?' is-evidence-target':''}`} data-event-id={event.id} aria-current={event.id===focusEvent?'true':undefined} tabIndex={event.id===focusEvent?-1:undefined} key={event.id}>
         <div><span className="ops-event-dot"/><div><button className="ops-event-title" disabled={!event.actual_at||event.projected||event.source==='projection'} onClick={()=>onInspect({type:'event',id:event.id,label:event.title})}>{event.title}</button>
           {event.operation&&<small className="ops-event-transition">{event.operation.activity_label}{!event.actual_at?' · planificat':''} · {event.operation.observation?'Observație înregistrată':`${event.operation.from_label} → ${event.operation.to_label}`}</small>}
-          <div className="ops-event-people">{event.entities?.filter(entity=>entity.role==='participant'||entity.role==='recorder').filter((entity,index,all)=>all.findIndex(item=>item.id===entity.id)===index).map(entity=><EntityChip key={entity.id+entity.role} entity={entity} onInspect={onInspect}/>)||<small>{event.actor}</small>}</div></div></div>
+          <div className="ops-event-people">{event.entities?.filter(entity=>entity.role==='participant'||entity.role==='recorder').filter((entity,index,all)=>all.findIndex(item=>item.id===entity.id)===index).map(entity=><EntityChip key={entity.id+entity.role} entity={entity} onInspect={onInspect}/>)||<small><PersonReference name={event.actor}/></small>}</div></div></div>
         <time dateTime={event.planned_at||undefined}>{shortTime(event.planned_at)}{event.planned_at&&event.planned_at.slice(0,10)!==flight.scheduled_at.slice(0,10)&&<small>{dayLabel(event.planned_at.slice(0,10))}</small>}</time>
         <time dateTime={event.actual_at||undefined}>{shortTime(event.actual_at)}{event.actual_at&&event.actual_at.slice(0,10)!==flight.scheduled_at.slice(0,10)&&<small>{dayLabel(event.actual_at.slice(0,10))}</small>}</time>
         <span className={`ops-event-delta severity-${event.severity}`}>{event.delay_minutes&&event.delay_minutes>0?`+${event.delay_minutes} min`:event.severity!=='neutral'?<><AlertTriangle size={13}/>Abatere</>:event.actual_at?<><Check size={13}/>Înregistrat</>:<><Clock3 size={13}/>Așteaptă</>}</span>

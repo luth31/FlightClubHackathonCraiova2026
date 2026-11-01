@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import {useState, type FormEvent} from 'react';
 import {api} from '@/services/api-client';
 import {ErrorMessage, Modal} from '@/components/ui';
@@ -23,7 +24,7 @@ export function AuthorityDialog({person,directory,signing,onClose,onChanged}: {
       onChanged(signing?'Autoritatea de semnare a fost actualizată.':'Propunerea a fost trimisă directorului.');onClose();
     } catch(e) {setError((e as Error).message);setBusy(false)}
   }
-  return <Modal title={signing?'Autoritate de semnare':'Propune un șef de departament'} subtitle={`${person.name} · ${person.department}`} onClose={onClose}>
+  return <Modal title={signing?'Autoritate de semnare':'Propune un șef de departament'} subtitle={<><PersonReference person={person}/> · {person.department}</>} onClose={onClose}>
     <form className="modal-body" onSubmit={submit}>
       <p>{signing?enabled?'Acordă dreptul personal de semnare. Documentele necesită în continuare acces și o sarcină atribuită.':'Revocă dreptul personal de semnare. Sarcinile deschise vor necesita reatribuire.':
         'Directorul aprobă numirea. Până la data intrării în vigoare, responsabilitatea rămâne la șeful actual.'}</p>

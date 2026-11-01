@@ -1,3 +1,4 @@
+import {PersonReference} from '@/components/people/PersonReference';
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   ArrowLeft,
@@ -739,9 +740,7 @@ export function DocumentDetail({
                               : "Verificarea nu a trecut"}
                           </strong>
                           <p>
-                            {verification.signer === user.id
-                              ? user.name
-                              : verification.signer || "Semnatar neidentificat"}
+                            <PersonReference userId={verification.signer} name={verification.signer === user.id ? user.name : verification.signer || 'Semnatar neidentificat'}/>
                           </p>
                           <small>
                             Certificat local, fără statut de semnătură calificată.
