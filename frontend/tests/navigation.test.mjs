@@ -662,6 +662,22 @@ test('expired session leaves the workspace for login instead of rendering reques
   assert.equal(location.hash,'#reports','Keep the destination for the next sign-in');
 });
 
+test('session expiry dismisses logout confirmation before the next sign-in',async t=>{
+  let expired=false;
+  await setup(t,'#reports',{briefingResponse:()=>Response.json(
+    expired?{detail:'Conectează-te pentru a continua.'}:briefingFixture,{status:expired?401:200})});
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.ok(document.querySelector('.logout-confirmation'));
+  expired=true;
+  await act(async()=>window.dispatchEvent(new window.Event('focus')));
+  await settle();
+  assert.ok(document.querySelector('.login-page'));
+  expired=false;
+  await click(find('.login-page button','Intră în spațiul de lucru'));
+  assert.ok(document.querySelector('.app-shell'));
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+});
+
 
 test('legacy contracts routes open the document library and preserve contract documents',async t=>{
   await setup(t,'#contracts');
