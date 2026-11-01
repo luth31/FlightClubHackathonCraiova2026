@@ -1,14 +1,14 @@
 @import 'leaflet/dist/leaflet.css';
-.mail-workspace{--mail-blue:#174d68;--mail-muted:#647385;--mail-border:#e4e9ef;color:#203143}
-.collaboration-topbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:4px 0 22px}
+.mail-workspace{--mail-blue:#174d68;--mail-muted:#647385;--mail-border:#e4e9ef;color:#203143;max-width:none;width:100%;margin:0}
+.collaboration-topbar{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 14px}
 .collaboration-workspace-tabs{display:flex;gap:5px;padding:4px;border:1px solid #dde5ec;background:#fff;border-radius:12px}
-.collaboration-workspace-tabs button{display:flex;gap:9px;align-items:center;padding:11px 20px;border:0;border-radius:8px;color:#607183;background:transparent;font-size:14px;font-weight:600}
+.collaboration-workspace-tabs button{display:flex;gap:9px;align-items:center;padding:8px 16px;border:0;border-radius:8px;color:#607183;background:transparent;font-size:14px;font-weight:600}
 .collaboration-workspace-tabs button[aria-pressed=true]{background:#eaf1f7;color:#173f59}.collaboration-workspace-tabs button:hover{background:#f0f4f8}
 .airport-badge{position:relative;isolation:isolate;display:inline-flex;flex-shrink:0;align-items:center;justify-content:center;flex-direction:column;gap:2px;width:49px;height:49px;border-radius:13px;background:var(--airport-color);color:white;overflow:hidden;box-shadow:inset 0 0 0 1px #ffffff26}
 .airport-badge svg{height:19px;width:19px;transform:rotate(-15deg)}.airport-badge strong{font-size:11px;letter-spacing:1.5px;line-height:1.1}.airport-badge i{position:absolute;bottom:-13px;right:-6px;width:32px;height:60px;transform:rotate(35deg);border-left:1px dashed #ffffff40;z-index:-1}.airport-badge.small{width:35px;height:35px;border-radius:9px}.airport-badge.small svg{height:13px}.airport-badge.small strong{font-size:9px}.airport-badge.large{width:78px;height:78px;border-radius:19px}.airport-badge.large svg{width:29px;height:29px}.airport-badge.large strong{font-size:15px;letter-spacing:2px}
 .airport-account{display:flex;align-items:center;gap:12px;text-align:left;background:white;border:1px solid #dce5ed;border-radius:14px;padding:8px 12px 8px 8px;color:#203a50}.airport-account:hover{border-color:#94afc0}.airport-account>span:not(.airport-badge){display:grid;gap:5px}.airport-account strong{font-size:13px}.airport-account small{display:flex;align-items:center;gap:6px;color:#6d7a87;font-size:11px}.airport-account small i{height:6px;width:6px;background:#a7aeb8;border-radius:50%}.airport-account small i.active{background:#278368}.airport-account>svg{color:#7b8996;margin-left:8px}
 .airport-own-profile{padding:26px}.airport-own-profile h2{font-size:23px;margin:15px 0 7px}.airport-own-profile>p{display:flex;gap:7px;align-items:center;color:#6b7b89;font-size:13px}.airport-own-profile .collab-participation{margin-top:25px;flex-wrap:wrap;padding:17px}.airport-own-profile .collab-participation strong{font-size:14px}.airport-own-profile .collab-participation p{font-size:13px}.collaboration-inactive{display:flex;gap:8px;flex-wrap:wrap;padding:12px 16px;font-size:13px;background:#fff7e4;color:#795f29;border:1px solid #f0e1ba;border-radius:10px;margin-bottom:18px}
-.mail-workspace .collab-mail-layout{grid-template-columns:192px minmax(0,1fr);border:0;gap:18px;background:transparent;min-height:570px;overflow:visible}
+.mail-workspace .collab-mail-layout{grid-template-columns:208px minmax(0,1fr);border:0;gap:20px;background:transparent;min-height:max(460px,calc(100dvh - 320px));overflow:visible}
 .mail-workspace .collab-mail-nav{border:0;background:transparent;padding:8px 0;gap:3px;min-width:0}
 .mail-workspace .collab-compose-button{display:flex;align-items:center;gap:12px;justify-content:center;padding:18px 20px;background:#d7eaf4;color:#153e58;border:0;border-radius:17px;box-shadow:0 1px 2px #173c5210;font-weight:650;font-size:15px;align-self:flex-start;margin:0 4px 23px;min-height:58px}.mail-workspace .collab-compose-button:hover{background:#cce3ef;box-shadow:0 3px 8px #173c5217}.mail-workspace .collab-compose-button:disabled{opacity:.5;box-shadow:none;cursor:not-allowed}
 .mail-workspace .collab-folder{border-radius:0 22px 22px 0;padding:10px 14px;min-height:41px;font-size:13px;color:#536579}.mail-workspace .collab-folder[aria-pressed=true]{background:#dce9f5;color:#143f5c;font-weight:700}.mail-workspace .collab-folder small{background:transparent;font-size:12px;color:inherit}.mail-workspace .collab-folder:hover{background:#e9eef4}.mail-nav-divider{height:1px;background:#dfe6ec;margin:16px 8px}.mail-sender{display:flex;align-items:center;gap:9px;margin:28px 9px 0;min-width:0}.mail-sender>span{display:grid;gap:3px;min-width:0}.mail-sender strong{font-size:11px}.mail-sender small{font-size:10px;color:#718091;overflow:hidden;text-overflow:ellipsis}.mail-sender .person-avatar-trigger{width:30px;height:30px;font-size:10px}
@@ -33,7 +33,45 @@
 .mail-airport-target select{min-width:0;flex:1;background:transparent;border:0;padding:12px 0;color:#34536b;font-size:12px}.mail-recipient-options{max-height:260px;overflow:auto}.mail-recipient-options>button:focus{background:#edf4f9;outline:2px solid #86a8bb;outline-offset:-2px}
 .mail-recipient-options>button{grid-template-columns:34px minmax(0,1fr);align-items:center;column-gap:12px}.mail-recipient-avatar{width:34px;height:34px;border-radius:50%;background:#e2ecf2;color:#25485f;font-size:11px;font-weight:600}.mail-recipient-info{display:grid;gap:5px;min-width:0}.mail-recipient-info small{overflow-wrap:anywhere}
 .mail-compose-window{display:flex;flex-direction:column;overflow:hidden}.mail-compose-window>.modal-header{flex-shrink:0}.mail-compose-window .coord-create.collab-compose{display:flex;flex-direction:column;gap:6px;min-height:0;overflow:auto}.mail-compose-window .collab-compose>div,.mail-compose-window .collab-compose>label{flex-shrink:0}.mail-compose-window .collab-compose textarea{flex:1 0 160px;min-height:160px}.mail-compose-window .mail-compose-footer{position:sticky;bottom:-19px;background:white;padding-bottom:12px;z-index:5}.mail-compose-window .mail-compose-category{margin:8px 0}
+
+/* Use the page's available width and keep message text readable at normal zoom. */
+.collaboration-topbar .airport-account{padding:6px 12px 6px 6px}
+.collaboration-topbar .airport-badge{width:40px;height:40px;border-radius:11px}
+.mail-workspace .collab-compose-button{margin-bottom:14px}
+.mail-workspace .collab-folder{font-size:14px}
+.mail-nav-divider{margin:12px 8px}
+.mail-sender{margin-top:16px}
+.mail-sender strong{font-size:12px}
+.mail-sender small{font-size:11px}
+.mail-search{margin:12px 18px 6px}
+.mail-search input{font-size:15px}
+.mail-toolbar{min-height:48px;padding:0 18px 6px}
+.mail-toolbar h2{font-size:15px}
+.mail-filter{font-size:13px}
+.mail-pagination{font-size:12px}
+.mail-workspace .collab-message-open{grid-template-columns:170px minmax(0,1fr) 56px}
+.mail-row-sender strong,.mail-row-copy strong,.mail-row-copy>span:first-child{font-size:14px}
+.mail-row-sender small{font-size:12px}
+.mail-row-tags em{font-size:11px}
+.mail-workspace .collab-message-open time{font-size:12px}
+.mail-workspace .coord-detail{max-width:none;margin:0}
+
+@media(min-width:901px) and (max-width:1250px){
+  .mail-workspace .collab-mail-layout{grid-template-columns:176px minmax(0,1fr);gap:16px}
+  .mail-workspace .collab-message-open{grid-template-columns:150px minmax(0,1fr) 52px}
+}
+@media(max-width:900px){
+  .mail-workspace .collab-mail-layout{min-height:0}
+  .mail-workspace .collab-mail-nav{flex-wrap:nowrap}
+  .mail-workspace .collab-compose-button{margin-bottom:0}
+  .mail-workspace .collab-folder{font-size:13px;flex-shrink:0}
+}
 @media(max-width:600px){
+  .collaboration-topbar{gap:10px}
+  .mail-workspace .collab-message-open{grid-template-columns:minmax(0,1fr) 52px}
+  .mail-row-sender{flex-wrap:wrap;gap:3px 8px}
+  .mail-row-sender small{font-size:11px}
+  .mail-search{margin:12px}
   .mail-workspace .collab-mail-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
   .mail-workspace .collab-compose-button{grid-column:1/-1;width:100%;margin:0}
   .mail-workspace .collab-folder{min-width:0;padding:10px 6px;gap:5px}
