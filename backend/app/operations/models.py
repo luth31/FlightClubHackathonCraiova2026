@@ -50,3 +50,18 @@ class OperationLedgerGroup(Base):
     airport_id: Mapped[str] = mapped_column(String, index=True)
     operational_date: Mapped[str] = mapped_column(String, index=True)
     data: Mapped[dict] = mapped_column(JSON)
+
+
+class StrategyAnalysis(Base):
+    __tablename__ = 'operation_strategy_analyses'
+    __table_args__ = (UniqueConstraint('airport_id', 'fingerprint', name='uq_strategy_analysis_snapshot'),)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    airport_id: Mapped[str] = mapped_column(String, index=True)
+    fingerprint: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String)
+    created_by: Mapped[str] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String)
+    updated_at: Mapped[str] = mapped_column(String)
+    model: Mapped[str | None] = mapped_column(String, nullable=True)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    result: Mapped[dict] = mapped_column(JSON, default=dict)

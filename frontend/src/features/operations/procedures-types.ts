@@ -1,0 +1,8 @@
+import type {LedgerMetrics} from './types';
+export interface ProcedureStep {when:string;owner:string;action:string;record:string}
+export interface ProcedureDocument {id:string;title:string;status:string;version:number;can_share:boolean;updated_at:string}
+export interface Procedure {code:string;title:string;area:string;owner:string;revision:string;purpose:string;trigger:string;prerequisites:string[];steps:ProcedureStep[];escalation:string[];records:string[];metrics:string[];review:string;local_validation:string[];source_refs:Array<{title:string;url:string}>;status:string;notice?:string;documents:ProcedureDocument[]}
+export interface ProcedureLibrary {items:Procedure[];can_draft:boolean;can_share:boolean;partner:{id:string;name:string};notice:string}
+export interface Recommendation {id:string;kind:'amend'|'new';sop_code:string;title:string;priority:'high'|'medium'|'low';problem:string;rationale:string;current_rule:string;proposed_rule:string;owner:string;steps:ProcedureStep[];assumptions:string[];risks:string[];pilot:string;success_criteria:string;evidence:Array<{event_id:string;group_id:string;callsign:string;title:string;actual_at:string;delay_minutes:number}>;impact:{observed_delay_minutes:number;completed_departures:number};document_id:string|null;document_status:string|null}
+export interface StrategyAnalysis {id:string;created_at:string;status:string;model:string;stale:boolean;summary:string;limitations:string[];recommendations:Recommendation[];baseline:LedgerMetrics;period:{from:string;to:string};evidence_count:number;omitted_events:number}
+export interface AnalysisData {running?:boolean;analysis:StrategyAnalysis|null;can_analyze:boolean;configured:boolean;baseline:LedgerMetrics;period:{from:string;to:string};evidence_count:number}

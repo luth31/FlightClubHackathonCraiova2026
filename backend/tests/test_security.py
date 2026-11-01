@@ -13,6 +13,12 @@ def test_role_filters_search_files_assistant_exports(client,db):
     for item in items:
         if item['department']=='Tehnic':
             continue
+        if item['department']=='Conformitate':
+            assert item['category']=='Procedură' and item['status'] in ('approved','signed')
+            assert item.get('metadata',{}).get('sop_code')
+            assert item['confidentiality'] not in ('restricted','confidential')
+            assert item['permissions']['can_share'] is False
+            continue
         # Employees can also read their own system-generated leave request;
         # this exception must never open unrelated HR records.
         assert item['department']=='Resurse umane'

@@ -11,6 +11,8 @@ import {clock,eventTime} from './format';
 import type {LiveTraffic,MapConfig,OperationsData} from './types';
 import './operations.css';
 import './workspace.css';
+import './ledger.css';
+import './procedures.css';
 type View='shift'|'ledger'|'strategies'|'station';
 function viewFromHash():View {const view=new URLSearchParams(window.location.hash.split('?')[1]||'').get('view');return view==='ledger'||view==='strategies'||view==='station'?view:'shift'}
 

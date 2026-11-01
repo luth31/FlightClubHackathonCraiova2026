@@ -75,3 +75,33 @@ def operations_summary(user=Depends(current_user), db: Session=Depends(get_db)):
 def previous_runs(offset: int=Query(default=0,ge=0), limit: int=Query(default=100,ge=1,le=200),
                   user=Depends(current_user), db: Session=Depends(get_db)):
     return service.runs(db,user,offset,limit)
+
+
+@router.get('/sops')
+def sop_library(user=Depends(current_user), db: Session=Depends(get_db)):
+    from app.operations.procedures import service as procedures
+    return procedures.library(db, user)
+
+
+@router.post('/sops/{code}/draft')
+def sop_template_draft(code: str, user=Depends(current_user), db: Session=Depends(get_db)):
+    from app.operations.procedures import service as procedures
+    return procedures.draft_template(db, user, code)
+
+
+@router.get('/strategy-analysis')
+def latest_strategy_analysis(user=Depends(current_user), db: Session=Depends(get_db)):
+    from app.operations.procedures import engine
+    return engine.latest(db, user)
+
+
+@router.post('/strategy-analysis')
+def analyze_strategy(user=Depends(current_user), db: Session=Depends(get_db)):
+    from app.operations.procedures import engine
+    return engine.analyze(db, user)
+
+
+@router.post('/strategy-analysis/{analysis_id}/recommendations/{recommendation_id}/draft')
+def draft_recommendation(analysis_id: str, recommendation_id: str, user=Depends(current_user), db: Session=Depends(get_db)):
+    from app.operations.procedures import engine
+    return engine.draft(db, user, analysis_id, recommendation_id)
