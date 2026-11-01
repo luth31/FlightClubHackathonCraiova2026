@@ -49,7 +49,7 @@ def test_technician_session_and_section_boundaries(client):
     login(client, 'technician')
     user = client.get('/api/session').json()['current_user']
     assert {page for page, allowed in user['permissions']['pages'].items() if allowed} == {
-        'home', 'operations', 'documents', 'approvals', 'people'}
+        'home', 'operations', 'documents', 'approvals', 'people', 'reports'}
     assert client.get('/api/contracts').status_code == 403
     assert client.get('/api/audit').status_code == 403
     assert client.get('/api/shares').status_code == 403

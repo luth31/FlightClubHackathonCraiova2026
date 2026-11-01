@@ -15,11 +15,11 @@
   font-size: 21px;
 }
 .ask-dialog .modal-header p {
-  color: #61716a;
+  color: #526575;
   font-size: 13px;
 }
 .ask-dialog .modal-header .icon-button {
-  color: #61716a;
+  color: #526575;
   width: 40px;
   height: 40px;
 }
@@ -43,7 +43,7 @@
   border: 1px solid #b9c9be;
   border-radius: 12px;
   background: #fff;
-  color: #61716a;
+  color: #526575;
   transition: box-shadow 0.15s;
 }
 .ask-input-wrap:focus-within {
@@ -61,7 +61,7 @@
   padding: 10px 0;
 }
 .ask-input-wrap input::placeholder {
-  color: #6b7971;
+  color: #526575;
 }
 .ask-input-wrap input:focus {
   outline: none;
@@ -85,14 +85,14 @@
 .ask-input-wrap button:disabled {
   opacity: 1;
   background: #edf1ed;
-  color: #6b7971;
+  color: #526575;
 }
 .ask-start {
   margin-top: 27px;
 }
 .ask-start > p,
 .ask-question-heading {
-  color: #61716a;
+  color: #526575;
   font-size: 12px;
   margin-bottom: 12px;
 }
@@ -127,11 +127,11 @@
 }
 .ask-shortcuts > button:nth-child(2) .ask-shortcut-icon {
   background: #f5eddb;
-  color: #856225;
+  color: #153c52;
 }
 .ask-shortcuts > button:nth-child(3) .ask-shortcut-icon {
   background: #e9eef2;
-  color: #4c687c;
+  color: #153c52;
 }
 .ask-shortcuts strong {
   display: block;
@@ -140,13 +140,13 @@
 }
 .ask-shortcuts small {
   display: block;
-  color: #61716a;
+  color: #526575;
   font-size: 12px;
   margin-top: 4px;
 }
 .ask-shortcut-arrow {
   margin-left: auto;
-  color: #61716a;
+  color: #526575;
 }
 .ask-footer {
   display: flex;
@@ -157,7 +157,7 @@
   padding: 16px 20px;
   border-top: 1px solid var(--border);
   background: #fafbf8;
-  color: #61716a;
+  color: #526575;
   font-size: 11px;
 }
 .ask-response {
@@ -201,7 +201,7 @@
 }
 .ask-answer-heading small {
   font-size: 11px;
-  color: #61716a;
+  color: #526575;
 }
 .ask-summary {
   font-size: 14px;
@@ -245,7 +245,7 @@
   border-radius: 7px;
   padding: 12px;
   font-size: 12px;
-  color: #4e6056;
+  color: #153c52;
   line-height: 1.75;
   white-space: pre-line;
   overflow-wrap: anywhere;
@@ -269,7 +269,7 @@
   background: #edf1ed;
   padding: 2px 6px;
   font-size: 11px;
-  color: #61716a;
+  color: #526575;
 }
 .ask-source {
   display: flex;
@@ -279,7 +279,7 @@
   border-bottom: 1px solid var(--border);
 }
 .ask-source-icon {
-  color: #718476;
+  color: #526575;
   margin-top: 3px;
 }
 .ask-source > div {
@@ -313,7 +313,7 @@
 .ask-source small {
   display: block;
   margin-top: 3px;
-  color: #61716a;
+  color: #526575;
   font-size: 11px;
 }
 .ask-excerpt > summary {
@@ -342,7 +342,7 @@
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  color: #61716a;
+  color: #526575;
   padding: 15px 0;
 }
 
@@ -399,3 +399,16 @@
     gap: 6px;
   }
 }
+
+.ask-dialog .modal-header{padding:20px 22px}
+.ask-content{padding:20px 22px}
+.ask-form>label{font-size:14px;margin-bottom:9px;color:#142432}
+.ask-input-wrap{border-color:#b9c8d4;border-radius:9px}
+.ask-start{margin-top:20px}
+.ask-shortcuts{gap:8px}
+.ask-shortcuts>button{padding:12px;border-radius:8px}
+.ask-shortcut-icon{background:#e7f3f1;color:#0f6e68}
+.ask-shortcuts strong{color:#142432}
+.ask-shortcuts small{color:#526575;font-size:12px}
+.ask-source-card{border-color:#d7dfe6}
+.ask-summary{color:#142432}

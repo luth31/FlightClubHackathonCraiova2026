@@ -1,7 +1,8 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
-import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,ShieldCheck,Plane} from 'lucide-react';
+import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
+import {rememberNfcLink,pendingNfcCard,cardFromHash} from '@/features/operations/nfc-links';
 import {api,setIdentity,clearIdentity} from '@/services/api-client';
 import {Loading,ErrorMessage,Toast,ViewActiveContext} from '@/components/ui';
 import {DashboardPage} from '@/features/dashboard';
@@ -15,6 +16,7 @@ import {SupplierCatalogPage} from '@/features/suppliers/SupplierCatalogPage';
 import {PeoplePage} from '@/features/people';
 import {PersonAvatar} from '@/components/people/PersonAvatar';
 import {PersonDirectoryProvider} from '@/components/people/PersonDirectory';
+import {ReportsPage} from '@/features/reports';
 import {AssistantDialog} from '@/features/assistant';
 import {LoginPage} from '@/features/auth';
 import {initials,roleLabel} from '@/utils/format';
@@ -28,7 +30,7 @@ function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:st
     <Suspense fallback={<Loading/>}><OperationsPage notify={notify}/></Suspense>
   </ViewActiveContext></div>;
 }
-const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound}];
+const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
 const secondNav=[{id:'sharing',label:'Partajate cu aeroporturi',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
@@ -46,6 +48,8 @@ export function App() {
   const mainRef = useRef<HTMLElement>(null);
   const returnFocus = useRef<{element: HTMLElement; page: Page; userId: string} | undefined>(undefined);
   const userId = session?.current_user?.id;
+  useEffect(()=>{rememberNfcLink();window.addEventListener('hashchange',rememberNfcLink);return()=>window.removeEventListener('hashchange',rememberNfcLink)},[]);
+  useEffect(()=>{if(!userId)return;const card=pendingNfcCard();if(card&&!cardFromHash(window.location.hash))window.location.hash=`#operations?view=station&card=${encodeURIComponent(card)}`},[userId]);
   useEffect(()=>{
     if(doc){mainRef.current?.querySelector<HTMLElement>('.back-button')?.focus({preventScroll:true});return}
     const previous = returnFocus.current;
@@ -133,14 +137,14 @@ export function App() {
         <span className="brand-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 25 16 5l11 20h-7l-4-8-4 8z" fill="currentColor"/><path d="M8 21h18" stroke="#91b6a3" strokeWidth="2"/></svg></span>
         FlyLeaf<span className="brand-period">.</span>
       </a>
-      <div className="airport-switch"><span className="airport-symbol"><Plane size={18}/></span><div><strong>{airport}</strong><small>Spațiu de lucru</small></div><ShieldCheck size={15}/></div>
-      <div className="nav-label">SPAȚIUL MEU</div>
+      <div className="airport-switch"><span className="airport-symbol"><Plane size={18}/></span><div><strong>{airport}</strong></div></div>
+      <div className="nav-label">SPAȚIU DE LUCRU</div>
       <nav aria-label="Navigare principală">
         {nav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
           <n.icon size={19}/><span>{labels[n.id as Page]}</span>{page===n.id&&<span className="active-dot"/>}
         </button>)}
       </nav>
-      {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">ÎMPREUNĂ</div>}
+      {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">COLABORARE</div>}
       <nav aria-label="Colaborare și istoric">
         {secondNav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
           <n.icon size={18}/><span>{n.label}</span>
@@ -163,7 +167,7 @@ export function App() {
       <header className="topbar">
         <div className="breadcrumb">
           <button className="icon-button mobile-menu" onClick={()=>setMobileOpen(true)} aria-label="Deschide meniul"><Menu size={21}/></button>
-          <span>Spațiul de lucru</span><ChevronRight size={13}/>
+
           {doc?<><button className="breadcrumb-parent" onClick={returnToOrigin}>{labels[page]}</button><ChevronRight size={13}/><strong>Document</strong></>:<strong>{labels[page]}</strong>}
         </div>
         <div className="topbar-actions">
@@ -188,6 +192,7 @@ export function App() {
             ? <SuppliersPage revision={revision} notify={notify} onOpen={openDoc} user={user}/>
             : <SupplierCatalogPage revision={revision} onOpen={openDoc}/>)}
           {page==='people'&&<PeoplePage revision={revision} notify={notify}/>}
+          {page==='reports'&&<ReportsPage user={user} revision={revision} onOpen={openDoc} onNavigate={navigate} notify={notify}/>}
           {page==='audit'&&<AuditPage revision={revision} onOpen={openDoc}/>}
           </ViewActiveContext>
         </div>
@@ -195,7 +200,7 @@ export function App() {
         <RetainedOperations visible={page==='operations'&&!doc} notify={notify}/>
         {doc&&<DocumentDetail key={doc} id={doc} origin={page} onOpen={openDoc} onClose={returnToOrigin} onChanged={changed} notify={notify} user={user}/>}
       </main>
-      <footer className="workspace-footer"><span>FlyLeaf <span>·</span> Mai multă ordine. Mai mult timp pentru echipă.</span></footer>
+
     </div>
     {upload&&<UploadDialog user={user} onClose={closeUpload} onCreated={d=>{setUpload(false);changed();notify('Documentul a fost înregistrat. Verifică informațiile extrase.');openDoc(d.id)}}/>}
     {assistant&&<AssistantDialog onClose={closeAssistant} onOpen={openDoc}/>}

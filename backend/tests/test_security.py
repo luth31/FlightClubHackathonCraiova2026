@@ -5,10 +5,29 @@ def test_requires_session_and_ignores_impersonation_header(client):
     assert client.get('/api/documents/test-contract/file?as_user=admin').status_code==401
     assert client.post('/api/auth/login',json={'user_id':'admin','password':'wrong'}).status_code==401
 
-def test_role_filters_search_files_assistant_exports(client):
+def test_role_filters_search_files_assistant_exports(client,db):
+    from app.documents.models import Document
+    from app.people.models import LeaveRequest
     login(client,'technician')
     items=client.get('/api/documents').json()['items']
-    assert all(item['department']=='Tehnic' for item in items)
+    for item in items:
+        if item['department']=='Tehnic':
+            continue
+        if item['department']=='Conformitate':
+            assert item['category']=='Procedură' and item['status'] in ('approved','signed')
+            assert item.get('metadata',{}).get('sop_code')
+            assert item['confidentiality'] not in ('restricted','confidential')
+            assert item['permissions']['can_share'] is False
+            continue
+        # Employees can also read their own system-generated leave request;
+        # this exception must never open unrelated HR records.
+        assert item['department']=='Resurse umane'
+        metadata=item.get('metadata',{})
+        assert metadata.get('managed_by')=='leave_workflow'
+        leave=db.get(LeaveRequest,metadata.get('leave_request_id'))
+        assert leave is not None and leave.user_id=='technician'
+        document=db.get(Document,item['id'])
+        assert document.id==f'doc-{leave.id}' and document.owner_id=='technician'
     assert 'supplier_iban' not in str(items)
     assert 'supplier_iban' not in str(client.get('/api/documents/test-tech').json())
     assert client.get('/api/documents/test-hr').status_code==404

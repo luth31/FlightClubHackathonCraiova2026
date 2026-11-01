@@ -204,7 +204,6 @@ export function AssistantDialog({
   return (
     <Modal
       title="Întreabă FlyLeaf"
-      subtitle="Contracte, documente și termene, la îndemână."
       className="ask-dialog"
       initialFocusRef={inputRef}
       onClose={onClose}
@@ -242,7 +241,7 @@ export function AssistantDialog({
         </form>
         {!asked ? (
           <div className="ask-start">
-            <p>Sau începe de aici</p>
+            <p>Întrebări rapide</p>
             <div className="ask-shortcuts">
               {suggestions.map(
                 ({ title, detail, question: prompt, icon: Icon }) => (

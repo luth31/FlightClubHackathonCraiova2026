@@ -28,10 +28,16 @@ function installDOM(window) {
     this.scrollLeft=x;
     this.scrollTop=y;
   };
+  window.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
+  window.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
 }
 
 const user={id:'admin',name:'Ana Demo',role:'director',roles:['director','finance'],department:'Conducere'};
 const technician={id:'tech',name:'Teo Demo',role:'technician',roles:['technician'],department:'Tehnic'};
+const operationsRecord={airport:{id:'craiova',name:'Demo airport',icao:'LRCV',lat:44.318,lon:23.889,elevation_m:191},
+  simulation:{run_id:'test-run',revision:1,running:false,speed:1,elapsed_seconds:0,duration_seconds:3600,
+    clock_time:'2026-10-30T08:00:00',scenario_mode:'interactive'},flights:[],gates:[],staff:[],events:[],kpis:{},
+  thresholds:{minor_delay_minutes:1,major_delay_minutes:15},permissions:{can_control:true}};
 const documentRecord={id:'doc-contract',title:'Contract Demo Navigation',number:'DEMO-1',category:'Contract',
   department:'Achiziții',status:'approved',created_at:'2026-10-01',expires_at:'2027-01-01',supplier:'Demo SRL',
   value:1000,currency:'RON',owner:user.name,confidentiality:'internal',tags:[],summary:'Demo contract',
@@ -39,12 +45,22 @@ const documentRecord={id:'doc-contract',title:'Contract Demo Navigation',number:
   contract_status:'active',days_remaining:60,versions:[],audit:[],workflow:{steps:[],current_step:'done'},
   permissions:{can_edit:false,can_review:false,can_sign:false,can_share:false}};
 const related={...documentRecord,id:'doc-related',title:'Related Demo Document',related_documents:[]};
+const reportRow={...documentRecord,document_id:documentRecord.id,date:documentRecord.expires_at};
+const reportDefinition={id:'contracts',title:'Portofoliu test',subtitle:'Contracte accesibile',category:'Financiar',source:'Contracte'};
+const reportCatalog={items:[reportDefinition],refresh_seconds:60};
+const reportFixture={report:reportDefinition,rows:[reportRow],total:1,metrics:[],breakdowns:[],highlights:[],
+  secondary:[],recent_activity:[],currency_totals:[],departments:['Achiziții'],department:'Achiziții',
+  reference_date:'2026-10-31',generated_at:'2026-10-31T12:00:00Z',refresh_seconds:60,
+  activity:{start:'2026-10-01',end:'2026-10-31',items:[],total:0},table_title:'Contracte sursă',scope:'Date accesibile'};
+const briefingFixture={catalog:reportCatalog,airport:'Demo airport',date:'2026-10-31',generated_at:'2026-10-31T12:00:00Z',
+  department:'',departments:['Achiziții'],analysis:{documents:[reportRow],contracts:[reportRow],tasks:[],events:[]},
+  priorities:[],reports:[],deadlines:[],summary:{},coverage:{}};
 const supplier={id:'supplier-demo',name:'Demo SRL',document_id:documentRecord.id,expected_iban:'RO49AAAA1B31007593840000',
   verified_contact:'demo@example.test',trust_status:'demo_verified',bank_history:[],registry_revision:1,
   address:'Demo address',category:'Services',state:'active',contracts:[{id:documentRecord.id,title:documentRecord.title,
     version:1,eligible_for_review:true}]};
 
-async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse}={}) {
+async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentError=false,workflowTask=false,uploadResponse,catalogResponse,reviewResponse,logoutResponse,authMode='demo',strict=false,sessionResponse,briefingResponse}={}) {
   const dom=new JSDOM('<div id="root"></div>',{url:`http://flyleaf.test/${hash}`,pretendToBeVisual:true});
   installDOM(dom.window);
   let currentUser=startUser||{...user,roles};
@@ -62,6 +78,9 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
       if(response.ok)currentUser=null;
       return response;
     }
+    else if(path==='/api/reports')body=reportCatalog;
+    else if(path==='/api/reports/briefing')return briefingResponse?await briefingResponse():Response.json(briefingFixture);
+    else if(path==='/api/reports/contracts')body=reportFixture;
     else if(path==='/api/assistant')body={answer:'Demo answer',sources:[{id:related.id,title:related.title,number:'DEMO-2',page:1,excerpt:'Demo source'}],mode:'local',reference_date:'2026-10-30'};
     else if(path==='/api/supplier-reviews')return reviewResponse?await reviewResponse():Response.json({items:[],total:0,limit:25,offset:0,suppliers:[supplier],counters:{needs_review:0,verified:0,approved:0,clear:0}});
     else if(path==='/api/suppliers')return catalogResponse?await catalogResponse():Response.json({items:[supplier],total:1});
@@ -69,6 +88,8 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/documents'&&options.method==='POST')return uploadResponse?await uploadResponse():Response.json(documentRecord);
     else if(path==='/api/documents')body={items:[documentRecord],total:1,categories:['Contract']};
     else if(path==='/api/contracts')body={items:[documentRecord]};
+    else if(path==='/api/operations')body=operationsRecord;
+    else if(path==='/api/operations/map-config')body={google_api_key:null,photorealistic_available:false,default_mode:'model'};
     else if(path==='/api/dashboard')body={stats:{documents:1,pending:0,expiring:0,approved:1},recent_documents:[documentRecord],attention:[],activity:[],departments:[]};
     else if(path==='/api/tasks')body={items:[{id:'task-demo',document_id:documentRecord.id,title:documentRecord.title,department:'Achiziții',
       assignee:user.name,status:'pending',priority:'normal',due_date:'2026-11-01',type:'approval',can_act:false}]};
@@ -102,6 +123,54 @@ async function setInput(input,value){assert.ok(input);await act(async()=>{
 });await settle(280);}
 const heading=()=>[...document.querySelectorAll('main h1')].find(visible)?.textContent;
 
+test('report deep links and source-document returns preserve the report and table filters',async t=>{
+  await setup(t,'#reports/contracts?view=data&status=approved');
+  assert.equal(heading(),'Portofoliu test');
+  await click(document.querySelector('.bi-filter-toggle'));
+  await act(async()=>{
+    const department=document.querySelector('#report-filters select');
+    department.value='Achiziții';
+    department.dispatchEvent(new window.Event('change',{bubbles:true}));
+  });
+  await settle();
+  const hash=location.hash;
+  assert.equal(new URLSearchParams(hash.split('?')[1]).get('department'),'Achiziții');
+  await setInput(document.querySelector('input[aria-label="Caută în raport"]'),'Navigation');
+  await click(find('.rp-row-title','Contract Demo Navigation'));
+  assert.equal(location.hash,'#document/doc-contract?from=reports');
+  await click(find('.back-button','Rapoarte'));
+  assert.equal(location.hash,hash);
+  assert.equal(heading(),'Portofoliu test');
+  assert.equal(document.querySelector('input[aria-label="Caută în raport"]').value,'Navigation');
+  assert.match(find('.bi-active-filters','Stare').textContent,/Aprobat/);
+  await click(find('aside nav button','Rapoarte'));
+  assert.equal(location.hash,'#reports');
+  assert.ok(document.querySelector('.px-dashboard'));
+});
+
+test('a refreshed dashboard dismisses stale source rows before they can be exported',async t=>{
+  let current=briefingFixture;
+  await setup(t,'#reports',{briefingResponse:()=>Response.json(current)});
+  await click(find('.px-kpi','Total documente'));
+  assert.ok(document.querySelector('dialog[open]'));
+  current={...briefingFixture,generated_at:'2026-10-31T12:01:00Z',analysis:{...briefingFixture.analysis,documents:[],contracts:[]}};
+  await act(async()=>window.dispatchEvent(new window.Event('focus')));
+  await settle();
+  assert.equal(document.querySelector('dialog'),null);
+  assert.equal(find('.px-kpi','Total documente').querySelector('strong').textContent,'0');
+});
+
+test('leaving the retained mobile NFC station restores the normal application shell',async t=>{
+  await setup(t,'#operations?view=station');
+  assert.ok(document.querySelector('.ops-station-mode'));
+  await click(find('aside button','Acasă'));
+  assert.equal(heading(),'Bine ai venit, Ana.');
+  const retained=document.querySelector('.operations-page');
+  assert.ok(retained?.closest('[hidden]'),'The operations page remains mounted for session state');
+  assert.equal(document.querySelector('.ops-station-mode'),null,
+    'A hidden station must not trigger the CSS rule that hides the global sidebar and topbar');
+});
+
 test('technician sidebar contains only personal work and forbidden hashes do not fetch sections',async t=>{
   const paths=[];
   await setup(t,'#audit',{startUser:technician,sessionResponse:response=>{
@@ -110,7 +179,7 @@ test('technician sidebar contains only personal work and forbidden hashes do not
     return response;
   }});
   assert.deepEqual([...document.querySelectorAll('aside nav button')].map(e=>e.textContent),
-    ['Acasă','Operațiuni la sol','Documente','Sarcinile mele','Echipă']);
+    ['Acasă','Operațiuni la sol','Documente','Sarcinile mele','Echipă','Rapoarte']);
   assert.equal(heading(),'Documente');
   assert.ok(!paths.includes('/api/audit'));
   await click(find('aside button','Sarcinile mele'));
@@ -275,7 +344,7 @@ test('registry waits for its catalog and counts catalog records instead of revie
   assert.equal(pendingCount,'—');
   assert.equal(document.querySelectorAll('.supplier-registry-card').length,2);
   assert.equal(find('.library-tabs button','Registru furnizori').querySelector('span').textContent,'2');
-  assert.equal(find('.supplier-summary div','furnizori în registru').querySelector('strong').textContent,'2');
+  assert.equal(find('.supplier-summary button','furnizori în registru').querySelector('strong').textContent,'2');
 });
 
 test('supplier contract returns to the registry with its query and scroll position',async t=>{

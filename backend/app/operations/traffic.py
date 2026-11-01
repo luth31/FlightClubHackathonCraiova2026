@@ -39,6 +39,16 @@ def clean_string(value, limit=40):
     return value.strip()[:limit] if isinstance(value, str) else None
 
 
+def distance_and_bearing(lat, lon, airport):
+    start_lat, end_lat = math.radians(airport['lat']), math.radians(lat)
+    delta_lat, delta_lon = end_lat-start_lat, math.radians(lon-airport['lon'])
+    haversine = math.sin(delta_lat/2)**2 + math.cos(start_lat)*math.cos(end_lat)*math.sin(delta_lon/2)**2
+    distance = 6371008.8*2*math.asin(min(1, math.sqrt(haversine)))/1852
+    bearing = math.degrees(math.atan2(math.sin(delta_lon)*math.cos(end_lat),
+        math.cos(start_lat)*math.sin(end_lat)-math.sin(start_lat)*math.cos(end_lat)*math.cos(delta_lon))) % 360
+    return distance, bearing if distance > .001 else None
+
+
 def normalize_aircraft(payload, airport):
     if not isinstance(payload, dict) or not isinstance(payload.get('ac'), list):
         raise ValueError('Unexpected ADSB response shape')
@@ -59,8 +69,7 @@ def normalize_aircraft(payload, airport):
         if age is None or not 0 <= age <= MAX_POSITION_AGE_SECONDS:
             continue
         # Provider is a circle endpoint; enforce a loose local distance bound too.
-        distance_nm = math.hypot((lon-airport['lon'])*math.cos(math.radians(airport['lat']))*60,
-                                 (lat-airport['lat'])*60)
+        distance_nm, bearing = distance_and_bearing(lat, lon, airport)
         if distance_nm > RADIUS_NM+1:
             continue
         identifier = clean_string(item.get('hex'), 16)
@@ -78,7 +87,9 @@ def normalize_aircraft(payload, airport):
         output.append({'id': 'adsb-'+identifier, 'hex': identifier, 'callsign': clean_string(item.get('flight')) or identifier.upper(),
             'registration': clean_string(item.get('r')), 'aircraft_type': clean_string(item.get('t')),
             'position': {'lat': lat, 'lon': lon, 'altitude_m': altitude, 'heading': heading % 360 if heading is not None else None},
-            'altitude_reference': 'airport_elevation' if ground else ('geometric_ellipsoid' if geometric is not None else 'barometric_pressure'),
+            'altitude_reference': 'airport_elevation' if ground else ('geometric_ellipsoid' if geometric is not None else ('barometric_pressure' if barometric is not None else 'unknown')),
+            'distance_nm': round(distance_nm, 2), 'bearing_degrees': round(bearing, 1) if bearing is not None else None,
+            'phase': ('taxiing' if speed is not None and speed > 1 else 'parked') if ground else 'airborne',
             'ground': ground, 'ground_speed_knots': max(0, speed) if speed is not None else None,
             'position_age_seconds': age, 'emergency': emergency, 'emergency_code': emergency_code,
             'squawk': squawk, 'severity': 'red' if emergency else 'neutral',

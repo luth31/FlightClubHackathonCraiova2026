@@ -6,7 +6,7 @@
   width: fit-content;
   border: 1px solid var(--border);
   border-radius: 9px;
-  background: #eef1eb;
+  background: #edf1f5;
 }
 
 .library-view-switch button {
@@ -15,7 +15,7 @@
   gap: 8px;
   padding: 9px 15px;
   border-radius: 6px;
-  color: #596653;
+  color: #33475b;
   font-size: 12px;
 }
 
@@ -27,7 +27,7 @@
 }
 
 .document-flow {
-  padding: 24px;
+  padding: 18px;
 }
 
 .flow-toolbar {
@@ -38,8 +38,8 @@
 }
 
 .flow-kicker {
-  color: #65785c;
-  font-size: 10px;
+  color: #526575;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 1.4px;
   margin-bottom: 8px;
@@ -51,7 +51,7 @@
 }
 
 .flow-toolbar p {
-  color: #66725f;
+  color: #526575;
   font-size: 12px;
   line-height: 1.7;
   max-width: 510px;
@@ -69,8 +69,8 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #526549;
-  font-size: 11px;
+  color: #33475b;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -81,7 +81,7 @@
   border: 1px solid var(--border);
   border-radius: 7px;
   background: #fff;
-  color: #405437;
+  color: #142432;
   font-size: 12px;
   text-overflow: ellipsis;
 }
@@ -91,8 +91,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin: 22px 0 16px;
-  color: #66725f;
+  margin: 14px 0 12px;
+  color: #526575;
   font-size: 12px;
 }
 
@@ -107,8 +107,8 @@
   flex-wrap: wrap;
   gap: 20px;
   margin-bottom: 16px;
-  color: #53695b;
-  font-size: 11px;
+  color: #33475b;
+  font-size: 12px;
 }
 
 .flow-legend > span {
@@ -136,7 +136,7 @@
 
 .flow-legend .flow-scroll-hint {
   display: none;
-  color: #697466;
+  color: #526575;
   margin-left: auto;
 }
 
@@ -196,8 +196,8 @@
 }
 
 .flow-stage-header {
-  padding: 15px 14px;
-  min-height: 112px;
+  padding: 12px 14px;
+  min-height: 88px;
 }
 
 .flow-stage-step {
@@ -249,7 +249,7 @@
 }
 
 .flow-case-graph + .flow-case-graph {
-  border-top: 1px solid #dce5dc;
+  border-top: 1px solid #d7dfe6;
 }
 
 .flow-case-heading {
@@ -259,9 +259,9 @@
   gap: 15px;
   min-height: 44px;
   padding: 10px 12px;
-  background: #f8faf6;
-  color: #5b6f57;
-  font-size: 10px;
+  background: #f3f5f7;
+  color: #526575;
+  font-size: 12px;
 }
 
 .flow-case-heading > div {
@@ -273,7 +273,7 @@
 .flow-case-heading button,
 .flow-case-heading strong {
   padding: 0;
-  color: #36533d;
+  color: #153c52;
   font-size: 12px;
   font-weight: 700;
 }
@@ -378,7 +378,7 @@
   gap: 6px;
   color: var(--stage-color);
   height: 27px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -404,7 +404,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  color: #2c3f32;
+  color: #142432;
   font-size: 12px;
   line-height: 1.4;
   height: 34px;
@@ -415,8 +415,8 @@
 .flow-document-number {
   display: block;
   margin-top: 5px;
-  color: #657360;
-  font-size: 10px;
+  color: #526575;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -429,12 +429,12 @@
 }
 
 .flow-document-footer .status {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .flow-empty-diagram {
   padding: 48px;
-  color: #64766a;
+  color: #526575;
   text-align: center;
   font-size: 12px;
 }
@@ -446,13 +446,13 @@
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 13px;
-  color: #66725f;
-  font-size: 11px;
+  color: #526575;
+  font-size: 12px;
   line-height: 1.7;
 }
 
 .flow-note .text-button {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .flow-other-documents {
@@ -485,7 +485,7 @@
 
   .flow-summary {
     flex-wrap: wrap;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .flow-legend {
@@ -502,3 +502,14 @@
     flex-direction: column;
   }
 }
+
+.flow-case-folder{border-top:1px solid #d7dfe6;background:white}
+.flow-case-folder>summary{display:flex;align-items:center;gap:10px;padding:16px 18px;color:#153c52;cursor:pointer;list-style:none}
+.flow-case-folder>summary::-webkit-details-marker{display:none}
+.flow-case-folder>summary:before{content:'›';font-size:22px;width:12px;line-height:1;transition:transform .15s}
+.flow-case-folder[open]>summary:before{transform:rotate(90deg)}
+.flow-case-folder[open]>summary{background:#edf4f6}
+.flow-case-folder>summary strong{font-size:13px;line-height:1.4}
+.flow-case-folder>summary>span{margin-left:auto;color:#526575;font-size:12px}
+.flow-case-folder .flow-case-heading{display:none}
+.flow-case-folder>summary:hover{background:#f3f5f7}

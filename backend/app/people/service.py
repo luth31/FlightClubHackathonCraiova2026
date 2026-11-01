@@ -54,14 +54,14 @@ def can_review_leave(db, user, leave):
         (has_role(user, 'reviewer', 'department_head') and getattr(subject, 'manager_id', None) == user.id))
 
 
-def directory(db, user):
+def directory(db, user, reference_date=None):
     from app.people.management import employee_dict, department_records
     users = list(db.scalars(select(User).where(User.airport_id == user.airport_id).order_by(User.name)))
     user_ids = {person.id for person in users}
     profiles = {profile.user_id: profile for profile in db.scalars(select(UserProfile).where(UserProfile.user_id.in_(user_ids)))}
     presence_time = person_profiles.utc_now()
     all_leaves = list(db.scalars(select(LeaveRequest).where(LeaveRequest.user_id.in_(user_ids))))
-    today = settings.reference_date.isoformat()
+    today = (reference_date or settings.reference_date).isoformat()
     open_appointments = {appointment.department_id: appointment for appointment in db.scalars(
         select(HeadAppointment).where(HeadAppointment.airport_id == user.airport_id,
             HeadAppointment.status.in_(['pending', 'approved'])))}
@@ -97,9 +97,11 @@ def directory(db, user):
         if leave.user_id != user.id and not can_review_leave(db, user, leave):
             continue
         person = local_user(db, leave.user_id)
+        from app.people.leave_documents import reference
         leaves.append({'id': leave.id, 'user_id': leave.user_id, 'name': person.name, 'department': person.department,
             'starts_at': leave.starts_at, 'ends_at': leave.ends_at, 'reason': leave.reason, 'status': leave.status,
-            'approver_id': leave.approver_id, 'can_decide': leave.status == 'pending' and can_review_leave(db, user, leave)})
+            'approver_id': leave.approver_id, 'can_decide': leave.status == 'pending' and can_review_leave(db, user, leave),
+            **reference(db, leave)})
     return {'items': items, 'total': len(items), 'departments': [d['name'] for d in records],
         'organization_leaders': [{'id': person.id, 'name': person.name, 'job_title': person.job_title}
             for person in users if person.active and has_role(person, 'director')],
@@ -167,10 +169,18 @@ def create_leave(db, user, payload):
         raise DomainError('Există deja o cerere de concediu pentru acest interval.', 409)
     leave = LeaveRequest(id=f'leave-{uuid4().hex[:12]}', user_id=user.id, starts_at=start,
         ends_at=end, reason=payload.reason.strip(), status='pending')
-    db.add(leave)
-    record(db, user, 'leave_requested', detail=f'Cerere {leave.id}; perioada {start}–{end}.')
-    db.commit()
-    return {'id': leave.id, 'status': leave.status}
+    from app.people import leave_documents
+    created_files = []
+    try:
+        db.add(leave)
+        document = leave_documents.write_request(db, user, leave, user, created_files)
+        record(db, user, 'leave_requested', document, f'Cerere {leave.id}; perioada {start}–{end}.')
+        db.commit()
+    except Exception:
+        db.rollback()
+        leave_documents.discard_files(created_files)
+        raise
+    return {'id': leave.id, 'status': leave.status, **leave_documents.reference(db, leave)}
 
 
 def decide_leave(db, user, leave_id, payload):
@@ -186,11 +196,19 @@ def decide_leave(db, user, leave_id, payload):
         raise DomainError('Cererea are deja o decizie.', 409)
     if payload.action == 'reject' and not payload.comment.strip():
         raise DomainError('Explică motivul respingerii.', 422)
-    item.status = 'approved' if payload.action == 'approve' else 'rejected'
-    item.approver_id = user.id
-    record(db, user, 'leave_' + item.status, detail=f'Cerere {item.id}; {payload.comment.strip()}')
-    db.commit()
-    return {'id': item.id, 'status': item.status}
+    from app.people import leave_documents
+    created_files = []
+    try:
+        item.status = 'approved' if payload.action == 'approve' else 'rejected'
+        item.approver_id = user.id
+        document = leave_documents.write_decision(db, user, item, local_user(db, item.user_id), payload.comment.strip(), created_files)
+        record(db, user, 'leave_' + item.status, document, f'Cerere {item.id}; {payload.comment.strip()}')
+        db.commit()
+    except Exception:
+        db.rollback()
+        leave_documents.discard_files(created_files)
+        raise
+    return {'id': item.id, 'status': item.status, **leave_documents.reference(db, item)}
 
 
 def update_account(db, user, user_id, payload):

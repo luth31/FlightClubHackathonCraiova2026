@@ -27,6 +27,7 @@ import {
   Modal,
 } from "@/components/ui";
 import { ExtractedText } from './ExtractedText';
+import "./documents.css";
 import { ShareDialog } from "@/features/sharing";
 import { date, time, money, actionLabel } from "@/utils/format";
 import type { DocumentRecord, Page, User } from "@/types";
@@ -310,6 +311,123 @@ export function DocumentDetail({
               />
             </div>
             <aside className="document-side">
+              {doc.metadata?.managed_by === "leave_workflow" && (
+                <div className="panel document-actions">
+                  <h2>{doc.metadata.request_status === "approved" ? "Concediul este aprobat" :
+                    doc.metadata.request_status === "rejected" ? "Concediul a fost respins" : "Cerere în așteptarea deciziei"}</h2>
+                  <p>Actualizat automat din Concedii.</p>
+                  <a className="button secondary full-width" href="#people?tab=leave">
+                    Vezi cererile de concediu <ArrowRight size={15}/>
+                  </a>
+                </div>
+              )}
+              {doc.metadata?.managed_by !== "leave_workflow" && !["archived", "signed"].includes(doc.status) && (
+                <div className="panel document-actions">
+                  {doc.workflow?.task?.status === "pending" && (
+                    <div className="document-task-owner">
+                      <span>
+                        Responsabil:{" "}
+                        <strong>{doc.workflow.task.assignee}</strong>
+                      </span>
+                      <small>Termen: {date(doc.workflow.task.due_date)}</small>
+                      <a href="#approvals">
+                        Vezi sarcinile echipei <ArrowRight size={13} />
+                      </a>
+                    </div>
+                  )}
+                  {doc.status === "draft" && (
+                    <>
+                      <h2>
+                        {doc.validated
+                          ? "Trimite la aprobare"
+                          : "Verifică informațiile"}
+                      </h2>
+                      <p>
+                        {doc.validated
+                          ? "Informațiile sunt validate."
+                          : "Compară datele de mai jos cu PDF-ul."}
+                      </p>
+                      {!doc.validated ? (
+                        <button
+                          className="button primary full-width"
+                          disabled={busy || !canValidate || editing}
+                          onClick={() => act("validate")}
+                        >
+                          {busy ? (
+                            <LoaderCircle className="spin" size={17} />
+                          ) : (
+                            <Check size={17} />
+                          )}
+                          Confirmă informațiile
+                        </button>
+                      ) : (
+                        <button
+                          className="button primary full-width"
+                          disabled={busy || !canSubmit || editing}
+                          onClick={() => act("submit")}
+                        >
+                          <FileCheck2 size={17} />
+                          Trimite spre aprobare
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {doc.status === "in_review" && (
+                    <>
+                      <h2>Decizia ta</h2>
+                      <p>
+                        Verifici versiunea {doc.version}.
+                      </p>
+                      {canReview ? (
+                        <div className="approval-actions">
+                          <button
+                            className="button primary full-width"
+                            disabled={busy}
+                            onClick={() => setConfirm("approve")}
+                          >
+                            <Check size={17} />
+                            Aprobă documentul
+                          </button>
+                          <button
+                            className="button secondary full-width"
+                            disabled={busy}
+                            onClick={() => setConfirm("reject")}
+                          >
+                            Returnează pentru corectare
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="note-box">
+                          În așteptarea responsabilului din Aprobări.
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {doc.status === "approved" && (
+                    <>
+                      <h2>Document aprobat</h2>
+                      <p>
+                        {canSign
+                          ? "Semnează versiunea aprobată."
+                          : "Documentul așteaptă semnătura responsabilului desemnat."}
+                      </p>
+                      {canSign && (
+                        <button
+                          className="button primary full-width"
+                          disabled={busy}
+                          onClick={() => setConfirm("sign")}
+                        >
+                          <PenLine size={17} />
+                          Semnează documentul
+                        </button>
+                      )}
+                      <small className="quiet-note">
+                        Semnătură criptografică cu certificat local.
+                      </small>
+                    </>
+                  )}
+                </div>
+              )}
               <div className="panel document-info">
                 <div className="detail-tabs">
                   {[
@@ -320,6 +438,7 @@ export function DocumentDetail({
                     <button
                       key={key as string}
                       className={tab === key ? "active" : ""}
+                      aria-pressed={tab === key}
                       onClick={() => setTab(key as string)}
                     >
                       {typeof Icon !== "string" && <Icon size={15} />}{" "}
@@ -333,7 +452,7 @@ export function DocumentDetail({
                       {doc.validated ? (
                         <div className="verified-line">
                           <Check size={14} />
-                          Informații validate de un coleg
+                          {doc.metadata?.managed_by === "leave_workflow" ? "Date din cererea de concediu" : "Informații validate"}
                         </div>
                       ) : (
                         <div className="unverified-line">
@@ -440,7 +559,7 @@ export function DocumentDetail({
                         <>
                           <dl className="metadata-list">
                             <div>
-                              <dt>Număr de înregistrare</dt>
+                              <dt>Număr</dt>
                               <dd>{doc.number}</dd>
                             </div>
                             <div>
@@ -453,12 +572,12 @@ export function DocumentDetail({
                             </div>
                             {doc.supplier && (
                               <div>
-                                <dt>Furnizor / partener</dt>
+                                <dt>Furnizor</dt>
                                 <dd>{doc.supplier}</dd>
                               </div>
                             )}
                             <div>
-                              <dt>Data înregistrării</dt>
+                              <dt>Înregistrat</dt>
                               <dd>{date(doc.created_at)}</dd>
                             </div>
                             <div>
@@ -482,8 +601,8 @@ export function DocumentDetail({
                             )}
                           </dl>
                           {doc.summary && (
-                            <div className="doc-summary">
-                              <h2>Pe scurt</h2>
+                            <details className="doc-summary">
+                              <summary>Rezumat</summary>
                               <p>
                                 {doc.summary.startsWith(
                                   "Document încărcat. Verifică informațiile",
@@ -491,7 +610,7 @@ export function DocumentDetail({
                                   ? "Document introdus în registru."
                                   : doc.summary}
                               </p>
-                            </div>
+                            </details>
                           )}
                           {doc.tags?.length > 0 && (
                             <div className="tags">
@@ -540,7 +659,7 @@ export function DocumentDetail({
                   )}
                   {tab === "workflow" && (
                     <>
-                      <h2 className="tab-title">Traseul documentului</h2>
+                      <h2 className="tab-title">Traseu · versiunea {doc.version}</h2>
                       <div className="workflow-steps">
                         {(
                           doc.workflow?.steps || [
@@ -594,8 +713,7 @@ export function DocumentDetail({
                       <div className="note-box">
                         <ShieldCheck size={18} />
                         <p>
-                          Deciziile se aplică versiunii {doc.version}. O
-                          versiune nouă va necesita o nouă aprobare.
+                          O versiune nouă necesită o nouă aprobare.
                         </p>
                       </div>
                       {doc.status === "signed" && (
@@ -724,122 +842,9 @@ export function DocumentDetail({
                   )}
                 </div>
               </div>
-              {!["archived", "signed"].includes(doc.status) && (
-                <div className="panel document-actions">
-                  {doc.workflow?.task?.status === "pending" && (
-                    <div className="document-task-owner">
-                      <span>
-                        Responsabil:{" "}
-                        <strong>{doc.workflow.task.assignee}</strong>
-                      </span>
-                      <small>Termen: {date(doc.workflow.task.due_date)}</small>
-                      <a href="#approvals">
-                        Vezi sarcinile echipei <ArrowRight size={13} />
-                      </a>
-                    </div>
-                  )}
-                  {doc.status === "draft" && (
-                    <>
-                      <h2>
-                        {doc.validated
-                          ? "Gata pentru următorul pas"
-                          : "Verifică informațiile din PDF"}
-                      </h2>
-                      <p>
-                        {doc.validated
-                          ? "Trimite documentul persoanelor responsabile de aprobare."
-                          : "Compară informațiile cu documentul, apoi confirmă că sunt corecte."}
-                      </p>
-                      {!doc.validated ? (
-                        <button
-                          className="button primary full-width"
-                          disabled={busy || !canValidate || editing}
-                          onClick={() => act("validate")}
-                        >
-                          {busy ? (
-                            <LoaderCircle className="spin" size={17} />
-                          ) : (
-                            <Check size={17} />
-                          )}
-                          Confirmă informațiile
-                        </button>
-                      ) : (
-                        <button
-                          className="button primary full-width"
-                          disabled={busy || !canSubmit || editing}
-                          onClick={() => act("submit")}
-                        >
-                          <FileCheck2 size={17} />
-                          Trimite spre aprobare
-                        </button>
-                      )}
-                    </>
-                  )}
-                  {doc.status === "in_review" && (
-                    <>
-                      <h2>O decizie, înregistrată clar.</h2>
-                      <p>
-                        Ai în față versiunea {doc.version} trimisă spre
-                        aprobare.
-                      </p>
-                      {canReview ? (
-                        <div className="approval-actions">
-                          <button
-                            className="button primary full-width"
-                            disabled={busy}
-                            onClick={() => setConfirm("approve")}
-                          >
-                            <Check size={17} />
-                            Aprobă documentul
-                          </button>
-                          <button
-                            className="button secondary full-width"
-                            disabled={busy}
-                            onClick={() => setConfirm("reject")}
-                          >
-                            Returnează pentru corectare
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="note-box">
-                          Documentul așteaptă decizia responsabilului desemnat.
-                          Poți urmări atribuirea în Aprobări.
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {doc.status === "approved" && (
-                    <>
-                      <h2>Document aprobat</h2>
-                      <p>
-                        {canSign
-                          ? "Aprobarea este înregistrată. Semnează această versiune sau partajează o copie revizuită."
-                          : "Documentul așteaptă semnătura responsabilului desemnat."}
-                      </p>
-                      {canSign && (
-                        <button
-                          className="button primary full-width"
-                          disabled={busy}
-                          onClick={() => setConfirm("sign")}
-                        >
-                          <PenLine size={17} />
-                          Semnează documentul
-                        </button>
-                      )}
-                      <small className="quiet-note">
-                        Semnătură criptografică cu certificat local.
-                      </small>
-                    </>
-                  )}
-                </div>
-              )}
               {doc.related_documents && doc.related_documents.length > 0 && (
                 <div className="panel related-panel">
-                  <h2>Documente în același dosar</h2>
-                  <p>
-                    {doc.related_documents.length} documente conectate în
-                    registru
-                  </p>
+                  <h2>În același dosar <span className="count-badge">{doc.related_documents.length}</span></h2>
                   <div className="related-documents">
                     {doc.related_documents.map((rel) => (
                       <a

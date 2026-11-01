@@ -19,7 +19,7 @@ def structured_response(*, instructions, payload, schema, task):
         raise DomainError('Luna analizează deja mai multe documente. Încearcă din nou în câteva momente.', 429)
     model = (settings.openai_redaction_model or settings.openai_model) if task == 'redaction' else settings.openai_model
     try:
-        with httpx.Client(timeout=httpx.Timeout(45, connect=5), follow_redirects=False) as client:
+        with httpx.Client(timeout=httpx.Timeout(120 if task == 'operations_strategy' else 45, connect=5), follow_redirects=False) as client:
             response = client.post('https://api.openai.com/v1/responses',
                 headers={'Authorization': 'Bearer ' + settings.openai_api_key.get_secret_value()},
                 json={'model': model, 'store': False, 'instructions': instructions,
@@ -40,6 +40,8 @@ def structured_response(*, instructions, payload, schema, task):
         if len(outputs) != 1:
             raise ValueError('Ambiguous structured output')
         return json.loads(outputs[0]), model
+    except httpx.TimeoutException:
+        raise DomainError('Luna nu a răspuns în intervalul de analiză. Rezultatul anterior este păstrat; încearcă din nou.', 504) from None
     except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
         raise DomainError('Analiza Luna nu este disponibilă momentan. Selecțiile tale sunt păstrate.', 502) from None
     finally:

@@ -89,7 +89,7 @@ def page_permissions(user):
     compliance = has_role(user, 'reviewer') and canonical_department(user.department) == 'Conformitate'
     procurement = head and canonical_department(user.department) == 'Achiziții'
     technician = has_role(user, 'technician') and not head and not director
-    return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True,
+    return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True, 'reports': True,
             'contracts': not technician and (director or finance or (head and not has_role(user, 'hr'))),
             'suppliers': director or finance or procurement,
             'sharing': director or compliance,
@@ -135,8 +135,20 @@ def can_read(user, document, include_assignment=True):
     if not document or not user.active or document.airport_id != user.airport_id:
         return False
     if document.department == 'Resurse umane':
+        from app.people.leave_documents import linked_leave
+        db = object_session(user) if isinstance(user, User) else None
+        leave = linked_leave(db, document) if db else None
+        if leave:
+            from app.people.service import can_review_leave
+            return leave.user_id == user.id or can_review_leave(db, user, leave)
         return has_role(user, 'hr') or is_department_head(user, 'Resurse umane') or document.owner_id == user.id or document.created_by == user.id
     if has_role(user, 'director'):
+        return True
+    # Approved operational procedures are internal reading material for all staff.
+    # Drafts and restricted procedures keep their normal departmental scope.
+    if (document.category == 'Procedură' and document.department == 'Conformitate'
+            and document.status in ('approved', 'signed') and document.confidentiality not in RESTRICTED
+            and (document.extra or {}).get('metadata', {}).get('sop_code')):
         return True
     head = is_department_head(user, document.department)
     if has_role(user, 'technician') and not head:
@@ -164,11 +176,14 @@ def can_read_version(user, document, version):
     from types import SimpleNamespace
     snapshot = version.snapshot or {}
     historical = SimpleNamespace(**{name: getattr(document, name) for name in
-        ('id','airport_id','department','category','confidentiality','owner_id','created_by')},
+        ('id','airport_id','department','category','confidentiality','owner_id','created_by','extra')},
         version=version.version,
         status=snapshot.get('status', 'approved' if version.approved_by else 'draft'))
     return can_read(user, historical, include_assignment=False)
 
 def can_edit(user, document):
+    from app.people.leave_documents import is_leave_document
+    if is_leave_document(document):
+        return False
     return can_read(user,document) and (is_department_head(user, document.department) or
         has_role(user, 'director') or (has_role(user, 'reviewer','finance','hr') and user.department == document.department) or document.created_by == user.id)
