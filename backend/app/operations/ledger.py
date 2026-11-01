@@ -6,12 +6,15 @@ completed off-block events; open risks and projections are separate counters.
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from math import floor
+from types import SimpleNamespace
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
-from app.operations.models import OperationLedgerGroup
+from app.operations.models import OperationEvent, OperationLedgerGroup
+from app.core.exceptions import DomainError
+from app.core.presentation import operational_text
 from app.operations import service
 from app.operations.scenario import STAFF
 
@@ -141,9 +144,9 @@ def active_groups(snapshot):
         if planned is None: planned=flight.get('scheduled_arrival_seconds',0)
         schedule=datetime.fromisoformat(service.clock_time(planned))
         identifier=snapshot['simulation']['run_id']+':'+flight['id']
-        events=[entry(identifier+'-scheduled','flight_scheduled','Zbor programat',schedule-timedelta(days=3),schedule-timedelta(days=3),'Planificare demo',f'Programat pentru {schedule:%d.%m %H:%M}; scenariu de prezentare.',source='scenario')]
+        events=[entry(identifier+'-scheduled','flight_scheduled','Zbor programat',schedule-timedelta(days=3),schedule-timedelta(days=3),'Planificare zboruri',f'Programat pentru {schedule:%d.%m %H:%M}.',source='scenario')]
         assigned=staff.get(gate.get('assigned_staff_id'))
-        events.append(entry(identifier+'-assigned','gate_assigned','Poartă și agent alocate',schedule-timedelta(days=1),schedule-timedelta(days=1),'Coordonator demo',f"{gate['id']} · {assigned['name'] if assigned else 'echipă sosiri'}",source='scenario'))
+        events.append(entry(identifier+'-assigned','gate_assigned','Poartă și agent alocate',schedule-timedelta(days=1),schedule-timedelta(days=1),'Coordonare operațională',f"{gate['id']} · {assigned['name'] if assigned else 'echipă sosiri'}",source='scenario'))
         for item in snapshot['events']:
             linked=item['flight_id']==flight['id'] or (item['staff_id'] and item['staff_id'] in (gate.get('assigned_staff_id'),gate.get('opened_by')) and item['kind'].startswith('nfc_'))
             if not linked: continue
@@ -193,13 +196,20 @@ def metrics(groups):
             'projected_delay_minutes':sum(g['delay_minutes'] or 0 for g in flights if g['actual_at'] is None and g['status']!='scheduled')}
 
 
-def get_ledger(db,user,day=None,status='all',search=''):
-    seed_history(db,user)
+def get_ledger(db,user,day=None,status='all',search='',scope='all',run_id=None,at_seconds=None):
+    if scope == 'all':
+        seed_history(db,user)
     snapshot=service.get_snapshot(db,user)
+    if run_id and snapshot['simulation']['run_id'] != run_id:
+        raise DomainError('Scenariul s-a schimbat. Reîncarcă registrul.',409)
+    if at_seconds is not None and run_id:
+        snapshot=service.timeline_preview(db,user,at_seconds,run_id)
     stored=list(db.scalars(select(OperationLedgerGroup).where(OperationLedgerGroup.airport_id==user.airport_id,
         OperationLedgerGroup.operational_date >= (settings.reference_date-timedelta(days=7)).isoformat(),
         OperationLedgerGroup.operational_date <= (settings.reference_date+timedelta(days=3)).isoformat())))
-    groups=[row.data for row in stored]+active_groups(snapshot)
+    if scope == 'current':
+        stored=[]
+    groups=[present_group(row.data) for row in stored]+active_groups(snapshot)
     all_metrics=metrics(groups)
     selected=[]
     query=search.strip().casefold()
@@ -210,11 +220,55 @@ def get_ledger(db,user,day=None,status='all',search=''):
         selected.append(group)
     days=defaultdict(list)
     for group in selected: days[group['scheduled_at'][:10]].append(group)
-    return {'days':[{'date':key,'severity':worst(items),'flights':sorted(items,key=lambda g:g['scheduled_at']),
+    return {'scope':scope,'scenario_mode':snapshot['simulation']['scenario_mode'],'days':[{'date':key,'severity':worst(items),'flights':sorted(items,key=lambda g:g['scheduled_at']),
                      'event_count':sum(g['event_count'] for g in items),'metrics':metrics(items)} for key,items in sorted(days.items(),reverse=True)],
             'metrics':all_metrics,'filtered_metrics':metrics(selected),
             'period':{'from':(settings.reference_date-timedelta(days=7)).isoformat(),'to':(settings.reference_date+timedelta(days=3)).isoformat()},
             'reference_date':settings.reference_date.isoformat(),'seeded_events':sum(row.data['event_count'] for row in stored),
             'total_groups':len(groups),'filtered_groups':len(selected),'current_run_id':snapshot['simulation']['run_id'],
             'event_count':sum(g['event_count'] for g in selected),
-            'notice':'Istoric demonstrativ persistent + acțiunile sesiunii curente. Jurnalul documentelor și al personalului păstrează separat drepturile de acces. ADS-B nu produce pontaje sau timpi de poartă.'}
+            'notice':'Istoricul operațiunilor și activitatea turei curente. Jurnalul documentelor și al personalului păstrează separat drepturile de acces. ADS-B nu produce pontaje sau timpi de poartă.'}
+
+
+def evidence_entry(db, user, event_id, group_id):
+    """Resolve a citation by identity, independently of current-run/date filters.
+
+    Historical groups remain addressable outside the dashboard's rolling period.
+    For rehearsal events, reconstruct their recorded run without advancing it or
+    substituting a newer run that happens to contain the same flight ID.
+    """
+    service.airport_for(user)
+    row = db.scalar(select(OperationLedgerGroup).where(
+        OperationLedgerGroup.id == group_id, OperationLedgerGroup.airport_id == user.airport_id))
+    group = present_group(row.data) if row else None
+    run_id = None
+    if group is None:
+        event = db.scalar(select(OperationEvent).where(
+            OperationEvent.id == event_id, OperationEvent.airport_id == user.airport_id))
+        if event:
+            run_id = event.run_id
+            events = list(db.scalars(select(OperationEvent).where(
+                OperationEvent.airport_id == user.airport_id, OperationEvent.run_id == run_id)
+                .order_by(OperationEvent.sequence)))
+            initial = next((item for item in events if item.kind == 'simulation_initialized'), events[0])
+            state = SimpleNamespace(airport_id=user.airport_id, run_id=run_id,
+                elapsed_seconds=max(item.elapsed_seconds for item in events), running=False,
+                speed=30, revision=0, scenario_mode=initial.payload.get('scenario_mode', 'interactive'),
+                created_at=initial.recorded_at, updated_at=events[-1].recorded_at)
+            groups = active_groups(service.snapshot(db, state, user, events))
+            group = next((item for item in groups if item['id'] == group_id), None)
+    if not group or not any(item['id'] == event_id for item in group['events']):
+        raise DomainError('Dovada citată nu mai este disponibilă în registrul acestui aeroport.', 404)
+    day = group['scheduled_at'][:10]
+    values = metrics([group])
+    return {'scope':'evidence', 'focus_event_id':event_id, 'evidence_run_id':run_id,
+        'days':[{'date':day, 'severity':group['severity'], 'flights':[group],
+                 'event_count':group['event_count'], 'metrics':values}],
+        'metrics':values, 'filtered_metrics':values, 'period':{'from':day, 'to':day},
+        'reference_date':day, 'seeded_events':group['event_count'] if row else 0,
+        'total_groups':1, 'filtered_groups':1, 'event_count':group['event_count'],
+        'current_run_id':None}
+
+
+def present_group(group):
+    return {**group, 'events':[{**event, **{key:operational_text(event[key]) for key in ('title','actor','detail')}} for event in group['events']]}

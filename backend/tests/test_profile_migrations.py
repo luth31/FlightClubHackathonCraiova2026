@@ -12,7 +12,8 @@ BACKEND = Path(__file__).resolve().parents[1]
 @pytest.mark.parametrize('starting_revision', [
     'base', '20261101_strategy_analysis', '20261101_person_profiles',
     '20261101_profiles_strategy_merge', '20261101_collaboration_routing',
-    'both_histories',
+    '20261101_workspace_merge', '20261101_collaboration_profiles',
+    '20261101_operations_workspace', '20261101_collaboration_merge', 'both_histories',
 ])
 def test_workspace_merge_preserves_existing_histories_and_upgrades_fresh_databases(tmp_path, starting_revision):
     environment = {**os.environ, 'PYTHONPATH': str(BACKEND),
@@ -24,6 +25,7 @@ def test_workspace_merge_preserves_existing_histories_and_upgrades_fresh_databas
 import sys
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import inspect, text
 from app.database import engine, SessionLocal
 from app.collaboration.models import CollaborationSync, CollaborationThread
@@ -61,7 +63,7 @@ command.upgrade(config, 'head')
 command.upgrade(config, 'head')
 seed()
 with engine.connect() as connection:
-    assert connection.execute(text('select version_num from alembic_version')).scalars().all() == ['20261101_workspace_merge']
+    assert connection.execute(text('select version_num from alembic_version')).scalars().all() == [ScriptDirectory.from_config(config).get_current_head()]
 assert {'user_profiles', 'collaboration_threads', 'collaboration_sync'} <= set(inspect(engine).get_table_names())
 with SessionLocal() as db:
     assert db.get(User, 'admin') is not None

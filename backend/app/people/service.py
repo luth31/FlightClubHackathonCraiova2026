@@ -102,7 +102,9 @@ def directory(db, user, reference_date=None):
             'starts_at': leave.starts_at, 'ends_at': leave.ends_at, 'reason': leave.reason, 'status': leave.status,
             'approver_id': leave.approver_id, 'can_decide': leave.status == 'pending' and can_review_leave(db, user, leave),
             **reference(db, leave)})
-    return {'items': items, 'total': len(items), 'departments': [d['name'] for d in records],
+    from app.operations.service import can_control
+    return {'items': items, 'total': len(items),
+        'can_record_attendance': can_control(user), 'departments': [d['name'] for d in records],
         'organization_leaders': [{'id': person.id, 'name': person.name, 'job_title': person.job_title}
             for person in users if person.active and has_role(person, 'director')],
         'delegations': delegations, 'leaves': leaves, 'current_user_id': user.id,

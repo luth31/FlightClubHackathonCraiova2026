@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ControlInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
     action: Literal['start', 'pause', 'step', 'advance', 'advance_to', 'reset']
-    scenario_mode: Literal['interactive', 'replay'] | None = None
+    scenario_mode: Literal['interactive', 'replay', 'normal', 'delayed', 'recovery'] | None = None
     target_seconds: int | None = Field(default=None, ge=0, le=3600)
     seconds: int = Field(default=300, ge=1, le=3600)
     speed: int | None = Field(default=None, ge=1, le=120)

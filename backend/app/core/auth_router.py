@@ -9,6 +9,7 @@ from app.core.exceptions import DomainError
 from app.core.audit import record
 from app.config import settings
 from app.identity.service import provider_logout_url
+from app.identity.origins import request_origin
 
 router = APIRouter(prefix='/api', tags=['Identity'])
 class Login(BaseModel):
@@ -51,4 +52,4 @@ def logout(request: Request, response: Response, db: DbSession = Depends(get_db)
         db.commit()
     response.delete_cookie(f'flyleaf_session_{settings.airport_id}',path='/api')
     response.delete_cookie(f'flyleaf_oidc_{settings.airport_id}',path='/api/auth/oidc')
-    return {'ok':True,'redirect_url':provider_logout_url() if settings.auth_mode == 'oidc' else None}
+    return {'ok':True,'redirect_url':provider_logout_url(request_origin(request)) if settings.auth_mode == 'oidc' else None}

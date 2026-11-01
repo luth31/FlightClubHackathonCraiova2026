@@ -100,7 +100,7 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/audit')body={items:[{id:'audit-demo',document_id:documentRecord.id,document_title:documentRecord.title,
       actor:user.name,action:'Demo action',created_at:'2026-10-01'}]};
     else if(path==='/api/people')body={items:[],total:0,departments:[],delegations:[],leaves:[],current_user_id:currentUser.id,
-      can_manage_accounts:false,can_manage_delegations:false,reference_date:'2026-10-30'};
+      can_manage_accounts:false,can_manage_delegations:false,can_record_attendance:true,reference_date:'2026-10-30'};
     else if(path.startsWith('/api/documents/')) {
       if(documentError)return Response.json({detail:'Document unavailable'},{status:404});
       body=path.endsWith('/doc-related')?related:{...documentRecord,related_documents:[related],
@@ -162,15 +162,14 @@ test('a refreshed dashboard dismisses stale source rows before they can be expor
   assert.equal(find('.px-kpi','Total documente').querySelector('strong').textContent,'0');
 });
 
-test('leaving the retained mobile NFC station restores the normal application shell',async t=>{
-  await setup(t,'#operations?view=station');
-  assert.ok(document.querySelector('.ops-station-mode'));
-  await click(find('aside button','Acasă'));
+test('obsolete NFC session links do not redirect the user away from their work',async t=>{
+  await setup(t,'#home',{sessionResponse:response=>{
+    sessionStorage.setItem('flyleaf.pendingNfc',JSON.stringify({card:'DEMO-NFC-101',at:Date.now()}));
+    return response;
+  }});
   assert.equal(heading(),'Bine ai venit, Ana.');
-  const retained=document.querySelector('.operations-page');
-  assert.ok(retained?.closest('[hidden]'),'The operations page remains mounted for session state');
-  assert.equal(document.querySelector('.ops-station-mode'),null,
-    'A hidden station must not trigger the CSS rule that hides the global sidebar and topbar');
+  assert.equal(location.hash,'#home');
+  assert.equal(document.querySelector('.ops-station-mode'),null);
 });
 
 test('technician sidebar contains only personal work and forbidden hashes do not fetch sections',async t=>{
@@ -413,7 +412,7 @@ test('supplier contract returns to the registry with its query and scroll positi
   assert.equal(browser.scrollY,650);
 });
 
-for(const [page,label] of [['documents','Documente'],['contracts','Contracte'],['approvals','Aprobări'],
+for(const [page,label] of [['documents','Documente'],['approvals','Aprobări'],
   ['sharing','Colaborare'],['audit','Jurnal de activitate'],['home','Acasă']])
   test(`document return preserves ${page} origin`,async t=>{
     await setup(t,`#${page}`);
@@ -501,8 +500,9 @@ test('malformed encoded document links recover without crashing',async t=>{
 
 test('sidebar still navigates away from document detail',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
-  await click(find('nav button','Contracte'));
-  assert.equal(heading(),'Contracte');
+  await click(find('nav button','Documente'));
+  assert.equal(heading(),'Documente');
+  await settle(230);
   await click(find('button',documentRecord.title));
   await click(find('nav button','Furnizori'));
   assert.equal(heading(),'Furnizori');
@@ -598,7 +598,7 @@ for (const [hash,pageHeading] of [['#document','Documente'],['#document/','Docum
 
 test('every sidebar section works and mobile navigation closes its drawer',async t=>{
   await setup(t,'#document/doc-contract?from=suppliers');
-  for (const [page,label] of [['home','Acasă'],['documents','Documente'],['contracts','Contracte'],
+  for (const [page,label] of [['home','Acasă'],['documents','Documente'],
     ['suppliers','Furnizori'],['approvals','Aprobări'],['people','Echipă'],
     ['sharing','Colaborare'],['audit','Jurnal de activitate']]) {
     await click(document.querySelector('.mobile-menu'));
@@ -623,7 +623,7 @@ for (const dismiss of ['cancel','navigate','back','account change'])
     await click(find('[role="dialog"] button','Înregistrează documentul'));
     assert.ok(find('button','Se încarcă'));
     if(dismiss==='cancel')await click(find('[role="dialog"] button','Renunță'));
-    else if(dismiss==='navigate')await click(find('nav button','Contracte'));
+    else if(dismiss==='navigate')await click(find('nav button','Acasă'));
     else if(dismiss==='back'){await act(async()=>window.history.back());await settle(70);}
     else {
       await click(document.querySelector('.user-button'));
@@ -647,4 +647,77 @@ test('a completed active upload opens its document and returns to its origin',as
   assert.equal(location.hash,'#document/doc-contract?from=documents');
   await click(document.querySelector('.back-button'));
   assert.equal(heading(),'Documente');
+});
+
+test('expired session leaves the workspace for login instead of rendering request errors',async t=>{
+  let expired=false;
+  await setup(t,'#reports',{authMode:'oidc',briefingResponse:()=>Response.json(
+    expired?{detail:'Conectează-te pentru a continua.'}:briefingFixture,{status:expired?401:200})});
+  expired=true;
+  await act(async()=>window.dispatchEvent(new window.Event('focus')));
+  await settle();
+  assert.ok(document.querySelector('.login-page'),'Expired session must show login');
+  assert.equal(document.querySelector('.app-shell'),null);
+  assert.equal(document.querySelector('.toast'),null);
+  assert.equal(location.hash,'#reports','Keep the destination for the next sign-in');
+});
+
+test('session expiry dismisses logout confirmation before the next sign-in',async t=>{
+  let expired=false;
+  await setup(t,'#reports',{briefingResponse:()=>Response.json(
+    expired?{detail:'Conectează-te pentru a continua.'}:briefingFixture,{status:expired?401:200})});
+  await click(find('.sidebar-bottom button','Ieși din cont'));
+  assert.ok(document.querySelector('.logout-confirmation'));
+  expired=true;
+  await act(async()=>window.dispatchEvent(new window.Event('focus')));
+  await settle();
+  assert.ok(document.querySelector('.login-page'));
+  expired=false;
+  await click(find('.login-page button','Intră în spațiul de lucru'));
+  assert.ok(document.querySelector('.app-shell'));
+  assert.equal(document.querySelector('.logout-confirmation'),null);
+});
+
+
+test('legacy contracts routes open the document library and preserve contract documents',async t=>{
+  await setup(t,'#contracts');
+  assert.equal(find('nav button','Contracte'),undefined);
+  assert.ok(find('nav [aria-current="page"]','Documente'));
+  await click(find('button',documentRecord.title));
+  assert.equal(location.hash,'#document/doc-contract?from=documents');
+  await click(document.querySelector('.back-button'));
+  assert.ok(document.querySelector('.document-library') || find('nav [aria-current="page"]','Documente'));
+});
+
+test('permission denial does not log the user out',async t=>{
+  await setup(t,'#reports',{briefingResponse:()=>Response.json({detail:'Acces restricționat.'},{status:403})});
+  assert.ok(document.querySelector('.app-shell'));
+  assert.equal(document.querySelector('.login-page'),null);
+});
+
+test('the home expiry metric opens its filtered documents without a Contracts section',async t=>{
+  await setup(t,'#home');
+  await click(find('button','Expiră în 60 zile'));
+  await settle(230);
+  assert.equal(location.hash,'#documents');
+  assert.ok(find('.library-tabs .active','Expiră în 60 zile'));
+  assert.equal(find('nav button','Contracte'),undefined);
+});
+
+
+test('NFC card survives login callback at the root and opens attendance under Team',async t=>{
+  await setup(t,'',{sessionResponse:response=>{
+    sessionStorage.setItem('flyleaf.pendingNfc',JSON.stringify({card:'DEMO-NFC-101',at:Date.now()}));
+    return response;
+  }});
+  assert.equal(location.hash,'#people?tab=attendance&card=DEMO-NFC-101');
+  assert.equal(heading(),'Pontajul echipei');
+  assert.equal(document.querySelector('#nfc-card').value,'DEMO-NFC-101');
+});
+
+test('previously written station cards open the restored attendance page',async t=>{
+  await setup(t,'#operations?view=station&card=DEMO-NFC-104');
+  assert.equal(heading(),'Pontajul echipei');
+  assert.equal(document.querySelector('#nfc-card').value,'DEMO-NFC-104');
+  assert.equal(document.querySelector('.operations-page'),null);
 });

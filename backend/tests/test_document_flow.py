@@ -284,3 +284,12 @@ def test_flow_includes_all_matches_beyond_default_library_page(admin, db):
             if document:
                 db.delete(document)
         db.commit()
+
+
+def test_expiring_dashboard_link_uses_documents_in_both_views(admin):
+    count = admin.get('/api/dashboard').json()['stats']['expiring']
+    records = admin.get('/api/documents?status=soon').json()
+    flow = admin.get('/api/documents/flow?status=soon').json()
+    assert records['total'] == flow['total'] == count
+    assert all(d['category'] == 'Contract' and d['validated'] and 0 <= d['days_remaining'] <= 60
+        and d['status'] != 'archived' for d in records['items'])

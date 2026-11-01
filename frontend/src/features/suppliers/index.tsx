@@ -64,7 +64,7 @@ export function SuppliersPage({
     [catalog,setCatalog]=useState<Supplier[]>(),[catalogError,setCatalogError]=useState(''),
     [registrations,setRegistrations]=useState<Registration[]>([]),[registrationOpen,setRegistrationOpen]=useState(false),[registrationId,setRegistrationId]=useState<string>(),
     [error, setError] = useState(""),
-    [tab, setTab] = useState("reviews"),
+    [tab, setTab] = useState("registry"),
     [query, setQuery] = useState(""),
     [create, setCreate] = useState(false),
     [selected, setSelected] = useState<Review>(),

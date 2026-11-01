@@ -14,8 +14,7 @@ def document_flow(db, user, q='', category='', status='', department='', selecte
     if category:
         documents = [document for document in documents if normalize(document.category) == normalize(category)]
     if status:
-        documents = [document for document in documents if document.status == status
-            or (status == 'approved' and document.status == 'signed')]
+        documents = [document for document in documents if service.matches_status(document, status)]
     if department:
         documents = [document for document in documents if normalize(document.department) == normalize(department)]
 

@@ -24,9 +24,10 @@ export interface OperationEvent {
   elapsed_seconds?:number;
 }
 export interface OperationsData {
+  scenarios?:{id:string;name:string;description:string}[];
   airport:{id:'craiova'|'sibiu';name:string;icao:string;lat:number;lon:number;elevation_m:number};
   simulation:{run_id:string;revision:number;running:boolean;speed:number;elapsed_seconds:number;
-    duration_seconds:number;clock_time:string;scenario_mode?:'interactive'|'replay'};
+    duration_seconds:number;clock_time:string;scenario_mode?:'interactive'|'replay'|'normal'|'delayed'|'recovery'};
   flights:Flight[];gates:Gate[];staff:Staff[];events:OperationEvent[];
   kpis:Record<string,number|null>;
   thresholds:{minor_delay_minutes:number;major_delay_minutes:number};
@@ -45,6 +46,7 @@ export interface LedgerEvent {
   id:string;kind:string;title:string;planned_at:string|null;actual_at:string|null;
   actor:string;detail:string;severity:Severity;delay_minutes:number|null;source:string;
 }
+export interface LedgerEvidenceTarget {eventId:string;groupId:string}
 export interface LedgerFlight {
   id:string;callsign:string;route:string;gate_id:string|null;scheduled_at:string;
   actual_at:string|null;status:string;severity:Severity;delay_minutes:number|null;
