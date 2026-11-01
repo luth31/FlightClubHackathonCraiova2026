@@ -25,18 +25,32 @@ def event(client,kind,**kwargs):
 def flight(state): return next(f for f in state['flights'] if f['id']=='flight-101')
 
 
-def test_default_interactive_clock_never_fabricates_staff_or_gate_actions(admin):
+def test_presentation_has_one_interactive_problem_and_two_automatic_routine_flights(admin):
+    command(admin,'reset')
+    state=command(admin,'advance_to',target_seconds=1320)
+    assert {f['id'] for f in state['flights']} == {'flight-101','flight-202','flight-404'}
+    assert flight(state)['actual_departure_seconds'] is None
+    regular=next(f for f in state['flights'] if f['id']=='flight-202')
+    assert regular['actual_departure_seconds']==1080 and regular['delay_minutes']==0
+    assert state['kpis']['on_time_percent']==100
+    assert [f['id'] for f in state['flights'] if f['severity']!='neutral']==['flight-101']
+    assert not next(s for s in state['staff'] if s['id']=='staff-agent-a')['present']
+    assert not any(e['staff_id'] in ('staff-agent-a','staff-relief') and e['kind']=='nfc_check_in' for e in state['events'])
+    assert any(e['kind']=='gate_open' and e['flight_id']=='flight-202' and e['source']=='scenario' for e in state['events'])
+
+
+def test_interactive_flight_never_fabricates_presenter_staff_or_gate_actions(admin):
     initial=command(admin,'reset')
     assert initial['simulation']['scenario_mode']=='interactive'
     assert initial['simulation']['speed']==1
     state=command(admin,'advance_to',target_seconds=1320)
-    assert all(not staff['present'] for staff in state['staff'])
-    assert not any(e['kind'].startswith(('nfc_','gate_open')) for e in state['events'])
+    assert all(not staff['present'] for staff in state['staff'] if staff['id'] in ('staff-agent-a','staff-relief'))
+    assert not any(e['kind'].startswith(('nfc_','gate_open')) for e in state['events'] if e['flight_id']=='flight-101' or e['staff_id'] in ('staff-agent-a','staff-relief'))
     assert flight(state)['actual_departure_seconds'] is None
     assert flight(state)['status']=='blocked'
     assert flight(state)['delay_minutes']==18
     assert flight(state)['phase']=='at_gate'
-    assert state['kpis']['on_time_percent'] is None
+    assert state['kpis']['on_time_percent']==100
     assert state['kpis']['actual_delay_minutes']==0
     assert state['kpis']['projected_delay_minutes']>0
     assert admin.post('/api/operations/control',json={'action':'advance_to','target_seconds':1200}).status_code==422
@@ -45,8 +59,6 @@ def test_default_interactive_clock_never_fabricates_staff_or_gate_actions(admin)
 def test_card_to_substitution_to_late_offblock_and_real_kpi_change(admin):
     command(admin,'reset')
     # The good flight proves actual punctuality; the delayed flight changes it.
-    event(admin,'nfc_check_in',staff_id='staff-agent-b')
-    event(admin,'gate_open',staff_id='staff-agent-b',gate_id='G2')
     state=command(admin,'advance_to',target_seconds=1320)
     assert state['kpis']['on_time_percent']==100
     request={'card_id':'DEMO-NFC-104','request_id':str(uuid4())}
@@ -150,7 +162,7 @@ def test_current_run_enters_ledger_and_changes_measured_metrics(admin):
     command(admin,'advance_to',target_seconds=2280)
     after=admin.get('/api/operations/ledger').json()
     assert after['metrics']['delay_minutes']==before['metrics']['delay_minutes']+18
-    assert after['metrics']['completed_departures']==before['metrics']['completed_departures']+1
+    assert after['metrics']['completed_departures']==before['metrics']['completed_departures']+2
     current=next(g for day in after['days'] for g in day['flights'] if g['id']=='flight-101')
     assert current['severity']=='red'
     assert current['cause']=='late_staff'

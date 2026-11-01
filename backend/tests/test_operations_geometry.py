@@ -55,7 +55,9 @@ def test_craiova_parked_aircraft_fit_the_established_apron():
 
 def test_craiova_pushback_keeps_the_nose_toward_the_terminal():
     airport = AIRPORTS['craiova']
-    for gate, flight in zip(gates(airport), FLIGHTS[:3]):
+    for gate, flight in zip(gates(airport), FLIGHTS):
+        if flight['direction'] != 'departure':
+            continue
         parked, _ = position(airport, gate, flight, 0)
         for second in (0, 5, 10, 19):
             point, _ = position(airport, gate, flight, second, departed_at=0)
@@ -96,3 +98,21 @@ def test_craiova_ground_routes_stay_on_the_apron_taxiway_and_runway():
         for second in range(start, start+duration+1):
             point, _ = position(airport, gate, flight, second, departed_at=0)
             assert on_pavement(point), (flight['callsign'], second, point)
+
+
+def test_timed_motion_vertices_match_authoritative_positions_for_both_airports():
+    from app.operations.scenario import motion_path
+    for airport in AIRPORTS.values():
+        for flight in FLIGHTS:
+            gate=next(g for g in gates(airport) if g['id']==flight['gate_id'])
+            departure=flight.get('scheduled_departure_seconds')
+            path=motion_path(airport,gate,flight,departure)
+            assert len(path)<35
+            assert all(a['at_seconds']<b['at_seconds'] for a,b in zip(path,path[1:]))
+            for a,b in zip(path,path[1:]):
+                for fraction in (0,.1,.5,.9,1):
+                    seconds=a['at_seconds']+(b['at_seconds']-a['at_seconds'])*fraction
+                    expected,_=position(airport,gate,flight,seconds,departure)
+                    for key in ('lat','lon','altitude_m'):
+                        actual=a[key]+(b[key]-a[key])*fraction
+                        assert abs(actual-expected[key])<1e-7,(airport['id'],flight['id'],seconds,key,actual,expected[key])

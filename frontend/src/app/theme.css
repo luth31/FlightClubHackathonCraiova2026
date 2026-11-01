@@ -63,6 +63,7 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .topbar-logout { padding: 8px; }
 .topbar-logout span { display: none; }
 .main-content { padding: 24px 28px 32px; }
+.collaboration-nav-count { margin-left:auto; min-width:24px; padding:2px 7px; border-radius:6px; background:#e6f3f1; color:#0b625b; font-size:14px; font-weight:650; }
 .main-content:focus { outline: none; }
 .eyebrow { font-size: 11px; letter-spacing: .9px; margin-bottom: 5px; color: var(--muted); }
 .page-heading { margin-bottom: 20px; gap: 16px; }

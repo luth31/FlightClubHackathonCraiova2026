@@ -13,6 +13,7 @@ from sqlalchemy import select, text
 from app.core.audit import now, record
 from app.core.exceptions import DomainError
 from app.core.security import can_read
+from app.config import settings
 from app.documents.models import Document
 from app.llm import service as llm
 from app.operations import ledger
@@ -69,6 +70,10 @@ Propose up to two specific, feasible procedural improvements, or none if unsuppo
 For an amendment use an existing sop_code. For a genuinely new procedure use kind=new and sop_code=null.
 Every recommendation must cite exact event IDs supplied in evidence. Cite multiple independent rotations when available.
 A cause label is an operational hypothesis, not proof of causation. Separate facts from inference.
+The cohort summarizes all observed groups. Evidence includes affected and unaffected examples.
+Unaffected examples provide context, not automatically matched controls. Never infer causality from sampling.
+Check counterexamples and missing data. If an existing SOP already requires the proposed action,
+consider verifying execution or data quality instead of duplicating the procedure. Return no recommendation if unsupported.
 Use metrics including the completed-departure denominator, baseline and unresolved risks. No invented percentages,
 measured benefits or promised minutes saved. Do not add together overlapping delay milestones.
 Explain why the existing SOP did not prevent the observed pattern, which steps change and how to test the hypothesis.
@@ -84,28 +89,59 @@ Use roles, not personal names. Do not reproduce operational evidence or staff id
 """
 
 
-def build_snapshot(db, user):
-    data = ledger.get_ledger(db, user)
-    groups = [g for d in data['days'] for g in d['flights']]
-    affected = sorted([g for g in groups if g['severity'] != 'neutral'],
-                      key=lambda g: (g['scheduled_at'], g['id']), reverse=True)
-    evidence = []
+def select_evidence(groups, limit=120):
+    """Alternate affected/unaffected examples without cutting a group's evidence.
+
+    These are descriptive comparison examples, not matched causal controls. Counts
+    cover the observed cohort independently of the bounded model payload.
+    """
+    buckets = {True: [], False: []}
     seen_events = set()
-    for group in affected:
+    observed_groups = [g for g in groups if any(e['actual_at'] for e in g['events'])]
+    for group in sorted(observed_groups, key=lambda g: (g['scheduled_at'], g['id']), reverse=True):
+        events = []
         for event in group['events']:
             if not event['actual_at'] or event['id'] in seen_events: continue
             if event['severity'] == 'neutral' and event['kind'] not in ('nfc_check_in', 'staff_substitution', 'gate_open', 'departure', 'equipment_check'): continue
             seen_events.add(event['id'])
             # No names, free-form user notes, leave records or HR details sent to the model.
-            evidence.append({'event_id': event['id'], 'group_id': group['id'], 'callsign': group['callsign'],
+            events.append({'event_id': event['id'], 'group_id': group['id'], 'callsign': group['callsign'],
                 'category': group['category'], 'direction': group.get('direction', 'departure'),
                 'kind': event['kind'], 'title': ledger.service.KINDS.get(event['kind'], event['title']), 'planned_at': event['planned_at'],
                 'actual_at': event['actual_at'], 'delay_minutes': event['delay_minutes'],
                 'flight_delay_minutes': group['delay_minutes'] if group['actual_at'] else None,
                 'flight_completed': bool(group['actual_at']), 'cause_hypothesis': group.get('cause'),
-                'severity': event['severity']})
-    # Bounded payload: retain the most recent affected rotations in deterministic order.
-    selected = evidence[:120]
+                'severity': event['severity'], 'group_affected': group['severity'] != 'neutral'})
+        if events:
+            buckets[group['severity'] != 'neutral'].append(events)
+    selected = []
+    selected_groups = {True: 0, False: 0}
+    for index in range(max(len(buckets[True]), len(buckets[False]), 0)):
+        for affected in (True, False):
+            if index >= len(buckets[affected]): continue
+            events = buckets[affected][index]
+            if len(selected) + len(events) > limit: continue
+            selected.extend(events)
+            selected_groups[affected] += 1
+    eligible_events = sum(len(events) for groups_in_bucket in buckets.values() for events in groups_in_bucket)
+    return selected, {
+        'observed_groups': len(observed_groups),
+        'affected_groups': sum(g['severity'] != 'neutral' for g in observed_groups),
+        'unaffected_groups': sum(g['severity'] == 'neutral' for g in observed_groups),
+        'completed_groups': sum(bool(g['actual_at']) for g in observed_groups),
+        'selected_affected_groups': selected_groups[True],
+        'selected_unaffected_groups': selected_groups[False],
+        'eligible_events': eligible_events,
+        'affected_events': sum(len(events) for events in buckets[True]),
+        'omitted_events': eligible_events - len(selected),
+        'selection': 'Alternating most-recent affected and unaffected groups; complete eligible event sets; descriptive, not matched controls.',
+    }
+
+
+def build_snapshot(db, user):
+    data = ledger.get_ledger(db, user)
+    groups = [g for d in data['days'] for g in d['flights']]
+    selected, cohort = select_evidence(groups)
     procedures = templates()
     for doc in service.documents(db, user):
         metadata = doc.extra['metadata']
@@ -128,8 +164,9 @@ def build_snapshot(db, user):
             'delay_minutes': 'Sum of positive off-block delays on completed departures only.',
             'open_risks': 'Unfinished flights with an active deviation or incident; not measured departure delay.'},
         'evidence': selected, 'observed_events': sum(bool(e['actual_at']) for g in groups for e in g['events']),
-        'affected_events': len(evidence), 'omitted_events': max(0, len(evidence) - len(selected)),
-        'procedures': [{k: value for k, value in p.items() if k in ('code','title','owner','purpose','trigger','steps','escalation','prerequisites','records','metrics','area','source_refs','local_validation','review','revision','document_id','document_version','status','current_document_text','text_truncated')} for p in procedures], 'synthetic': True, 'engine_version': 3,
+        'affected_events': cohort['affected_events'], 'omitted_events': cohort['omitted_events'], 'cohort': cohort,
+        'model': settings.openai_model,
+        'procedures': [{k: value for k, value in p.items() if k in ('code','title','owner','purpose','trigger','steps','escalation','prerequisites','records','metrics','area','source_refs','local_validation','review','revision','document_id','document_version','status','current_document_text','text_truncated')} for p in procedures], 'synthetic': True, 'engine_version': 4,
         'analysis_contract': hashlib.sha256((INSTRUCTIONS + json.dumps(Analysis.model_json_schema(), sort_keys=True)).encode()).hexdigest()}
 
 
@@ -148,7 +185,8 @@ def present(db, user, row, current_fingerprint=None):
         'stale': bool(current_fingerprint and row.fingerprint != current_fingerprint),
         'summary': result.get('summary'), 'limitations': result.get('limitations', []), 'recommendations': recommendations,
         'baseline': row.snapshot['metrics'], 'period': row.snapshot['period'],
-        'evidence_count': len(row.snapshot['evidence']), 'omitted_events': row.snapshot['omitted_events']}
+        'evidence_count': len(row.snapshot['evidence']), 'omitted_events': row.snapshot['omitted_events'],
+        'cohort': row.snapshot.get('cohort')}
 
 
 def latest(db, user):
@@ -159,7 +197,7 @@ def latest(db, user):
         StrategyAnalysis.status == 'running', StrategyAnalysis.updated_at > (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()))
     return {'analysis': present(db, user, row, fingerprint(snapshot)) if row else None, 'running': bool(running),
         'can_analyze': service.allowed(user), 'configured': llm.configured(), 'baseline': snapshot['metrics'],
-        'period': snapshot['period'], 'evidence_count': len(snapshot['evidence'])}
+        'period': snapshot['period'], 'evidence_count': len(snapshot['evidence']), 'cohort': snapshot['cohort']}
 
 
 def enrich(raw, snapshot, analysis_id):
@@ -196,7 +234,7 @@ def enrich(raw, snapshot, analysis_id):
 def analyze(db, user):
     service.require_editor(user)
     snapshot = build_snapshot(db, user)
-    if not snapshot['evidence']: raise DomainError('Nu există încă abateri înregistrate pentru analiză.', 409)
+    if not snapshot['evidence']: raise DomainError('Nu există încă evenimente observate pentru analiză.', 409)
     digest = fingerprint(snapshot)
     db.commit(); db.execute(text('BEGIN IMMEDIATE'))
     row = db.scalar(select(StrategyAnalysis).where(StrategyAnalysis.airport_id == user.airport_id, StrategyAnalysis.fingerprint == digest))

@@ -4,7 +4,7 @@ The operations workspace connects an interactive demonstration, a grouped airpor
 
 ## The presentation story
 
-Start a new **interactive** run. The clock starts paused at 08:00 and 1×, so scanning cards does not unexpectedly fast-forward the presentation. Cards, gate openings and closures are recorded by the presenter, never invented by the scenario. The clock can be paused, stepped or advanced to an exact stage; it is shared across signed-in browser/mobile clients.
+Start a new **interactive** run. The clock starts paused at 08:00 and 1×, so scanning cards does not unexpectedly fast-forward the presentation. FL101 at G1 is the only interactive delay story: its cards, gate openings and closures are recorded by the presenter. FL202 departs automatically at 08:18 and FL404 arrives normally at 08:12, clearing the taxiway before the departure. Their routine actions are explicitly recorded by the simulation engine. The clock can be paused, stepped or advanced to an exact stage; it is shared across signed-in browser/mobile clients.
 
 1. Scan a worker's NFC card, or select its demo card. The attendance event records the person's identity, expected arrival and actual scenario time, plus the real recording time.
 2. G1 is assigned to Mara Stoica, with an 08:04 opening and an 08:20 departure from the stand. With no check-in or gate opening, the aircraft remains at the stand and an operational risk appears.
@@ -14,7 +14,7 @@ Start a new **interactive** run. The clock starts paused at 08:00 and 1×, so sc
 6. Open the SOP library and saved Luna analysis. It references individual ledger events and proposes full procedure changes with a pilot and measurable success criteria. Generate a real procedure draft, then use document review and controlled sharing to continue the story across airports.
 7. Reset and check in/open G1 on time. That intervention prevents the delay. Closing the gate during unfinished boarding pauses progress, so the simulation responds to later decisions too.
 
-Opening G2 on time produces a completed punctual flight first; a later delayed FL101 then visibly lowers the actual punctuality percentage. A blocked flight affects risk/projection indicators without masquerading as a completed departure.
+The automatic G2 departure produces a completed punctual flight first; a later delayed FL101 then visibly lowers the actual punctuality percentage. A blocked flight affects risk/projection indicators without masquerading as a completed departure.
 
 The prerecorded replay remains an explicit alternative. Reset preserves prior run history, available from the run archive and paginated event endpoint. Card labels `DEMO-NFC-101` through `DEMO-NFC-104` are demonstration identities; they do not grant physical access. An NFC Tools link opens an authenticated card-confirmation screen; the user must confirm before attendance is recorded. iPhone browser Web NFC is not assumed.
 
@@ -45,3 +45,11 @@ Google tile requests use the browser's normal HTTP cache, respecting the provide
 ## Verification
 
 Focused tests cover default interactive behavior, NFC request idempotency, missing prerequisites, the 18-minute causal chain and successful early intervention, interrupted boarding, off-block/takeoff ordering, server-clock concurrency, ledger seeding/filtering/KPI arithmetic, actual SOP PDF generation, evidence snapshots and access controls. Whole-application and browser verification are recorded in the change's completion report; older verification counts are not claims about this implementation.
+
+## Motion and live tracking
+
+The presentation has three aircraft: FL101 (interactive), FL202 (automatic departure), and FL404 (automatic arrival). The other demo flights and scripted emergency were removed. Routine gate controls are unavailable so only the G1 story needs attention. Start a new repetition after upgrading to avoid carrying over events from an older scenario. Previous run history remains stored.
+
+Simulation snapshots include compact timed route vertices. The scene follows that route each animation frame at the selected speed, rather than cutting straight across taxiways between polling snapshots. Paused seeks snap to the inspected instant; playing clocks do not rewind on slightly late responses and stop predicting after a short network gap. Terrain clearance is consistent, ground-height changes settle smoothly, and status colors change without recreating the mesh.
+
+Live traffic refreshes every ten seconds, including while locked. A 15-second display buffer interpolates position, altitude and heading between timestamped observations; cached responses cannot create new keyframes. Playback holds at the last observation when the buffer runs out and does not interpolate across gaps over 45 seconds. The UI labels the delay and details show the latest received observation. All viewers of an airport share the provider cache; hidden views stop polling and failures back off, respecting Retry-After. The live lock uses a close aircraft camera; airport/all-traffic overview still provides geographic context. The adapter displays reported positions rather than inventing forward movement. Provider rate limits remain dynamic: [ADSB.lol API documentation](https://github.com/adsblol/api/blob/main/README.md).

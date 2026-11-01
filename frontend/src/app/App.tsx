@@ -10,6 +10,7 @@ import {DocumentLibrary,DocumentDetail,UploadDialog} from '@/features/documents'
 import {ContractsPage} from '@/features/contracts';
 import {ApprovalsPage} from '@/features/approvals';
 import {SharingPage} from '@/features/sharing';
+import {useCollaborationInbox} from '@/features/sharing/useCollaborationInbox';
 import {AuditPage} from '@/features/audit';
 import {SuppliersPage} from '@/features/suppliers';
 import {SupplierCatalogPage} from '@/features/suppliers/SupplierCatalogPage';
@@ -31,7 +32,7 @@ function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:st
   </ViewActiveContext></div>;
 }
 const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
-const secondNav=[{id:'sharing',label:'Partajate cu aeroporturi',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
+const secondNav=[{id:'sharing',label:'Colaborare',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
     [filter,setFilter]=useState(''), [upload,setUpload]=useState(false),
@@ -42,6 +43,7 @@ export function App() {
   const logoutPending = useRef(false);
   const sessionEpoch = useRef(0);
   const allowedPages = pagePermissions(session?.current_user);
+  const collaborationInbox = useCollaborationInbox(!!session?.current_user && allowedPages.sharing, session?.current_user?.id);
   const ownTasks = personalTasks(session?.current_user);
   const labels = {...pageLabels, approvals:ownTasks?'Sarcinile mele':pageLabels.approvals};
   const {page,doc,navigate:goToPage,openDocument,returnToOrigin} = useNavigation(session?.current_user?.id,allowedPages);
@@ -147,7 +149,7 @@ export function App() {
       {secondNav.some(n=>allowedPages[n.id as Page])&&<div className="nav-label second-label">COLABORARE</div>}
       <nav aria-label="Colaborare și istoric">
         {secondNav.filter(n=>allowedPages[n.id as Page]).map(n=><button key={n.id} className={page===n.id?'active':''} onClick={()=>navigate(n.id as Page)} aria-current={page===n.id?'page':undefined}>
-          <n.icon size={18}/><span>{n.label}</span>
+          <n.icon size={18}/><span>{n.label}</span>{n.id==='sharing'&&collaborationInbox.pendingCount>0&&<span className="collaboration-nav-count" aria-label={collaborationInbox.pendingCount===1?'1 cerere primită deschisă':`${collaborationInbox.pendingCount} cereri primite deschise`}>{collaborationInbox.pendingCount}</span>}
         </button>)}
       </nav>
       <div className="sidebar-bottom">

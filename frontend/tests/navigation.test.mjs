@@ -93,6 +93,7 @@ async function setup(t,hash='#suppliers',{roles=user.roles,startUser,documentErr
     else if(path==='/api/dashboard')body={stats:{documents:1,pending:0,expiring:0,approved:1},recent_documents:[documentRecord],attention:[],activity:[],departments:[]};
     else if(path==='/api/tasks')body={items:[{id:'task-demo',document_id:documentRecord.id,title:documentRecord.title,department:'Achiziții',
       assignee:user.name,status:'pending',priority:'normal',due_date:'2026-11-01',type:'approval',can_act:false}]};
+    else if(path==='/api/collaboration')body={partner:{id:'sibiu',name:'Aeroportul Sibiu'},can_create:true,connected:true,requests:[]};
     else if(path==='/api/shares')body={items:[{id:'share-demo',document_id:documentRecord.id,document_title:documentRecord.title,
       source_version:1,recipient_airport:'Demo partner',expires_at:'2026-12-01',created_at:'2026-10-01',status:'active'}]};
     else if(path==='/api/audit')body={items:[{id:'audit-demo',document_id:documentRecord.id,document_title:documentRecord.title,
@@ -363,9 +364,10 @@ test('supplier contract returns to the registry with its query and scroll positi
 });
 
 for(const [page,label] of [['documents','Documente'],['contracts','Contracte'],['approvals','Aprobări'],
-  ['sharing','Partajate cu aeroporturi'],['audit','Jurnal de activitate'],['home','Acasă']])
+  ['sharing','Colaborare'],['audit','Jurnal de activitate'],['home','Acasă']])
   test(`document return preserves ${page} origin`,async t=>{
     await setup(t,`#${page}`);
+    if(page==='sharing')await click(find('button','Documente trimise'));
     await click(find('button',documentRecord.title));
     assert.equal(heading(),documentRecord.title);
     assert.ok(document.querySelector('.back-button').textContent.includes(label));
@@ -548,7 +550,7 @@ test('every sidebar section works and mobile navigation closes its drawer',async
   await setup(t,'#document/doc-contract?from=suppliers');
   for (const [page,label] of [['home','Acasă'],['documents','Documente'],['contracts','Contracte'],
     ['suppliers','Furnizori'],['approvals','Aprobări'],['people','Echipă'],
-    ['sharing','Partajate cu aeroporturi'],['audit','Jurnal de activitate']]) {
+    ['sharing','Colaborare'],['audit','Jurnal de activitate']]) {
     await click(document.querySelector('.mobile-menu'));
     assert.ok(document.querySelector('.sidebar-overlay'));
     await click(find('nav button',label));

@@ -10,7 +10,8 @@ def norm(text):
     return ''.join(c for c in unicodedata.normalize('NFD',text.lower()) if unicodedata.category(c)!='Mn')
 
 def source(d):
-    return {'id':d['id'],'title':d['title'],'number':d['number'],'page':1,'excerpt':d['summary'][:300] or d['title'],'file_url':d['file_url']}
+    return {'id':d['id'],'title':d['title'],'number':d['number'],'page':None,
+            'source_type':'validated_metadata','excerpt':d['summary'][:300] or d['title'],'file_url':d['file_url']}
 
 def ask(question,db,user):
     docs=[serialize(d,user=user) for d in visible_documents(db,user) if d.validated]

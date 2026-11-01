@@ -81,3 +81,11 @@ export function disposeObject(object:THREE.Object3D,disposeMaterials=true){
   object.traverse(child=>{if(child instanceof THREE.Mesh||child instanceof THREE.Line){geometries.add(child.geometry);if(disposeMaterials){const mats=Array.isArray(child.material)?child.material:[child.material];mats.forEach(m=>materials.add(m));}}});
   geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());
 }
+
+/** Status updates must not recreate a moving aircraft at the next snapshot. */
+export function setAircraftStatus(group:THREE.Group,status:SceneStatus){
+  const [accent,fuselage]=group.userData.ownedMaterials as THREE.MeshStandardMaterial[];
+  accent.color.set(status==='critical'?'#e85f52':status==='caution'?'#edb63e':'#3c5558');
+  fuselage.color.set(status==='critical'?'#f5ada4':status==='caution'?'#f3d88e':'#eef1ed');
+  group.userData.status=status;
+}

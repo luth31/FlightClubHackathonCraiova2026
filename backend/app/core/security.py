@@ -82,6 +82,16 @@ def is_department_head(user, department=None):
     return has_role(user, 'department_head') and (department is None or canonical_department(user.department) == canonical_department(department))
 
 
+def can_share_documents(user):
+    # Request coordination and publishing a document copy are separate powers.
+    return has_role(user, 'director') or (has_role(user, 'reviewer') and canonical_department(user.department) == 'Conformitate')
+
+
+def require_share_documents(user):
+    if not can_share_documents(user):
+        raise DomainError('Partajarea documentelor necesită directorul sau responsabilul de conformitate.', 403)
+
+
 def page_permissions(user):
     director = has_role(user, 'director')
     head = is_department_head(user)
@@ -92,7 +102,7 @@ def page_permissions(user):
     return {'home': True, 'operations': True, 'documents': True, 'approvals': True, 'people': True, 'reports': True,
             'contracts': not technician and (director or finance or (head and not has_role(user, 'hr'))),
             'suppliers': director or finance or procurement,
-            'sharing': director or compliance,
+            'sharing': director or head or compliance,
             'audit': not technician and (director or head or has_role(user, 'hr') or compliance)}
 
 

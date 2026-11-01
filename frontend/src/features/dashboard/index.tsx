@@ -88,25 +88,6 @@ export function DashboardPage({
           <span className="plus">+</span>Adaugă document
         </button>
       </div>
-      <div className="stats-grid">
-        {stats.map((s, i) => (
-          <button
-            key={s.label}
-            className={`stat-card stat-${i}`}
-            onClick={() => onNavigate(s.to as Page, s.filter)}
-          >
-            <div className="stat-top">
-              <span>{s.label}</span>
-              <s.icon size={18} />
-            </div>
-            <div className="stat-number">
-              {s.value}
-              <ArrowUpRight size={19} />
-            </div>
-          </button>
-        ))}
-      </div>
-      <OperationsPulse onOpen={() => onNavigate("operations")} />
       <div className="dashboard-main">
         <div className="dashboard-primary">
           <div className="panel attention-panel">
@@ -214,6 +195,28 @@ export function DashboardPage({
           </div>
         </aside>
       </div>
+      <details className="home-overview">
+        <summary>Indicatori și situație operațională</summary>
+      <div className="stats-grid">
+        {stats.map((s, i) => (
+          <button
+            key={s.label}
+            className={`stat-card stat-${i}`}
+            onClick={() => onNavigate(s.to as Page, s.filter)}
+          >
+            <div className="stat-top">
+              <span>{s.label}</span>
+              <s.icon size={18} />
+            </div>
+            <div className="stat-number">
+              {s.value}
+              <ArrowUpRight size={19} />
+            </div>
+          </button>
+        ))}
+      </div>
+      <OperationsPulse onOpen={() => onNavigate("operations")} />
+      </details>
     </div>
   );
 }

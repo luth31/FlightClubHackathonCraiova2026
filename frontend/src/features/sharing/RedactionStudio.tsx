@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, EyeOff, LoaderCircle, MousePointer2, Search, ShieldCheck, Sparkles, Undo2, X } from 'lucide-react';
 import { api, fileUrl } from '@/services/api-client';
 import { ErrorMessage, Loading, Modal } from '@/components/ui';
-import type { DocumentRecord, Session } from '@/types';
+import type { DocumentRecord, Session, Share } from '@/types';
 import type { Analysis, Layout, Match, Preview, Suggestion } from './redaction-types';
 import { RedactionCanvas } from './RedactionCanvas';
 import './redaction.css';
 
-export function RedactionStudio({ document: doc, onClose, onShared }: {
-  document: DocumentRecord; onClose: () => void; onShared: () => void;
+export function RedactionStudio({ document: doc, onClose, onShared, recipientAirportId, forCoordination = false }: {
+  document: DocumentRecord; onClose: () => void; onShared: (share?: Share) => void;
+  recipientAirportId?: string; forCoordination?: boolean;
 }) {
   const [layout, setLayout] = useState<Layout>();
   const [step, setStep] = useState<'edit' | 'review'>('edit');
@@ -49,12 +50,12 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
         if (['queued', 'processing'].includes(extraction.status)) { timer = window.setTimeout(load, 1500); return; }
         if (extraction.status === 'failed') throw new Error(extraction.error || 'Reîncearcă extragerea textului din informațiile documentului.');
         const [data, session] = await Promise.all([api<Layout>(`/documents/${doc.id}/redaction-layout`), api<Session>('/session')]);
-        if (active) { setLayout(data); setRecipient(session.current_user?.airport_id === 'sibiu' ? 'craiova' : 'sibiu'); }
+        if (active) { setLayout(data); setRecipient(recipientAirportId || (session.current_user?.airport_id === 'sibiu' ? 'craiova' : 'sibiu')); }
       } catch (e) { if (active) setError((e as Error).message); }
     }
     void load();
     return () => { active = false; window.clearTimeout(timer); lookup.current?.abort(); };
-  }, [doc.id]);
+  }, [doc.id, recipientAirportId]);
 
   const wordMap = useMemo(() => new Map(layout?.pages.flatMap(p => p.words).map(w => [w.id, w]) || []), [layout]);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
@@ -150,8 +151,9 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
   async function share() {
     setBusy('share'); setError('');
     try {
-      await api(`/documents/${doc.id}/shares`, { method: 'POST', body: JSON.stringify({ recipient_airport_id: recipient, recipient_department: department || null, expires_at: expires, preview_id: preview?.preview_id, reviewed }) });
-      onShared();
+      const share = await api<Share>(`/documents/${doc.id}/shares`, { method: 'POST', body: JSON.stringify({ recipient_airport_id: recipient, recipient_department: forCoordination ? null : department || null, expires_at: expires, preview_id: preview?.preview_id, reviewed }) });
+      window.dispatchEvent(new Event('flyleaf:shares-changed'));
+      onShared(share);
     } catch (e) { setError((e as Error).message); setBusy(''); }
   }
   const pageNavigation = layout && <div className="studio-pagination">
@@ -226,7 +228,7 @@ export function RedactionStudio({ document: doc, onClose, onShared }: {
           <div className="review-image-scroll"><span className={`compare-label ${compare ? 'original' : ''}`}>{compare ? 'Original · datele sunt vizibile' : 'Copia pregătită pentru partajare'}</span><img alt={`${compare ? 'Original' : 'Copie anonimizată'}, pagina ${pageIndex + 1}`} src={fileUrl(compare ? `/api/documents/${doc.id}/redaction-pages/${pageIndex + 1}?source_version=${layout.source_version}&source_sha256=${layout.source_sha256}` : `/api/share-previews/${preview?.preview_id}/pages/${pageIndex + 1}`)} onError={() => { setImageError(true); setError('Pagina nu poate fi afișată. Deschide copia PDF pentru verificare.'); }} onLoad={() => setImageError(false)} /></div>
         </section><aside className="review-controls"><h3>Verifică copia</h3><p>{selected.length ? `${selected.length} cuvinte eliminate din copie.` : 'Copia păstrează tot conținutul.'} Parcurge toate paginile, inclusiv imaginile.</p><a className="text-button" href={fileUrl(preview?.file_url || '')} target="_blank" rel="noreferrer">Deschide copia PDF ↗</a>
           <div className="share-recipient"><span>Destinatar</span><strong>{recipient === 'sibiu' ? 'Aeroportul Sibiu' : 'Aeroportul Craiova'}</strong></div>
-          <label className="field">Cine poate accesa<select disabled={locked} value={department} onChange={e => setDepartment(e.target.value)}><option value="">Avizatorii și directorii autorizați</option>{['Achiziții', 'Tehnic', 'Financiar', 'Operațiuni', 'Resurse umane', 'Conformitate'].map(dep => <option key={dep} value={dep}>Doar {dep}</option>)}</select></label>
+          {forCoordination ? <p className="quiet-note">Copia va fi accesibilă directorilor și avizatorilor autorizați care participă la cerere. După partajare, o poți include în răspuns.</p> : <label className="field">Cine poate accesa<select disabled={locked} value={department} onChange={e => setDepartment(e.target.value)}><option value="">Avizatorii și directorii autorizați</option>{['Achiziții', 'Tehnic', 'Financiar', 'Operațiuni', 'Resurse umane', 'Conformitate'].map(dep => <option key={dep} value={dep}>Doar {dep}</option>)}</select></label>}
           <label className="field">Acces până la<input disabled={locked} type="date" min="2026-10-31" value={expires} onChange={e => setExpires(e.target.value)} /></label>
           <label className="checkbox-field"><input type="checkbox" checked={reviewed} disabled={locked} onChange={e => setReviewed(e.target.checked)} /><span>Am verificat copia și confirm că poate fi partajată.</span></label>
           <p className="quiet-note">Originalul rămâne intact. Accesul poate fi revocat; copiile deja descărcate nu se pot retrage.</p>

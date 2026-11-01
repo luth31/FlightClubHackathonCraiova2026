@@ -4,14 +4,16 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {Focus, LockKeyhole, Maximize2, Minus, Plus, Radar, RotateCcw, Plane, X} from 'lucide-react';
 import {createAirportModel, type AirportGeoJSON} from './airport-model';
-import {createAircraft, disposeObject} from './aircraft-model';
+import {createAircraft, disposeObject, setAircraftStatus} from './aircraft-model';
 import {AIRPORT_REFERENCE, flightCoordinates, fitTrafficFrame, REFERENCE_GEOID_OFFSET_M, type AirportSceneProps, type SceneFlight} from './scene-types';
 import {installMapWheelBoundary} from './map-input';
 import {AircraftCameraFollow} from './camera-follow';
+import {SimulationMotionClock,prepareRoute,sampleRoute,aircraftCloseUp,smoothGroundHeight,SURFACE_CLEARANCE,type MotionRoute} from './flight-motion';
 import './airport-scene.css';
+import {LiveMotionBuffer} from './live-motion';
 import type {TilesRenderer} from '3d-tiles-renderer';
 
-type FlightObject={mesh:THREE.Group;target:THREE.Vector3;heading:number;flight:SceneFlight;ground:number;base:THREE.Vector3;projection:THREE.Line;footprint:THREE.Mesh};
+type FlightObject={live:LiveMotionBuffer;mesh:THREE.Group;target:THREE.Vector3;heading:number;flight:SceneFlight;ground:number;groundTarget:number;surfaceCell:string;route:MotionRoute;base:THREE.Vector3;projection:THREE.Line;footprint:THREE.Mesh};
 type SceneHandle={wake:()=>void;syncFlights:()=>void;overview:()=>void;airport:()=>void;traffic:()=>void;focus:()=>void;zoom:(factor:number)=>void;checkLoadingTimeout:()=>void};
 type Notice={status:'loading'|'ready'|'error';message:string};
 const modelCache=new Map<string,AirportGeoJSON>();
@@ -42,6 +44,8 @@ export function AirportScene(props:AirportSceneProps){
     const abort=new AbortController(),reference=AIRPORT_REFERENCE[airportId];
     const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const flights=new Map<string,FlightObject>();
+    const motionClock=new SimulationMotionClock();
+    const epochOffset=Date.now()-performance.now();
     const cameraFollow=new AircraftCameraFollow();let followedId:string|null=null;
     const report=(status:Notice['status'],message:string)=>{if(disposed)return;setNotice({status,message});latest.current.onMapStatus?.(status,message);};
     report('loading',mapMode==='photorealistic'?'Încărcăm aeroportul fotorealist…':'Construim aeroportul din geometria reală…');
@@ -101,13 +105,8 @@ export function AirportScene(props:AirportSceneProps){
     const overview=()=>latest.current.trafficMode?trafficOverview():airportOverview();
     const focus=(id=latest.current.selectedFlightId||'')=>{
       const selected=flights.get(id);if(!selected)return;
-      if(latest.current.trafficMode){
-        // Keep its geographic footprint visible too: an airborne close-up alone
-        // hides the airport/terrain that makes a reported position meaningful.
-        const point=selected.mesh.position;
-        const frame=fitTrafficFrame([selected.base.toArray(),point.toArray()],camera.fov,camera.aspect);
-        controls.target.fromArray(frame.target);camera.position.fromArray(frame.position);
-      }else{controls.target.copy(selected.mesh.position);camera.position.copy(selected.mesh.position).add(new THREE.Vector3(115,100,140));}
+      const frame=aircraftCloseUp(selected.mesh.position);
+      controls.target.copy(frame.target);camera.position.copy(frame.position);
       controls.update();settleFrames=12;wake();
     };
     const updateFollow=()=>{
@@ -121,23 +120,26 @@ export function AirportScene(props:AirportSceneProps){
     const zoom=(factor:number)=>{camera.position.sub(controls.target).multiplyScalar(factor).add(controls.target);controls.update();settleFrames=12;wake();};
     const removeFlight=(id:string,item:FlightObject)=>{aircraftGroup.remove(item.mesh,item.projection,item.footprint);disposeObject(item.mesh,false);(item.mesh.userData.ownedMaterials as THREE.Material[]).forEach(material=>material.dispose());item.projection.geometry.dispose();(item.projection.material as THREE.Material).dispose();item.footprint.geometry.dispose();(item.footprint.material as THREE.Material).dispose();flights.delete(id);};
     const syncFlights=()=>{
+      if(latest.current.simulationClock)motionClock.sync(latest.current.simulationClock,performance.now());
       const wanted=new Set(latest.current.flights.map(f=>f.id));for(const [id,item]of flights)if(!wanted.has(id))removeFlight(id,item);
       for(const flight of latest.current.flights){
         if(!Number.isFinite(flight.lat)||!Number.isFinite(flight.lon))continue;
         let item=flights.get(flight.id);const [x,y,z]=flightCoordinates(flight,reference,mapMode);
-        if(item&&item.flight.status!==flight.status){removeFlight(flight.id,item);item=undefined;}
+        if(item&&item.flight.status!==flight.status)setAircraftStatus(item.mesh,flight.status);
         if(!item){
           const mesh=createAircraft(flight.status,flight.display_scale);mesh.userData.flightId=flight.id;mesh.position.set(x,y,z);mesh.rotation.y=-(flight.heading||0)*Math.PI/180;
           const projection=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineDashedMaterial({color:'#ffffff',transparent:true,opacity:.85,dashSize:100,gapSize:70,depthTest:false}));
           const footprint=new THREE.Mesh(new THREE.RingGeometry(28,38,32),new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));footprint.rotation.x=-Math.PI/2;
-          aircraftGroup.add(mesh,projection,footprint);item={mesh,target:mesh.position.clone(),heading:mesh.rotation.y,flight,ground:0,base:new THREE.Vector3(),projection,footprint};flights.set(flight.id,item);
+          aircraftGroup.add(mesh,projection,footprint);item={live:new LiveMotionBuffer(),mesh,target:mesh.position.clone(),heading:mesh.rotation.y,flight,ground:0,groundTarget:0,surfaceCell:'',route:[],base:new THREE.Vector3(),projection,footprint};flights.set(flight.id,item);
         }
         item.base.fromArray(flightCoordinates({...flight,altitude_m:0,reported_altitude_m:reference.elevation+REFERENCE_GEOID_OFFSET_M,altitude_reference:'geometric_ellipsoid'},reference,mapMode));
-        item.flight=flight;item.target.set(x,y+(flight.source==='live'&&!flight.ground?0:item.ground),z);item.heading=-(flight.heading||0)*Math.PI/180;
+        item.flight=flight;item.target.set(x,y,z);item.heading=-(flight.heading||0)*Math.PI/180;
+        item.route=prepareRoute(flight.trajectory||[],reference,mapMode);
+        if(flight.source==='live'&&flight.observed_at_ms!=null)item.live.push(flight.observed_at_ms,item.target,item.heading);
         item.mesh.scale.setScalar(flight.display_scale??1);
         // A timeline seek is a new instant, not a straight taxi route between
         // distant snapshots. Never sweep through terrain or occupied stands.
-        if(flight.source==='simulation'&&latest.current.animateFlights===false){item.mesh.position.copy(item.target);item.mesh.rotation.y=item.heading;}
+        if(flight.source==='simulation'&&latest.current.animateFlights===false){item.mesh.position.copy(item.target);item.mesh.position.y+=item.ground+SURFACE_CLEARANCE;item.mesh.rotation.y=item.heading;}
         const ring=item.mesh.getObjectByName('selection-ring');if(ring)ring.visible=latest.current.selectedFlightId===flight.id;
       }
       const trafficMode=Boolean(latest.current.trafficMode);
@@ -176,11 +178,31 @@ export function AirportScene(props:AirportSceneProps){
       raf=0;if(disposed||latest.current.active===false||document.hidden)return;
       const delta=Math.min((now-lastFrame)/1000||.016,.05);lastFrame=now;
       const controlsChanged=controls.update(delta);let moving=false;
+      const simulationSeconds=motionClock.read(now);
       for(const item of flights.values()){
-        const distance=item.mesh.position.distanceToSquared(item.target);
-        if(distance>.0001){item.mesh.position.lerp(item.target,reducedMotion?1:Math.min(1,delta*4));moving=true;}
-        const diff=Math.atan2(Math.sin(item.heading-item.mesh.rotation.y),Math.cos(item.heading-item.mesh.rotation.y));
-        if(Math.abs(diff)>.0001){item.mesh.rotation.y+=diff*(reducedMotion?1:Math.min(1,delta*5));moving=true;}
+        const previousGround=item.ground;
+        if(item.flight.source!=='simulation'||item.target.y<=2)item.ground=smoothGroundHeight(item.ground,item.groundTarget,delta);
+        const groundMoving=Math.abs(item.ground-previousGround)>.00001;
+        if(item.flight.source==='simulation'&&item.route.length&&latest.current.simulationClock){
+          const heading=sampleRoute(item.route,simulationSeconds,item.target);
+          item.mesh.position.copy(item.target);item.mesh.position.y+=item.ground+SURFACE_CLEARANCE;
+          item.mesh.rotation.y=-heading*Math.PI/180;
+          moving=Boolean(latest.current.simulationClock.playing&&simulationSeconds<item.route.at(-1)!.seconds)||groundMoving||moving;
+        }else if(item.flight.source==='live'&&item.flight.observed_at_ms!=null){
+          const sample=item.live.sample(now+epochOffset,item.target);
+          if(sample){
+            item.mesh.position.copy(item.target);
+            if(item.flight.ground)item.mesh.position.y+=item.ground+SURFACE_CLEARANCE;
+            item.mesh.rotation.y=sample.heading;moving=sample.pending||groundMoving||moving;
+          }
+        }else{
+          // Observed live positions are interpolated, never extrapolated beyond the feed.
+          const target=item.target.clone();
+          if(item.flight.source!=='live'||item.flight.ground)target.y+=item.ground+SURFACE_CLEARANCE;
+          if(item.mesh.position.distanceToSquared(target)>.0001){item.mesh.position.lerp(target,reducedMotion?1:1-Math.exp(-delta*4));moving=true;}
+          const diff=Math.atan2(Math.sin(item.heading-item.mesh.rotation.y),Math.cos(item.heading-item.mesh.rotation.y));
+          if(Math.abs(diff)>.0001){item.mesh.rotation.y+=diff*(reducedMotion?1:1-Math.exp(-delta*5));moving=true;}
+        }
       }
       moving=updateFollow()||moving;
       for(const item of flights.values()){
@@ -195,13 +217,18 @@ export function AirportScene(props:AirportSceneProps){
       camera.updateMatrixWorld();
       if(tiles&&!tileFailure){
         tiles.update();
-        if(now-lastGroundAt>1200&&tiles.visibleTiles.size){
+        if(now-lastGroundAt>200&&tiles.visibleTiles.size){
           lastGroundAt=now;scene.updateMatrixWorld(true);
           for(const item of flights.values()){
-            if(item.flight.source==='live'?!item.flight.ground:(item.flight.altitude_m||0)>2)continue;
-            groundRay.ray.origin.set(item.target.x,8000,item.target.z);
+            if(item.flight.source==='live'?!item.flight.ground:item.target.y>2)continue;
+            // Probe where the plane is rendered, not a future polling target. Cache
+            // each visited pavement cell so changes in tile detail cannot make it bob.
+            const p=item.mesh.position,cell=`${Math.round(p.x/20)}:${Math.round(p.z/20)}`;
+            if(cell===item.surfaceCell)continue;
+            groundRay.ray.origin.set(p.x,8000,p.z);
             const hit=groundRay.intersectObject(tiles.group,true)[0];
-            if(hit&&Math.abs(hit.point.y)<1500){item.ground=hit.point.y;item.target.y=item.ground+Math.max(0,item.flight.altitude_m||0)+.35;}
+            if(hit&&Math.abs(hit.point.y)<1500){item.groundTarget=hit.point.y;if(latest.current.animateFlights===false)item.ground=hit.point.y;item.surfaceCell=cell;moving=true;}
+
           }
         }
         if(now-creditsAt>500){creditsAt=now;const values=tiles.getAttributions().filter(a=>a.type==='string').map(a=>String(a.value)).filter(Boolean);setCredits([...new Set(values)].join(' · '));}

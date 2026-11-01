@@ -2,11 +2,11 @@
 
 ## The five-minute story
 
-Use **Operațiuni la sol → Tura curentă**. The displayed clock is the demonstration's airport-local time; event records also retain the real UTC recording time. The default interactive mode never invents scans or opens a gate for the presenter. Real ADS-B traffic is a separate, read-only map mode.
+Use **Operațiuni la sol → Tura curentă**. The displayed clock is the demonstration's airport-local time; event records also retain the real UTC recording time. The default interactive mode never invents scans or opens G1 for the presenter. FL202 (08:18 departure) and FL404 (08:12 arrival) run automatically; only FL101 needs intervention. Real ADS-B traffic is a separate, read-only map mode.
 
 1. **Before the pitch:** sign in on the presentation laptop and iPhone to the same airport. Reset to **Interactivă** and keep the clock paused. Prepare the card links below.
 2. **Stage entrance:** the on-time staff scan their cards. Use the mobile confirmation to log the entry. The assigned G1 employee, Mara Stoica, has not arrived. The laptop receives the entries automatically.
-3. **Reveal the problem:** advance to 08:04. G1 should open, but the assigned worker is absent. Advance to 08:22. Scan Alexandru Marin's reserve card and confirm entry. Select FL101 and open G1 with Alexandru as the operator. For the other flights, scan their assigned workers and open their gates before their due times, or leave them blocked intentionally; the metrics reflect the actual actions in this rehearsal.
+3. **Reveal the problem:** advance to 08:04. G1 should open, but the assigned worker is absent. Advance to 08:22. Scan Alexandru Marin's reserve card and confirm entry. Select FL101 and open G1 with Alexandru as the operator. The other two aircraft require no presenter actions. FL202 supplies the on-time baseline automatically.
 4. **Show the consequence:** advance to 08:45. Boarding takes 16 modeled minutes from gate opening. FL101 leaves the stand at 08:38, 18 minutes after its 08:20 plan. Taxi follows departure from the stand; takeoff is a separate event. Closing the gate before boarding finishes pauses its progress.
 5. **Explain and improve:** select **Vezi firul evenimentelor**. The expanded ledger shows scheduling, assignment, attendance, operator identity, planned/actual milestones and delay. Open **Proceduri SOP → Strategii și optimizare** to inspect the saved Luna analysis, supporting events, proposed steps and pilot. **Creează ciornă SOP** creates a full procedure document for review. After normal approval, use the existing controlled airport-sharing workflow.
 
@@ -25,12 +25,12 @@ After dragging, **Redă de aici** plays from the selected moment; **Pauză**, pl
 The station works in the browser; no native iOS application is claimed. iOS can open a supported NFC tag's URL. Safari does not expose the Android Web NFC scanning API. See [Apple background tag reading](https://developer.apple.com/documentation/corenfc/adding-support-for-background-tag-reading) and [NFC Tools URL-writing instructions](https://www.wakdev.com/en/knowledge-base/how-to-guides/how-to-write-a-link-url-on-an-nfc-chip.html).
 
 1. Open FlyLeaf at the HTTPS presentation address on the iPhone and sign in with an operations-enabled account.
-2. On **Stație mobilă → Cardurile echipei**, copy the link for each person.
+2. On **Stație mobilă → Cardurile echipei**, prepare Mara’s `DEMO-NFC-101` and Alexandru’s `DEMO-NFC-104`. Ioana’s `DEMO-NFC-103` is optional for an on-time entrance; Vlad’s G2 attendance is automatic.
 3. In NFC Tools choose **Write → Add a record → URL / URI**, paste the link, then write the card. The link identifies a demonstration card, not an authentication credential. Use the presentation hostname, not localhost.
 4. Tap the card with the iPhone, open its notification, then press **Confirmă intrarea**. Opening a link alone never records attendance. If sign-in is required, the pending card survives the same-tab login round trip for up to 30 minutes.
 5. The receipt shows the server's scenario timestamp. The laptop updates on its next poll. **Ieșire** is explicit; repeated taps never silently toggle the person's presence.
 
-Card labels: Mara `DEMO-NFC-101`; Vlad `DEMO-NFC-102`; Ioana `DEMO-NFC-103`; Alexandru `DEMO-NFC-104`. A keyboard-style reader can enter the same label into the station. The preparation panel also supports rehearsal without hardware. Physical NFC hardware must still be rehearsed on the actual iPhone/tag combination; desktop mobile emulation checks the web flow only.
+Card labels: Mara `DEMO-NFC-101`; Vlad `DEMO-NFC-102` (automatic routine flight); Ioana `DEMO-NFC-103`; Alexandru `DEMO-NFC-104`. A keyboard-style reader can enter the same label into the station. The preparation panel also supports rehearsal without hardware. Physical NFC hardware must still be rehearsed on the actual iPhone/tag combination; desktop mobile emulation checks the web flow only.
 
 ## Evidence and metrics
 

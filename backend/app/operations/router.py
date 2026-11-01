@@ -40,8 +40,8 @@ def list_events(run_id: str | None=Query(default=None, max_length=100), offset: 
 
 
 @router.get('/traffic')
-def live_traffic(user=Depends(current_user)):
-    return traffic.get_traffic(user)
+def live_traffic(tracking: bool=False, user=Depends(current_user)):
+    return traffic.get_traffic(user, tracking=tracking)
 
 
 @router.post('/nfc')
