@@ -53,7 +53,7 @@ TIMELINE = [
     (240, 'staff_absent', {'gate_id': 'G1', 'staff_id': 'staff-agent-a', 'flight_id': 'flight-101'}, 'G1 · agentul alocat lipsește', 'Ora planificată de deschidere a sosit, dar cardul agentului nu a fost citit.'),
     (720, 'arrival', {'flight_id': 'flight-404', 'gate_id': 'G4'}, 'FL404 a aterizat', 'Sosire normală, gestionată automat în fundal.'),
     (1200, 'nfc_check_in', {'staff_id': 'staff-relief'}, 'Card NFC · Alexandru Marin', 'Agentul de rezervă este disponibil.'),
-    (1260, 'staff_substitution', {'gate_id': 'G1', 'staff_id': 'staff-relief', 'flight_id': 'flight-101'}, 'Înlocuitor trimis la G1', 'Alexandru Marin preia poarta alocată inițial Marei Stoica.'),
+    (1260, 'staff_substitution', {'gate_id': 'G1', 'staff_id': 'staff-relief', 'previous_staff_id':'staff-agent-a', 'flight_id': 'flight-101'}, 'Înlocuitor trimis la G1', 'Alexandru Marin preia poarta alocată inițial Marei Stoica.'),
     (1320, 'gate_open', {'gate_id': 'G1', 'staff_id': 'staff-relief', 'flight_id': 'flight-101'}, 'Poarta G1 deschisă de înlocuitor', 'Deschidere cu 18 minute după ora planificată. Îmbarcarea poate începe.'),
     (1500, 'nfc_check_in', {'staff_id': 'staff-agent-a'}, 'Card NFC · Mara Stoica', 'Agentul alocat inițial ajunge cu 25 minute după începutul turei.'),
     (3000, 'scenario_summary', {}, 'Rezumatul turei', 'Absență → înlocuire → poartă deschisă târziu → FL101 pleacă cu 18 minute întârziere.'),
@@ -78,12 +78,31 @@ RECOVERY_TIMELINE = ROUTINE_TIMELINE + [
     (0,'nfc_check_in',{'staff_id':'staff-supervisor'},'Coordonator prezent','Echipa este verificată.'),
     (240,'staff_absent',{'gate_id':'G1','staff_id':'staff-agent-a','flight_id':'flight-101'},'Agentul G1 lipsește','Coordonatorul activează imediat rezerva.'),
     (240,'nfc_check_in',{'staff_id':'staff-relief'},'Rezervă disponibilă','Alexandru Marin este pregătit pentru intervenție.'),
-    (300,'staff_substitution',{'gate_id':'G1','staff_id':'staff-relief','flight_id':'flight-101'},'Înlocuitor repartizat la G1','Rezerva este trimisă la poartă în primul minut.'),
+    (300,'staff_substitution',{'gate_id':'G1','staff_id':'staff-relief','previous_staff_id':'staff-agent-a','flight_id':'flight-101'},'Înlocuitor repartizat la G1','Rezerva este trimisă la poartă în primul minut.'),
     (420,'gate_open',{'gate_id':'G1','staff_id':'staff-relief','flight_id':'flight-101'},'Poarta G1 deschisă de rezervă','Îmbarcarea începe la 08:07, cu trei minute întârziere.'),
 ]
 
 def scenario_timeline(mode):
-    events = {'normal': NORMAL_TIMELINE, 'delayed': TIMELINE, 'recovery': RECOVERY_TIMELINE, 'replay': TIMELINE}.get(mode, ROUTINE_TIMELINE)
+    events = list({'normal': NORMAL_TIMELINE, 'delayed': TIMELINE, 'recovery': RECOVERY_TIMELINE, 'replay': TIMELINE}.get(mode, ROUTINE_TIMELINE))
+    for flight in FLIGHTS:
+        planned = flight.get('scheduled_departure_seconds',flight.get('scheduled_arrival_seconds'))
+        payload = {'flight_id':flight['id'],'gate_id':flight['gate_id'],'baseline':True}
+        events += [(planned-3*86400,'flight_scheduled',payload,'Zbor programat','Programul zborului a fost înregistrat.'),
+                   (planned-86400,'gate_assigned',payload,'Poartă alocată','Resursa de îmbarcare a fost alocată zborului.')]
+        if flight['direction'] == 'arrival':
+            events.append((planned+180,'aircraft_onblock',payload,'Aeronavă la stand','Sosirea la stand este distinctă de aterizare.'))
+            continue
+        staff_id = 'staff-agent-a' if flight['id']=='flight-101' else 'staff-agent-b'
+        events.append((planned-86400,'staff_assigned',{**payload,'staff_id':staff_id},'Agent alocat','Responsabilitatea porții a fost atribuită.'))
+        if flight['id']=='flight-101':
+            events.append((planned-86400,'reserve_assigned',{**payload,'staff_id':'staff-relief'},'Agent de rezervă alocat','Rezerva a fost nominalizată.'))
+        # Independent work streams overlap, with explicit start/completion pairs.
+        for at, kind, title in [(-2400,'aircraft_onblock','Aeronavă la stand'),
+            (-1500,'cleaning_started','Curățenie începută'),(-1440,'fuel_started','Alimentare începută'),
+            (-1200,'baggage_loading_started','Încărcare bagaje începută'),(-1100,'cleaning_complete','Curățenie încheiată'),
+            (-900,'fuel_ready','Alimentare încheiată'),(-300,'baggage_loaded','Bagaje încărcate'),
+            (-60,'loadsheet_confirmed','Document de încărcare confirmat')]:
+            events.append((at,kind,payload,title,'Reper de pregătire înregistrat de handling.'))
     if mode in {'normal','delayed','recovery'}:
         return [(at,kind,payload,title.replace('Card NFC ·','Prezență ·'),detail.replace('cardul agentului nu a fost citit','prezența agentului nu este confirmată')) for at,kind,payload,title,detail in events]
     return events

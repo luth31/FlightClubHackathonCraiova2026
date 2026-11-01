@@ -42,6 +42,10 @@ def clock_time(seconds):
 
 def append_event(db, state, user, kind, elapsed, title, detail='', *, source='scenario', key=None, payload=None):
     payload = payload or {}
+    from app.operations.event_rules import validate_live
+    prior = event_rows(db, state)
+    if any(e.kind == 'simulation_initialized' and e.payload.get('event_schema_version') == 1 for e in prior):
+        validate_live(kind, payload, prior)
     event = OperationEvent(id='op-' + uuid4().hex, airport_id=state.airport_id, run_id=state.run_id,
         sequence=state.next_sequence, elapsed_seconds=elapsed, recorded_at=utc_now().isoformat(),
         kind=kind, source=source, event_key=key or uuid4().hex, title=title, detail=detail,
@@ -71,7 +75,7 @@ def initial_state(db, user):
         db.add(state)
         db.flush()
         append_event(db, state, user, 'simulation_initialized', 0, 'Tura este pregătită',
-            'Tura este pregătită pentru începerea operațiunilor.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode})
+            'Tura este pregătită pentru începerea operațiunilor.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode, 'event_schema_version':1})
         db.flush()
     return state
 
@@ -108,6 +112,9 @@ def boarding_progress(flight, events, elapsed):
 def pending_events(events, scenario_mode='interactive'):
     keys = {e.event_key for e in events}
     scripted = scenario_timeline(scenario_mode)
+    versioned = any(e.kind == 'simulation_initialized' and e.payload.get('event_schema_version') == 1 for e in events)
+    if not versioned:
+        scripted = [item for item in scripted if not item[2].get('baseline')]
     result = []
     for seconds, kind, payload, title, detail in scripted:
         subject = payload.get('flight_id') or payload.get('staff_id') or 'shift'
@@ -139,14 +146,19 @@ def pending_events(events, scenario_mode='interactive'):
         if ready is not None:
             departure = max(flight['scheduled_departure_seconds'], ready)
             stages += [(ready, 'boarding_completed', f'{flight["callsign"]} · îmbarcare încheiată'),
+                       (ready, 'aircraft_ready', f'{flight["callsign"]} · pregătire plecare confirmată'),
                        (departure, 'departure', f'{flight["callsign"]} · plecare de la stand'),
                        (departure+180, 'takeoff', f'{flight["callsign"]} · decolare')]
         for seconds, kind, title in stages:
+            if kind == 'aircraft_ready' and not versioned:
+                continue
             key = flight['id'] + ':' + kind
             if key not in keys:
                 result.append((seconds, key, kind, payload, title,
                     f'Îmbarcare {flight["turnaround_seconds"]/60:g} min cu poarta deschisă; rulaj 3 min după plecarea de la stand.'))
-    return sorted(result, key=lambda item: (item[0], item[1]))
+    from app.operations.event_rules import RULES
+    priorities = {kind:index for index,kind in enumerate(RULES)}
+    return sorted(result, key=lambda item: (item[0], priorities.get(item[2],999), item[1]))
 
 
 def materialize_events(events, scenario_mode, user, elapsed, append):
@@ -156,6 +168,10 @@ def materialize_events(events, scenario_mode, user, elapsed, append):
         if not pending or pending[0][0] > elapsed:
             break
         seconds, key, kind, payload, title, detail = pending[0]
+        # Repeated deliveries or earlier human actions cannot create an invalid
+        # second attendance transition when a scheduled scan becomes due.
+        if kind in ('nfc_check_in','nfc_check_out') and staff_state(events)[payload['staff_id']]['present'] == (kind=='nfc_check_in'):
+            kind,title,detail='scenario_superseded','Prezența este deja înregistrată','Pontajul existent a fost păstrat; nu a fost creată o a doua intrare.'
         # An operator's earlier intervention supersedes the planned delayed opening.
         if kind == 'gate_open' and payload.get('flight_id') in first_openings(events):
             kind, title, detail = 'scenario_superseded', 'Acțiune deja realizată', 'Deschiderea automată nu a fost repetată; intervenția anterioară este păstrată.'
@@ -316,11 +332,19 @@ def snapshot(db, state, user, events):
     }
 
 
+
+def index_current(db,state,user,events):
+    from app.operations.ledger import active_groups
+    from app.operations.atomic_ledger import prepare
+    prepare(db,user,active_groups(snapshot(db,state,user,events)))
+
+
 def get_snapshot(db, user):
     for attempt in range(3):
         try:
             state = initial_state(db, user)
             events = synchronize(db, state, user)
+            index_current(db,state,user,events)
             db.commit()
             return snapshot(db, state, user, events)
         except (StaleDataError, IntegrityError):
@@ -394,7 +418,8 @@ def control(db, user, body):
                 state.speed = 30 if state.scenario_mode != 'interactive' else 1
                 state.created_at = utc_now().isoformat()
                 append_event(db, state, user, 'simulation_initialized', 0, 'Tura este pregătită',
-                    'Rulare nouă; evenimentele anterioare au fost păstrate.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode})
+                    'Rulare nouă; evenimentele anterioare au fost păstrate.', source='control', key='initialized', payload={'scenario_mode':state.scenario_mode, 'event_schema_version':1})
+                synchronize(db,state,user,target=0)
             elif body.action in ('step','advance','advance_to'):
                 state.running = False
                 pending = pending_events(events, state.scenario_mode)
@@ -416,6 +441,7 @@ def control(db, user, body):
             state.updated_at = utc_now().isoformat()
             db.flush()
             events = event_rows(db, state)
+            index_current(db,state,user,events)
             db.commit()
             return snapshot(db, state, user, events)
         except (StaleDataError, IntegrityError):
@@ -483,11 +509,19 @@ def input_event(db, user, body):
                 delay = max(0, floor((state.elapsed_seconds-payload['planned_seconds'])/60))
                 detail = f"{staff[body.staff_id]['name']} · {'înlocuitor' if payload['substitute'] else 'agent alocat'} · deschidere {'la timp' if delay == 0 else '+'+str(delay)+' min'}."
 
+            if body.kind=='gate_open':
+                assignments=[e for e in events if e.flight_id==payload['flight_id'] and e.kind in ('staff_assigned','staff_substitution')]
+                assigned_staff=assignments[-1].staff_id if assignments else payload['assigned_staff_id']
+                if assigned_staff != body.staff_id:
+                    append_event(db,state,user,'staff_substitution',state.elapsed_seconds,'Responsabilitatea porții realocată',
+                        staff[body.staff_id]['name']+' preia responsabilitatea porții.',source='operator',key=key+':assignment',
+                        payload={**payload,'previous_staff_id':assigned_staff})
             append_event(db, state, user, body.kind, state.elapsed_seconds, KINDS[body.kind], detail,
                 source='operator', key=key, payload=payload)
             db.flush()
             events = synchronize(db, state, user, target=state.elapsed_seconds)
             state.updated_at = utc_now().isoformat()
+            index_current(db,state,user,events)
             db.commit()
             return snapshot(db, state, user, events)
         except (StaleDataError, IntegrityError):

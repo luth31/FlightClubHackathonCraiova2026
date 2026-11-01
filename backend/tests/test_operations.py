@@ -11,7 +11,7 @@ from app.config import settings
 from app.core.exceptions import DomainError
 from app.core.models import AuditEvent
 from app.operations import service
-from app.operations.models import OperationEvent, OperationSimulation
+from app.operations.models import OperationEvent, OperationSimulation, OperationEntity, OperationFact, OperationFactEntity
 from app.operations.schemas import ControlInput, EventInput
 
 
@@ -19,7 +19,7 @@ from app.operations.schemas import ControlInput, EventInput
 def ops(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, 'airport_id', 'craiova')
     engine = create_engine(f'sqlite:///{tmp_path}/operations.db', connect_args={'check_same_thread': False, 'timeout': 10})
-    for table in (OperationSimulation.__table__, OperationEvent.__table__, AuditEvent.__table__):
+    for table in (OperationSimulation.__table__, OperationEvent.__table__, AuditEvent.__table__, OperationEntity.__table__, OperationFact.__table__, OperationFactEntity.__table__):
         table.create(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     user = SimpleNamespace(id='test-operator', name='Operator', airport_id='craiova', roles=['director'])
@@ -52,9 +52,11 @@ def test_replay_explains_delay_and_event_order(ops):
         assert flight(result, 'flight-202')['severity'] == 'neutral'
         assert not flight(result, 'flight-404')['emergency']
         assert result['kpis']['on_time_percent'] == 50
-        times = [event['elapsed_seconds'] for event in result['events']]
+        # Planning facts predate shift creation; ingestion sequence and occurrence
+        # time are separate audit dimensions. Control events retain ingestion order.
+        times = [event['elapsed_seconds'] for event in result['events'] if event['source']!='control']
         assert times == sorted(times)
-        assert [event['sequence'] for event in result['events']] == list(range(1, len(times)+1))
+        assert [event['sequence'] for event in result['events']] == list(range(1, len(result['events'])+1))
         opening = next(event for event in result['events'] if event['id']==flight(result)['cause_event_id'])
         assert opening['kind']=='gate_open' and opening['staff_id']=='staff-relief'
         assert any(event['kind']=='staff_absent' for event in result['events'])
@@ -96,7 +98,9 @@ def test_reset_keeps_previous_run_and_stale_revision_is_rejected(ops):
         db.rollback()
         reset = service.control(db, user, ControlInput(action='reset'))
         assert reset['simulation']['run_id'] != initial['simulation']['run_id']
-        assert len(reset['events']) == 1
+        assert sum(e['kind']=='simulation_initialized' for e in reset['events']) == 1
+        assert all(e['elapsed_seconds']<=0 for e in reset['events'])
+        assert any(e['kind']=='flight_scheduled' for e in reset['events'])
         historical = service.history(db, user, initial['simulation']['run_id'])
         assert historical['items'][-1]['kind']=='simulation_reset'
         assert historical['total'] > len(reset['events'])
@@ -277,7 +281,8 @@ def test_timeline_projection_matches_replay_without_persisting_clock_or_events(o
         assert flight(preview)['actual_departure_seconds'] == 2280
         assert flight(preview)['phase'] == 'taxiing'
         assert flight(preview)['delay_minutes'] == 18
-        assert all(event['projected'] for event in preview['timeline']['events'])
+        original_ids={event['id'] for event in initial['events']}
+        assert all(event['projected']==(event['id'] not in original_ids) for event in preview['timeline']['events'])
         assert service.get_snapshot(db, user) == initial
         assert list(db.scalars(select(AuditEvent.id))) == before_audit
         advanced = service.control(db, user, ControlInput(action='advance_to', target_seconds=2400))

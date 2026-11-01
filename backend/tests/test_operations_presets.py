@@ -20,7 +20,9 @@ def test_preset_outcome_and_isolated_ledger(admin,preset,delay,percent):
     assert flights['flight-202']['delay_minutes']==0
     assert result['kpis']['on_time_percent']==percent
     ledger=admin.get('/api/operations/ledger',params={'scope':'current','run_id':initial['simulation']['run_id']}).json()
-    assert ledger['total_groups']==3 and ledger['seeded_events']==0
+    groups=[group for day in ledger['days'] for group in day['flights']]
+    assert sum(group['category']=='flight' for group in groups)==3 and ledger['seeded_events']==0
+    assert any(group['callsign']=='Activitatea turei' for group in groups)
     assert ledger['metrics']['delay_minutes']==delay
     assert ledger['scenario_mode']==preset
     assert all(f['source']=='interactive' for d in ledger['days'] for f in d['flights'])

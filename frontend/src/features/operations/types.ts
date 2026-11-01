@@ -45,12 +45,14 @@ export interface MapConfig {
 export interface LedgerEvent {
   id:string;kind:string;title:string;planned_at:string|null;actual_at:string|null;
   actor:string;detail:string;severity:Severity;delay_minutes:number|null;source:string;
+  operation?:LedgerOperation;entities?:LedgerEntity[];audit?:LedgerAudit;projected?:boolean;
 }
 export interface LedgerEvidenceTarget {eventId:string;groupId:string}
 export interface LedgerFlight {
   id:string;callsign:string;route:string;gate_id:string|null;scheduled_at:string;
   actual_at:string|null;status:string;severity:Severity;delay_minutes:number|null;
   events:LedgerEvent[];event_count?:number;category?:string;current?:boolean;source?:string;
+  entities?:LedgerEntity[];activities?:{id:string;label:string;state:string;event_count:number;from:string|null;to:string|null}[];
 }
 export interface LedgerDay {date:string;severity:Severity;flights:LedgerFlight[];event_count?:number}
 export interface LedgerMetrics {
@@ -61,3 +63,9 @@ export interface LedgerData {
   days:LedgerDay[];metrics:LedgerMetrics;filtered_metrics?:LedgerMetrics;period:{from:string;to:string};
   seeded_events:number;current_run_id:string;reference_date?:string;event_count?:number;
 }
+
+export interface LedgerEntity {id:string;kind:string;code:string;label:string;role:string;attributes:Record<string,string>}
+export interface LedgerOperation {code:string;activity:string;activity_label:string;stream_id:string;from_state:string;to_state:string;from_label:string;to_label:string;dependencies:string[];validation:string;observation:boolean}
+export interface LedgerAudit {event_id:string;recorded_at:string|null;recorded_by:string;source:string;run_id:string|null;sequence:number|null;provenance:string;schema_version:number;indexed_at?:string}
+export interface LedgerFact extends Omit<LedgerEvent,'operation'|'entities'|'audit'> {operation:LedgerOperation;entities:LedgerEntity[];audit:LedgerAudit;group_id:string;integrity_verified:boolean;dependencies:{id:string;title:string;actual_at:string}[]}
+export interface LedgerEntityDetail {entity:LedgerEntity;kind_label:string;events:(LedgerEvent & {operation:LedgerOperation})[];total:number;offset:number;limit:number}
