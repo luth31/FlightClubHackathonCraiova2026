@@ -2,6 +2,7 @@ export interface ReportDefinition {id:string;title:string;subtitle:string;catego
 export interface ReportPreview {report:ReportDefinition;total:number;metrics:ReportData['metrics'];series:{name:string;value:number}[];currency_totals:ReportData['currency_totals'];highlights:ReportData['highlights']}
 export interface BriefingPriority {id:string;document_id:string|null;title:string;number:string;owner:string;department:string;report_id:string;reason:string;severity:'critical'|'warning';days:number|null;date:string|null;kind:string}
 export interface ReportBriefing {
+  analysis:{documents:ReportRow[];tasks:ReportRow[];contracts:ReportRow[];events:{document_id:string;created_at:string}[]};
   catalog:ReportCatalog;airport:string;date:string;demo_reference_date:string;generated_at:string;department:string;departments:string[];
   summary:{documents:number;approved:number;validated:number;new_today:number;actions_today:number;pending:number;overdue:number;due_today:number;contracts:number;expiring_contracts:number;expired_contracts:number;people:number;available:number;currency_totals:{currency:string;value:number}[];high_risk:number};
   timeline:{date:string;documents:number;actions:number}[];

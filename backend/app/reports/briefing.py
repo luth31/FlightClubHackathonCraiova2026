@@ -103,6 +103,8 @@ def build(db, user, department='', today=None):
             currency_totals=reports.get('contracts', {}).get('currency_totals', []),
             high_risk=sum(r['category'] in ('high', 'critical') and r['status'] in ('needs_review', 'verified') for r in suppliers)),
         timeline=list(timeline.values()), workload=workload, priorities=priorities, deadlines=deadlines, reports=previews,
+        analysis=dict(documents=documents, tasks=tasks, contracts=contracts,
+            events=[dict(document_id=event.document_id, created_at=event.created_at) for event in events]),
         coverage=dict(dated_contracts=sum(bool(r.get('date')) for r in contracts),
             valued_contracts=sum(r.get('value') is not None for r in contracts),
             scope='Date administrative din AeroDesk. Indicatorii de trafic aerian nu au o sursă conectată.'))

@@ -35,6 +35,12 @@ def test_briefing_admission_and_report_previews_follow_account_permissions(clien
     assert data['timeline'][-1]['date'] == today
     assert data['summary']['new_today'] == data['timeline'][-1]['documents']
     assert data['summary']['actions_today'] == data['timeline'][-1]['actions']
+    document_ids = {r['id'] for r in data['analysis']['documents']}
+    assert len(document_ids) == data['summary']['documents']
+    assert all(t['document_id'] in document_ids for t in data['analysis']['tasks'])
+    assert all(e['document_id'] in document_ids for e in data['analysis']['events'])
+    if 'contracts' not in permitted:
+        assert data['analysis']['contracts'] == []
     assert 'password_hash' not in response.text
     assert 'expected_iban' not in response.text
     if account == 'technician':
@@ -48,6 +54,8 @@ def test_briefing_department_filters_every_visible_section(admin):
     assert all(p['department'] == 'Tehnic' for p in data['priorities'])
     assert all(d['department'] == 'Tehnic' for d in data['deadlines'])
     assert all(w['name'] == 'Tehnic' for w in data['workload'])
+    assert all(r['department'] == 'Tehnic' for r in data['analysis']['documents'])
+    assert all(r['department'] == 'Tehnic' for r in data['analysis']['tasks'])
     for preview in data['reports']:
         report = admin.get('/api/reports/' + preview['report']['id'], params={'department':'Tehnic', 'as_of':data['date']}).json()
         assert preview['total'] == report['total']
@@ -91,6 +99,7 @@ def test_briefing_activity_never_includes_hidden_or_foreign_airport_documents(ad
         after = admin.get('/api/reports/briefing').json()
         assert after['summary']['actions_today'] == before['summary']['actions_today']
         assert after['timeline'] == before['timeline']
+        assert after['analysis']['events'] == before['analysis']['events']
         assert 'Private title' not in str(after)
     finally:
         for event in events: db.delete(event)

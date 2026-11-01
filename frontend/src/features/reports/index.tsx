@@ -5,12 +5,13 @@ import {ErrorMessage} from '@/components/ui';
 import type {Page, User} from '@/types';
 import {PowerReport} from './PowerReport';
 import {ReportHub} from './ReportHub';
-import {normalizeReport} from './normalize';
+import {normalizeBriefing, normalizeReport} from './normalize';
 import type {ReportBriefing, ReportCatalog, ReportData, SelectReport} from './types';
 import './reports.css';
 import './bi.css';
 import './workspace.css';
 import './briefing.css';
+import './dashboard.css';
 
 function routeReport() { return location.hash.startsWith('#reports/') ? location.hash.split('/')[1]?.split('?')[0] || '' : ''; }
 function routeDepartment() { return new URLSearchParams(location.hash.split('?')[1] || '').get('department') || ''; }
@@ -46,7 +47,7 @@ export function ReportsPage({user, revision, onOpen, onNavigate, notify}: {user:
         if (!reportId) {
           const next = await api<ReportBriefing>(`/reports/briefing?department=${encodeURIComponent(department)}`, {signal:controller.signal});
           if (controller.signal.aborted) return;
-          setBriefing(next); setCatalog(next.catalog); setData(undefined); setError('');
+          setBriefing(normalizeBriefing(next)); setCatalog(next.catalog); setData(undefined); setError('');
         } else {
         const [nextCatalog, nextData] = await Promise.all([
           api<ReportCatalog>('/reports', {signal: controller.signal}),

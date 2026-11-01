@@ -4,15 +4,17 @@ Open **Rapoarte** in the workspace navigation, or `/#reports`. Individual report
 
 The report center uses the current document, task, renewal, supplier, team and sharing records. Demonstration records remain fictional. No separate reporting database or precomputed snapshots are required.
 
-## Daily director briefing
+## Airport analytics dashboard
 
-The landing page starts with **Situația aeroportului**: today's document register, pending decisions, validated contracts due in 30 days, contractual value by original currency, and team availability. Restricted accounts see only their permitted indicators and report previews. A shared department filter applies to the entire briefing.
+The landing page uses the supplied airport Power BI reference as its layout: navy header, blue filter panel, compact KPI cards, a wide trend chart and two linked analytical panels. Four views cover overview, document analysis, contracts and decisions. The contract view is available only to accounts with contract-report access.
 
-The 7/30-day activity chart shows actual document creations and authorized document audit events. The deadline panel lists real contracts, while the priority queue identifies expired contracts, unassigned or overdue decisions, unvalidated metadata, overdue technical documents and open supplier reviews. Each item opens its source document. Department workload bars open the matching pending queue.
+Checkbox filters for department, document category, document status and creation month intersect across the dashboard. The all/30/7-day selector filters document creation dates in Europe/Bucharest. Linked tasks, contracts and priorities follow the same selected documents. The trend groups actual creation dates and shows current states; it does not claim to reconstruct historical approval counts. Long intervals use calendar months. Department bars and matrix cells apply filters to the whole dashboard.
 
-KPI drill-through links preserve status, department and deadline focus in the URL, including after reload. For example, the 30-day contract KPI opens only validated, non-archived contracts due in that interval; its selection CSV exports the same records. The report library sits below the daily briefing and replaces decorative thumbnails with live status rings, maturity bars, category distributions and procurement-stage counts from each report's source data. Missing supplier reviews and shares show explicit empty states and links to their source modules.
+KPI cards open an accessible source-data dialog containing the exact matching records. Its CSV includes every filtered page. The 30-day contract indicator excludes archived and unvalidated records. Contract scatter points open their source documents; supplier and owner rankings open the corresponding records. Currency totals and plots keep currencies separate. Selections persist during refresh and tab changes, and reset explicitly with the eraser control; dashboard selections reset on a full page reload.
 
-The daily PDF includes the selected scope, current date, KPIs, charts and all matching priorities, without the report catalog or app navigation. Presentation mode uses browser fullscreen and restores the regular layout when exited. No flight, passenger or delay metrics are fabricated; this app currently supplies administrative data.
+The expandable library below the dashboard retains all authorized detailed reports, live data previews, favorites and search. Missing supplier reviews and shares have explicit empty states and links to their source modules. The library opens full reports; dashboard-local slicers are not silently carried into those full reports. Existing report deep links still support status, department and deadline focus.
+
+PDF export prints the current analytical view, date and active filters without app navigation or the library. Presentation mode uses browser fullscreen. Mobile layouts expose a collapsible filter panel. No flight, passenger, delay or geographic data is fabricated; the app supplies administrative records, so the template's geographic map is replaced by actual contract exposure.
 
 Design references: Microsoft's [dashboard design guidance](https://learn.microsoft.com/en-us/power-bi/create-reports/service-dashboards-design-tips), the [Airport Authority Performance Summary](https://community.fabric.microsoft.com/t5/Data-Stories-Gallery/Airport-Authority-Performance-Summary/td-p/628963), and ZoomCharts' [airport Power BI example](https://zoomcharts.com/en/microsoft-power-bi-custom-visuals/dashboard-and-report-examples/view/airline-delays-dashboard-power-bi). The implementation uses AeroDesk records and code-native visuals.
 
@@ -43,7 +45,7 @@ Contract totals include accessible contracts across statuses and group each curr
 ## API and export
 
 - `GET /api/reports`: permitted catalog, visible-document count and refresh interval.
-- `GET /api/reports/briefing?department=`: permitted catalog and previews, current-day summary, 30 daily activity buckets, departmental workload, priorities, deadlines and completeness indicators.
+- `GET /api/reports/briefing?department=`: permitted catalog and previews, current-day summary, 30 daily activity buckets, departmental workload, priorities, deadlines, completeness indicators and permission-filtered analytical source rows. The `analysis` object contains documents, tasks, authorized contracts and document-event timestamps; it does not bypass report or document admission.
 - `GET /api/reports/{report_id}?days=90&department=&as_of=2026-10-31`: current report, charts, source rows and activity; optional calendar reference for deadlines and availability.
 - `GET /api/reports/{report_id}/export.csv?days=90&department=&as_of=2026-10-31`: all source rows in the report's authorized department scope. Client-side table search, status and chart filters are local exploration controls.
 
@@ -67,7 +69,7 @@ Procurement coverage counts actual records for each identified case and stage; i
 
 ## Verification
 
-Analytical transformations, CSV safety, Romanian search and legacy title formatting: `node --test frontend/tests/report-analysis.test.mjs frontend/tests/report-export.test.mjs`.
+Analytical transformations, cross filtering, CSV safety, Romanian search and legacy title formatting: `node --test frontend/tests/dashboard-model.test.mjs frontend/tests/report-analysis.test.mjs frontend/tests/report-export.test.mjs`.
 
 `backend/.venv/Scripts/python.exe -m pytest backend/tests/test_reports.py backend/tests/test_report_briefing.py -q`
 
@@ -75,4 +77,6 @@ The reporting tests cover catalog admission and direct endpoint denial for five 
 
 Frontend checks: `npm --prefix frontend run lint` and `npm --prefix frontend run build`. In restricted Windows environments, use `npm --prefix frontend run build -- --configLoader native` to avoid the config bundler's directory access restriction.
 
-The report-page presentation was checked in Chrome at desktop (1512px) and mobile (390px) widths, including report filter panes and source tables. Browser checks cover KPI-to-source agreement, reloadable drill-through, exact-selection CSV, department and activity-period changes, search preservation, priority document links, all nine report routes, fullscreen, PDF output, network-failure recovery and technician access restrictions. There are 11 frontend reporting tests and 23 backend reporting tests. Browser verification reads the current app data; backend tests use isolated fixtures.
+The dashboard is checked in Chrome at desktop (1512px) and mobile (390px) widths. Browser checks cover all four analytical views, KPI/source/CSV agreement, intersecting filters, matrix and bar selections, supplier/owner drill-through, contract document links, refresh preservation, library search, fullscreen, PDF, network-failure recovery and technician restrictions. There are 17 frontend reporting tests and 23 backend reporting tests. Browser verification reads the current app data; backend tests use isolated fixtures.
+
+Reports can be committed independently of the renewal feature. The contract report uses the renewal service when that separate module is installed, and otherwise retains the document-based metrics. This optional integration does not create renewal records.
