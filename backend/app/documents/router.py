@@ -29,7 +29,7 @@ def list_documents(q: str=Query('',max_length=200),category: str='',status: str=
         matching=service.matching_document_ids(db,q)
         docs=[d for d in docs if d.id in matching]
     if category: docs=[d for d in docs if d.category==category]
-    if status: docs=[d for d in docs if d.status==status or (status=='approved' and d.status=='signed')]
+    if status: docs=[d for d in docs if service.matches_status(d,status)]
     if department: docs=[d for d in docs if canonical_department(d.department)==canonical_department(department)]
     return {'items':[service.serialize(d,user=user) for d in docs[offset:offset+limit]],'total':len(docs),'categories':service.CATEGORIES,'departments':service.DEPARTMENTS}
 

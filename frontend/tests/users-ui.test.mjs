@@ -142,7 +142,7 @@ test('HR onboarding sends an ordinary profile and shows credentials once',async 
   assert.equal(calls[0].body.first_name,'Mara');assert.equal(calls[0].body.middle_name,'');assert.equal(calls[0].body.last_name,'Nouă');
   assert.ok(!('name' in calls[0].body));
   assert.ok([...document.querySelectorAll('input')].some(input=>input.value==='once-only'));
-  assert.ok([...document.querySelectorAll('input')].some(input=>input.value===person.sign_in_url));
+  assert.ok([...document.querySelectorAll('input')].some(input=>input.value==='http://flyleaf.test/api/auth/oidc/login?login_hint=mara'));
   assert.match(document.body.textContent,/o singură dată/);
   await click('Am preluat datele');
   assert.ok(![...document.querySelectorAll('input')].some(input=>input.value==='once-only'));
@@ -241,7 +241,7 @@ test('HR can copy the sign-in link without resetting credentials or granting acc
   const copied=[];
   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>copied.push(text)}});
   await click('Gestionează angajatul');await click('Copiază linkul de conectare');
-  assert.deepEqual(copied,[person.sign_in_url]);
+  assert.deepEqual(copied,['http://flyleaf.test/api/auth/oidc/login?login_hint=mara']);
   assert.equal(calls.length,0);
   assert.ok([...document.querySelectorAll('input')].some(input=>input.value==='mara'));
 });

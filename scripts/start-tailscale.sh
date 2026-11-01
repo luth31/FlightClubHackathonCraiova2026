@@ -5,20 +5,22 @@ cd "$PROJECT_DIR"
 if [ ! -f .env.tailscale ]; then
   cp deploy/tailscale.env.example .env.tailscale
 fi
-if [ ! -f .runtime/exchange/ready ]; then
-  if [ -x backend/.venv/bin/python ]; then
-    backend/.venv/bin/python scripts/prepare_exchange.py
-  elif command -v uv >/dev/null 2>&1; then
-    uv run --with cryptography==50.0.2 python scripts/prepare_exchange.py
-  else
-    printf '%s\n' 'First run ./scripts/dev.sh to install the Python environment, then retry.' >&2
-    exit 1
-  fi
+if [ -x backend/.venv/bin/python ]; then
+  task_python=(backend/.venv/bin/python)
+elif command -v uv >/dev/null 2>&1; then
+  task_python=(uv run --with httpx --with cryptography==50.0.2 python)
+else
+  printf '%s\n' 'First run ./scripts/dev.sh to install the Python environment, then retry.' >&2
+  exit 1
 fi
-# Pin isolation even when a developer exports COMPOSE_PROJECT_NAME for local work.
-compose_args=(--project-name flyleaf-presentation -f compose.yaml -f compose.tailscale.yaml)
+if [ ! -f .runtime/exchange/ready ]; then
+  "${task_python[@]}" scripts/prepare_exchange.py
+fi
+# Use the same project and persisted volumes as the default Docker installation.
+compose_args=(--project-name flyleaf -f compose.yaml -f compose.tailscale.yaml)
 if [ -f .env ]; then compose_args+=(--env-file .env); fi
-compose_args+=(--env-file .env.tailscale)
+"${task_python[@]}" scripts/tailscale_origins.py
+compose_args+=(--env-file .runtime/tailscale.origins.env)
 docker compose "${compose_args[@]}" build
 docker compose "${compose_args[@]}" up -d
 for airport in craiova sibiu; do
@@ -34,11 +36,14 @@ for url in urls:
                 if response.status == 200: break
         except Exception:
             if time.monotonic() >= deadline:
-                raise SystemExit('Presentation services did not become ready. Inspect the presentation Compose logs.')
+                raise SystemExit('Shared services did not become ready. Inspect the flyleaf Compose logs.')
             time.sleep(1)
 PY
   docker compose "${compose_args[@]}" exec -T "$airport-api" python -m app.people.sync_demo_organization
 done
-printf '%s\n' 'Presentation stack started separately from local development.' \
+# Register both browser origins on the existing realm, retaining all users/data.
+"${task_python[@]}" scripts/configure_identity.py --tailscale
+printf '%s\n' 'Tailscale entrances enabled on the existing FlyLeaf installation.' \
   'Craiova upstream: http://127.0.0.1:18080; Sibiu upstream: http://127.0.0.1:18081' \
-  'Use the HTTPS Service URLs to sign in. See docs/TAILSCALE.md for Serve commands.'
+  'Local access remains at ports 8080 and 8081. Both routes use the same data.' \
+  'See docs/TAILSCALE.md for Serve commands.'

@@ -291,3 +291,11 @@ def add_version(db,user,document_id,content,filename,comment):
     on_new_version(db,document,user)
     record(db,user,'Versiune nouă',document,f'Versiunea {document.version}; avizările au fost resetate')
     db.commit(); return document
+
+
+def matches_status(document, status):
+    if status == 'soon':
+        return (document.category == 'Contract' and document.validated and document.status != 'archived'
+            and document.expires_at is not None
+            and 0 <= (date.fromisoformat(document.expires_at[:10]) - settings.reference_date).days <= 60)
+    return document.status == status or (status == 'approved' and document.status == 'signed')

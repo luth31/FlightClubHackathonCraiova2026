@@ -135,6 +135,7 @@ export function DocumentLibrary({
             ["approved", "Aprobate"],
             ["draft", "Ciorne"],
             ["archived", "Arhivă"],
+            ...(initialFilter === "soon" ? [["soon", "Expiră în 60 zile"]] : []),
           ].map(([id, label]) => (
             <button
               key={id}

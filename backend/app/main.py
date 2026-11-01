@@ -48,7 +48,7 @@ async def lifespan(app):
             worker[1].join(timeout=2)
 
 app=FastAPI(title='FlyLeaf API',version='0.1.0',description='Local demonstration workspace. Synthetic airport documents; session-based access control.',lifespan=lifespan)
-app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origins,allow_credentials=True,allow_methods=['GET','POST','PATCH','DELETE','OPTIONS'],allow_headers=['Content-Type'])
+app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origins + settings.oidc_extra_origins,allow_credentials=True,allow_methods=['GET','POST','PATCH','DELETE','OPTIONS'],allow_headers=['Content-Type'])
 register_exception_handlers(app)
 
 @app.middleware('http')
@@ -57,7 +57,7 @@ async def security_headers(request: Request,call_next):
     origin=request.headers.get('origin')
     if request.method in ('POST','PATCH','DELETE','PUT') and origin:
         own=f'{request.url.scheme}://{request.headers.get("host","")}'
-        if origin not in settings.cors_origins and origin!=own:
+        if origin not in settings.cors_origins and origin not in settings.oidc_extra_origins and origin!=own:
             return JSONResponse(status_code=403,content={'detail':'Originea cererii nu este permisă.'})
     response=await call_next(request)
     response.headers['X-Content-Type-Options']='nosniff'

@@ -20,6 +20,7 @@ from sqlalchemy import delete, select
 from app.config import settings
 from app.core.security import token_hash
 from app.identity.models import LoginTransaction
+from app.identity.origins import primary_origin, configured_origins, transaction_origin, provider_headers
 from app.people.models import User
 
 
@@ -64,13 +65,14 @@ def subject_map():
     return dict(DEMO_SUBJECTS.get(settings.airport_id, {}))
 
 
-def provider_logout_url():
+def provider_logout_url(origin=None):
+    origin = origin or primary_origin()
     validate_configuration()
     # An exact registered redirect and client identify the RP. No ID token is
     # persisted or placed in the URL; Keycloak can ask for logout confirmation.
-    return settings.oidc_issuer + '/protocol/openid-connect/logout?' + urlencode({
+    return origin.issuer + '/protocol/openid-connect/logout?' + urlencode({
         'client_id':settings.oidc_client_id,
-        'post_logout_redirect_uri':settings.oidc_frontend_url,
+        'post_logout_redirect_uri':origin.frontend_url,
         'ui_locales':'ro'})
 
 
@@ -83,6 +85,10 @@ def validate_configuration():
                 or parsed.username or parsed.password or parsed.query or parsed.fragment
                 or (parsed.scheme == 'http' and parsed.hostname not in ('localhost', '127.0.0.1', '::1'))):
             raise IdentityError('configuration_error')
+    try:
+        configured_origins()
+    except ValueError as exc:
+        raise IdentityError('configuration_error') from exc
     internal = urlsplit(settings.oidc_internal_issuer or settings.oidc_issuer)
     if (internal.scheme not in ('http', 'https') or not internal.hostname
             or internal.username or internal.password or internal.query or internal.fragment):
@@ -95,11 +101,11 @@ def validate_configuration():
         raise IdentityError('configuration_error')
 
 
-def provider_json(method, url, data=None):
+def provider_json(method, url, data=None, *, issuer=None):
     """Bounded transport; never follow redirects to a different trust boundary."""
     try:
         with httpx.Client(timeout=8, follow_redirects=False, trust_env=False) as client:
-            with client.stream(method, url, data=data, headers={'Accept':'application/json'}) as response:
+            with client.stream(method, url, data=data, headers={'Accept':'application/json', **provider_headers(issuer or settings.oidc_issuer)}) as response:
                 response.raise_for_status()
                 chunks, size = [], 0
                 for chunk in response.iter_bytes():
@@ -115,42 +121,52 @@ def provider_json(method, url, data=None):
         raise IdentityError('provider_unavailable') from exc
 
 
-def transport_url(public_url):
-    prefix = settings.oidc_issuer + '/'
+def transport_url(public_url, origin=None):
+    origin = origin or primary_origin()
+    prefix = origin.issuer + '/'
     if not isinstance(public_url, str) or not public_url.startswith(prefix):
         raise IdentityError('invalid_provider')
     parsed = urlsplit(public_url)
     if parsed.query or parsed.fragment or '/..' in parsed.path or '%' in parsed.path:
         raise IdentityError('invalid_provider')
-    return (settings.oidc_internal_issuer or settings.oidc_issuer).rstrip('/') + public_url[len(settings.oidc_issuer):]
+    return (settings.oidc_internal_issuer or settings.oidc_issuer).rstrip('/') + public_url[len(origin.issuer):]
 
 
-def discovery():
+def origin_json(origin, method, url, data=None):
+    # Preserve the default transport seam for local installations.
+    if origin.issuer == settings.oidc_issuer:
+        return provider_json(method, url, data)
+    return provider_json(method, url, data, issuer=origin.issuer)
+
+
+def discovery(origin=None):
+    origin = origin or primary_origin()
     validate_configuration()
     internal = (settings.oidc_internal_issuer or settings.oidc_issuer).rstrip('/')
-    metadata = provider_json('GET', internal + '/.well-known/openid-configuration')
-    if metadata.get('issuer') != settings.oidc_issuer:
+    metadata = origin_json(origin, 'GET', internal + '/.well-known/openid-configuration')
+    if metadata.get('issuer') != origin.issuer:
         raise IdentityError('invalid_provider')
     for name in ('authorization_endpoint', 'token_endpoint', 'jwks_uri'):
-        transport_url(metadata.get(name))
+        transport_url(metadata.get(name), origin)
     if 'S256' not in metadata.get('code_challenge_methods_supported', []):
         raise IdentityError('invalid_provider')
     return metadata
 
 
-def start_login(db, login_hint=None):
-    metadata = discovery()
+def start_login(db, login_hint=None, origin=None):
+    origin = origin or primary_origin()
+    metadata = discovery(origin)
     state, browser, nonce, verifier = (secrets.token_urlsafe(48) for _ in range(4))
     created = now()
     db.execute(delete(LoginTransaction).where(LoginTransaction.expires_at <= created.isoformat()))
     db.add(LoginTransaction(state_hash=token_hash(state), browser_hash=token_hash(browser),
-        nonce=nonce, verifier=verifier, issuer=settings.oidc_issuer, client_id=settings.oidc_client_id,
-        redirect_uri=settings.oidc_redirect_uri, created_at=created.isoformat(),
+        nonce=nonce, verifier=verifier, issuer=origin.issuer, client_id=settings.oidc_client_id,
+        redirect_uri=origin.redirect_uri, created_at=created.isoformat(),
         expires_at=(created + timedelta(seconds=FLOW_SECONDS)).isoformat()))
     db.commit()
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode('ascii')).digest()).rstrip(b'=').decode()
     parameters = {'client_id':settings.oidc_client_id, 'response_type':'code',
-        'redirect_uri':settings.oidc_redirect_uri, 'scope':'openid profile', 'state':state,
+        'redirect_uri':origin.redirect_uri, 'scope':'openid profile', 'state':state,
         'nonce':nonce, 'code_challenge':challenge, 'code_challenge_method':'S256',
         'prompt':'login', 'max_age':'0', 'ui_locales':'ro'}
     if login_hint: parameters['login_hint'] = login_hint
@@ -158,7 +174,8 @@ def start_login(db, login_hint=None):
     return metadata['authorization_endpoint'] + '?' + query, browser
 
 
-def consume_transaction(db, state, browser):
+def consume_transaction(db, state, browser, origin=None):
+    origin = origin or primary_origin()
     if not state or not browser:
         raise IdentityError('invalid_state')
     # One atomic delete commits before the network exchange: concurrent callbacks
@@ -167,9 +184,9 @@ def consume_transaction(db, state, browser):
         LoginTransaction.state_hash == token_hash(state),
         LoginTransaction.browser_hash == token_hash(browser),
         LoginTransaction.expires_at > now().isoformat(),
-        LoginTransaction.issuer == settings.oidc_issuer,
+        LoginTransaction.issuer == origin.issuer,
         LoginTransaction.client_id == settings.oidc_client_id,
-        LoginTransaction.redirect_uri == settings.oidc_redirect_uri,
+        LoginTransaction.redirect_uri == origin.redirect_uri,
     ).returning(LoginTransaction)).scalar_one_or_none()
     db.commit()
     if row is None:
@@ -195,7 +212,7 @@ def validate_id_token(encoded, jwks, transaction):
         key = jwt.PyJWK.from_dict(keys[0], algorithm='RS256').key
         stage = 'signature_and_claims'
         claims = jwt.decode(encoded, key, algorithms=['RS256'], audience=settings.oidc_client_id,
-            issuer=settings.oidc_issuer, leeway=30,
+            issuer=transaction.issuer, leeway=30,
             options={'require':['iss','aud','sub','iat','exp','nonce','auth_time']})
         stage = 'nonce'
         if not hmac.compare_digest(claims['nonce'], transaction.nonce):
@@ -224,11 +241,15 @@ def validate_id_token(encoded, jwks, transaction):
 
 
 def complete_login(db, transaction, code):
-    metadata = discovery()
-    tokens = provider_json('POST', transport_url(metadata['token_endpoint']), {
+    try:
+        origin = transaction_origin(transaction)
+    except ValueError as exc:
+        raise IdentityError('invalid_provider') from exc
+    metadata = discovery(origin)
+    tokens = origin_json(origin, 'POST', transport_url(metadata['token_endpoint'], origin), {
         'grant_type':'authorization_code', 'code':code, 'client_id':transaction.client_id,
         'redirect_uri':transaction.redirect_uri, 'code_verifier':transaction.verifier})
-    jwks = provider_json('GET', transport_url(metadata['jwks_uri']))
+    jwks = origin_json(origin, 'GET', transport_url(metadata['jwks_uri'], origin))
     claims = validate_id_token(tokens.get('id_token'), jwks, transaction)
     user = db.scalar(select(User).where(User.identity_issuer == settings.oidc_issuer,
         User.identity_subject == claims['sub']))

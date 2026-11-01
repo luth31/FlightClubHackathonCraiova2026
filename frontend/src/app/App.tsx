@@ -1,12 +1,11 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
-import {House,FolderOpen,Files,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
+import {House,FolderOpen,ClipboardCheck,Building2,UsersRound,Landmark,History,Search,Sparkles,ChevronDown,ChevronRight,Menu,LogOut,Plane,BarChart3} from 'lucide-react';
 import {pageLabels,useNavigation} from '@/services/navigation';
 import {pagePermissions,personalTasks} from '@/services/access';
-import {api,setIdentity,clearIdentity} from '@/services/api-client';
+import {api,setIdentity,clearIdentity,onSessionExpired,isSessionExpired} from '@/services/api-client';
 import {Loading,ErrorMessage,Toast,ViewActiveContext,Modal} from '@/components/ui';
 import {DashboardPage} from '@/features/dashboard';
 import {DocumentLibrary,DocumentDetail,UploadDialog} from '@/features/documents';
-import {ContractsPage} from '@/features/contracts';
 import {ApprovalsPage} from '@/features/approvals';
 import {SharingPage} from '@/features/sharing';
 import {useCollaborationInbox} from '@/features/sharing/useCollaborationInbox';
@@ -30,7 +29,7 @@ function RetainedOperations({visible,notify}:{visible:boolean;notify:(message:st
     <Suspense fallback={<Loading/>}><OperationsPage notify={notify}/></Suspense>
   </ViewActiveContext></div>;
 }
-const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'contracts',label:'Contracte',icon:Files},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
+const nav=[{id:'home',label:'Acasă',icon:House},{id:'operations',label:'Operațiuni la sol',icon:Plane},{id:'documents',label:'Documente',icon:FolderOpen},{id:'suppliers',label:'Furnizori',icon:Landmark},{id:'approvals',label:'Aprobări',icon:ClipboardCheck},{id:'people',label:'Echipă',icon:UsersRound},{id:'reports',label:'Rapoarte',icon:BarChart3}];
 const secondNav=[{id:'sharing',label:'Colaborare',icon:Building2},{id:'audit',label:'Jurnal de activitate',icon:History}];
 export function App() {
   const [session,setSession]=useState<Session>(), [error,setError]=useState(''),
@@ -67,6 +66,13 @@ export function App() {
       setError('');
     }).catch(e=>{if(epoch===sessionEpoch.current)setError(e.message)});
   };
+  useEffect(()=>onSessionExpired(()=>{
+    sessionEpoch.current++;
+    returnFocus.current=undefined;
+    setError('');setToast('');setUpload(false);setAssistant(false);
+    setUserMenu(false);setMobileOpen(false);setLogoutError('');setConfirmingLogout(false);
+    setSession(current=>current?{...current,current_user:null,users:current.auth?.mode==='oidc'?[]:current.users}:current);
+  }),[]);
   useEffect(()=>{refresh()},[]);
   useEffect(()=>{
     setMobileOpen(false);
@@ -79,7 +85,7 @@ export function App() {
     const t=setTimeout(()=>setToast(''),4200);
     return()=>clearTimeout(t);
   },[toast]);
-  const notify=useCallback((s:string)=>setToast(s),[]);
+  const notify=useCallback((s:string)=>{if(!isSessionExpired())setToast(s)},[]);
   const closeUpload=useCallback(()=>setUpload(false),[]),closeAssistant=useCallback(()=>setAssistant(false),[]);
   const navigate=(p:Page,f='')=>{setFilter(f);goToPage(p);setMobileOpen(false);setUserMenu(false);setUpload(false);setAssistant(false)};
   const openDoc=(id:string)=>{
@@ -194,7 +200,7 @@ export function App() {
           <ViewActiveContext value={!doc}>
           {page==='home'&&<DashboardPage name={user.name} onOpen={openDoc} onNavigate={navigate} onUpload={()=>setUpload(true)} revision={revision}/>}
           {page==='documents'&&<DocumentLibrary onOpen={openDoc} onUpload={()=>setUpload(true)} notify={notify} initialFilter={filter} revision={revision}/>}
-          {page==='contracts'&&<ContractsPage initialFilter={filter} onOpen={openDoc} revision={revision} notify={notify}/>}
+
           {page==='approvals'&&<ApprovalsPage onOpen={openDoc} revision={revision} notify={notify} user={user}/>}
           {page==='sharing'&&<SharingPage revision={revision} onOpen={openDoc} notify={notify}/>}
           {page==='suppliers'&&(user.roles.some(role=>['director','finance'].includes(role))

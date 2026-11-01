@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session as DbSession
 from app.database import get_db
 from app.people.models import User, Session
 from app.config import settings
+from app.identity.origins import request_origin
 from app.core.exceptions import DomainError
 from app.people.organization import canonical_department, TECHNICAL_CATEGORIES, RESTRICTED, PUBLISHED
 from sqlalchemy import select
@@ -37,7 +38,7 @@ def issue_session(db, user, response, request=None, auth_source='demo'):
         expires_at=(datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat(),
         auth_source=auth_source, auth_issuer=settings.oidc_issuer if auth_source == 'oidc' else None))
     response.set_cookie(f'flyleaf_session_{settings.airport_id}', token,
-        httponly=True, secure=settings.cookie_secure, samesite='strict', max_age=seconds, path='/api')
+        httponly=True, secure=request_origin(request).secure, samesite='strict', max_age=seconds, path='/api')
 
 def optional_user(request: Request, db: DbSession = Depends(get_db)):
     flyleaf_session=request.cookies.get(f'flyleaf_session_{settings.airport_id}')

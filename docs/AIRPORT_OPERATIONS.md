@@ -30,7 +30,7 @@ Twelve structured working templates cover the airport's core coordination proces
 
 The model uses independently sourced OSM airport geometry; Google mode streams 3D imagery with provider attribution. Imagery and source geometry can have different dates. The live ADS-B mode displays actual reported positions around the airport, with freshness and source information, and does not invent schedules or delays. Missing altitude is explicit. The representation is not an air traffic control instrument.
 
-Google Maps can be enabled through the ignored root `.env` in native development, default Docker and the separate presentation deployment. An optional `.env.tailscale` overrides presentation values only. See [sources and licensing](AIRPORT_3D_SOURCES.md) and the [API contract](OPERATIONS_API.md).
+Google Maps can be enabled through the ignored root `.env` in native development, default Docker and the shared Tailscale entrance. `.env.tailscale` configures only the additional HTTPS origins; API keys remain in the root `.env`. See [sources and licensing](AIRPORT_3D_SOURCES.md) and the [API contract](OPERATIONS_API.md).
 
 Each map style is created only when first displayed, then retained in the current page session across the ledger, SOPs and style switches. Hidden scenes pause rendering and tile updates; opening a ledger link directly does not initialize a hidden map. At most two scenes are retained, and leaving the authenticated application disposes them. Reloading the browser still creates a new renderer/session.
 
